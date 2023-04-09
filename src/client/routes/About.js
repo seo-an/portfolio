@@ -82,7 +82,7 @@ const About = () => {
         <Paragraph>
           <Subtitle><span>API 포트폴리오,</span></Subtitle>
           <p>
-            API 포트폴리오 화면에는 공공 API 포털에서 받아온 OpenApi가 구현되어 있습니다. 인천공항의 출발/도착 항공편에 대한 정보를 얻을 수 있어요.
+            API 포트폴리오 화면에는 공공 API 포털에서 받아온 OpenApi가 구현되어 있습니다. 오늘 인천공항의 출발/도착 항공편에 대한 정보를 얻을 수 있어요. (상위 20개 내용만 노출됩니다.)
           </p>
         </Paragraph>
         <Paragraph>
