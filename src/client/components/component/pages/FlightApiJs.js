@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import styled from "styled-components";
 
@@ -51,55 +51,112 @@ const callAirport = () => {
 }
 
 
+const changeTo = (val) => {
+  if (val === '') return;
+  else if (typeof(val) === 'string') {
+    let result = val.charCodeAt(0);
+    return result;
+  }
+  else if (typeof(val) === 'number') {
+    let result = String.fromCharCode(val);
+    return result;
+  }
+};
+
+const handleSearch = (on) => {
+  console.log(on);
+  if (on) {
+    return (
+      <div>
+          <select>
+            <option>1</option>
+          </select>
+      </div>
+    )
+  }
+};
 
 
-  // return (
-  //   <div>
-  //     <button onClick={handleTranslate}>Translate</button>
-  //     <p>{result}</p>
-  //   </div>
-  // );
-  // return handleTranslate();
-
-// console.log(hangulCode.indexOf(val));
-// indexOf();
-// charCodeAt(0);
-
-export const FlightApiJs = () => {
-  callAirport();
-
-  const search = (e) => {
-    // const word = [];
-    // console.log('handle change', e.target.value);
-    // const nowTyping = e.target.value.charCodeAt(0);
-
-    // word.push(nowTyping);
-    // console.log(word);
-
-    const bb = e.target.value;
-    return bb;
+const letsBreak = (val) => {
+  const wordCode = {
+    separate: ['가', '까', '나', '다', '따', '라', '마', '바', '빠', '사', '싸', '아', '자', '짜', '차', '카', '타', '파', '하'],
+    initial: ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ'],
+    vowel: ["ㅏ", "ㅐ", "ㅑ", "ㅒ", "ㅓ", "ㅔ", "ㅕ", "ㅖ", "ㅗ", "ㅘ", "ㅙ", "ㅚ", "ㅛ", "ㅜ", "ㅝ", "ㅞ", "ㅟ", "ㅠ", "ㅡ", "ㅢ", "ㅣ"],
+    last: ['', "ㄱ", "ㄲ", "ㄳ", "ㄴ", "ㄵ", "ㄶ", "ㄷ", "ㄹ", "ㄺ", "ㄻ", "ㄼ", "ㅀ", "ㄾ", "ㄿ", "ㅀ", "ㅁ", "ㅂ", "ㅄ", "ㅅ", "ㅆ", "ㅇ", "ㅈ", "ㅊ", "ㅋ", "ㅌ", "ㅍ", "ㅎ"]
   };
 
-  const real = () => {
+  // 자음(19개) 하나 당 가능한 변화 자음(1개)*모음(21개)*받침(28개) = 588개
+  // 28개 단위로 받침이 바뀜
+  // 21개 단위로 모음이 바뀜
+  // 한 자음에서 모음(21)*받침(28)개를 순환하면 자음이 바뀜
+  const theFrstCode = '가'.charCodeAt(0);
+  let value = (val === undefined || isNaN(val)) ? null : val;
+  if (value === null) return;
+  let initialNum = Math.trunc((value - theFrstCode)/588); // 자음 찾기
+  let firstWordCode = changeTo(wordCode.separate[initialNum]); // 해당 자음으로 시작하는 가장 첫 단어의 유니코드 찾기 (변화의 단위: 588개, 588개 단위로 자음이 바뀜)
+  let vowelNum = Math.trunc((value - firstWordCode) / wordCode.last.length); // 자음1, 모음1의 가능한 변화 = 받침의 개수 (변화의 단위: 28개, 28개 단위로 모음이 바뀜)
+  let lastNum = (value - firstWordCode) - (28 * vowelNum); // 가능한 받침 단위(28개) 개수만큼 빼고 남은 나머지 = 받침 순서 (변화의 단위: 1개)
+  
+  // console.log(theFrstCode, value, firstWordCode, initialNum, vowelNum, lastNum);
+  // console.log(wordCode.initial[initialNum], wordCode.vowel[vowelNum], wordCode.last[lastNum]);
+  // const breaks = `'${wordCode.initial[initialNum]}', '${wordCode.vowel[vowelNum]}', '${wordCode.last[lastNum]}'`;
+  // console.log(breaks);
+  const result = `'${wordCode.initial[initialNum]}', '${changeTo(firstWordCode+(28*vowelNum))}', '${changeTo(firstWordCode+(28*vowelNum)+lastNum)}'`;
 
-  }
+  return result;
+};
+
+
+
+export const FlightApiJs = () => {
+  // 임시로 안불러옴
+  callAirport();
+  
+  
+  const [word, setWord] = useState();
+  const [breakWord, setBreakWord] = useState();
+
+  const catchTyping = (e) => {
+    const val = e.target.value;
+    console.log(val);
+    handleSearch(true);
+    setWord(val);
+  };
+
+
+  useEffect(() => {
+    setBreakWord(letsBreak(changeTo(word)));
+  }, [word])
+  
+
+  
+  console.log(breakWord);
+
+
+  
 
   const onSubmit = (e) => {
     e.preventDefault();
+    const airlines = document.querySelector("input#airlines").value;
+    
   };
-
   
-  // const air1 = document.querySelector("input#airlines").value;
+  const toFlightApiViewProps = {
+    onSubmit,
+    catchTyping,
+    handleSearch,
+  }
+  
   // console.log(hangulCode.indexOf(air1));
 
   return (
     <>
-      <FlightApiView props={ 'a' }/>
-      <div>
+      <FlightApiView props={ { ...toFlightApiViewProps } }/>
+      {/* <div>
         <form onSubmit={onSubmit}>
-          <input name="test" id="airlines" placeholder="항공사" onChange={search}></input>
+          <input name="test" id="airlines" placeholder="항공사" onChange={catchTyping}></input>
         </form>
-      </div>
+      </div> */}
     </>
   )
 }

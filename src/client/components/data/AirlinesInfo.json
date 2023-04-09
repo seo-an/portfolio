@@ -1,45 +1,16 @@
 {
-  "pet": [
+  "airline": [
     { 
-      "id": "abcab12", 
-      "petName": "치약", 
-      "family": "Parrot", 
-      "species": "블루헤드 피어니스", 
-      "sex": "Male", 
-      "birthday": "2022/10/9", 
-      "desexing": "N", 
-      "reg_no": "", 
-      "RFIDcode": "" 
+      "codeICAO": "a", 
+      "codeIATA": "b", 
+      "companyName": "c"
     }
   ],
-  "detail": [
+  "airport": [
     { 
-      "id": "abcab12", 
-      "petName": "치약", 
-      "age": "", 
-      "weight": "", 
-      "twitter": "", 
-      "instagram": "", 
-      "facebook": "", 
-      "youtube": "", 
-      "tiktok": "", 
-      "blog": ""
-    }
-  ],
-  "owner": [
-    { 
-      "id": "abcab12", 
-      "ownerName": "", 
-      "ownerBirthday": "", 
-      "phone": "", 
-      "email": "", 
-      "kakao": "", 
-      "line": "", 
-      "skype": "", 
-      "discord": "", 
-      "slack": "", 
-      "wechat": "", 
-      "telegram": ""
+      "id": "a", 
+      "codeAirport": "b", 
+      "airportName": "c"
     }
   ]
 }

@@ -5,15 +5,6 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function(app) {
 	// console.log('❤❤');
-	app.use('/papago-api', createProxyMiddleware({
-		target: 'https://openapi.naver.com',
-		changeOrigin: true,
-		timeout: 60000,
-		pathRewrite: {
-			'^/papago-api': ''
-		}
-	}));
-
   app.use('/weather-api', createProxyMiddleware({
 		target: 'http://apis.data.go.kr',
 		changeOrigin: true,
@@ -22,12 +13,4 @@ module.exports = function(app) {
 			'^/weather-api': ''
 		}
 	}));
-
-	// RESTApi
-	// app.use('/api', createProxyMiddleware({
-	// 		target: `http://localhost:1991`,
-	// 		changeOrigin: true,
-	// 		timeout: 60000,
-	// 	})
-	// );
 };

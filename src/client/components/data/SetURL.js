@@ -16,11 +16,6 @@ const SetURL = () => {
       text: 'API 포트폴리오',
     },
     {
-      id: 'handle-data',
-      url: '/handle-data',
-      text: 'Database 포트폴리오',
-    },
-    {
       id: 'about',
       url: '/about',
       text: 'About',
