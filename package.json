@@ -21,14 +21,14 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "set PORT=1991 && react-scripts start",
+    "start": "npm run build && react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "preclient": "npm run build",
     "client": "react-scripts start",
     "server": "node server.js",
-    "dev": "concurrently --kill-others-on-fail \"npm run client\" \"npm run server\""
+    "local": "concurrently --kill-others-on-fail \"npm run client\" \"npm run server\""
   },
   "eslintConfig": {
     "extends": [
