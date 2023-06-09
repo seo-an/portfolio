@@ -4,10 +4,10 @@ const path = require('path');
 require('dotenv').config();
 const app = express();
 
+// const { createProxyMiddleware } = require('http-proxy-middleware');
+
 // Node.js server용 port
 const PORT = 1991;
-
-
 
 
 // json body parser
@@ -32,21 +32,31 @@ app.use(express.json());
 // }
 
 if (!process.env.NODE_ENV) {
-  // 정적파일의 루트를 지정
+  // 정적파일
   app.use(express.static(path.join(__dirname, 'build')));
 
-  // 요청 url에 대한 응답페이지 지정
-  // '*' 으로 설정하면 react가 route의 전권을 가져갈 수 있음
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html')); //res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  });
 } else if (process.env.NODE_ENV === 'production') {
   app.use(cors());
 
-  // internal API of /api/data
-  app.get('/api/data', (req, res) => {
-    res.send(data);
+  // React app
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'build', 'index.html'));
   });
+  
+  // backend API route (internal API)
+  app.get('/api/data', (req, res) => {
+    res.send('<h1>did you call me?</h1>');
+  });
+
+  // app.use('/weather-api', createProxyMiddleware({
+	// 	target: 'http://apis.data.go.kr',
+	// 	changeOrigin: true,
+	// 	timeout: 60000,
+	// 	secure: false, // set secure to false to force http
+	// 	pathRewrite: {
+	// 		'^/weather-api': ''
+	// 	}
+	// }))
 }
 
 

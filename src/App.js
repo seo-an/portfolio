@@ -9,7 +9,7 @@ import About from "./client/routes/About";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/">
 			<Routes>
         <Route exact path="/" element={<Layout />}>
           <Route index element={<Home />}></Route>

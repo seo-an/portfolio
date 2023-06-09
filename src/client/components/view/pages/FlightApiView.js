@@ -2,7 +2,7 @@ import styled from "styled-components";
 import { useEffect } from "react";
 
 import { ReactComponent as AirplaneSVG } from "../icon/svg/airplane.svg";
-import airlinesInfo from "../../data/airlinesInfo.json"
+import airlinesInfo from "../../data/AirlinesInfo.json"
 
 
 export const Container = styled.div `
@@ -41,7 +41,7 @@ export const FlightApiView = ( fromFlightApiJs ) => {
   const airlines = airlinesInfo.airline;
   const airports = airlinesInfo.airport;
 
-  fromFlightApiJs.props.getData(airlinesInfo);
+  fromFlightApiJs.props.getFlightApiData(airlinesInfo);
   
   const finalData = (fromFlightApiJs.props.final === undefined) ? {items: []} : fromFlightApiJs.props.final;
   let result = finalData.items;

@@ -34,7 +34,7 @@ const findAirport = ( dataset, word ) => {
 }
 
 
-// const callAirport = async ( url, port, line ) => {
+// const callFlightApiData = async ( url, port, line ) => {
 
 //   // const fetchApi = async ( data ) => {
 
@@ -84,14 +84,12 @@ export const FlightApiJs = () => {
   const [final, setFinal] = useState();
   let jsonData = null;
 
-  const getData = (data) => {
+  const getFlightApiData = (data) => {
     return jsonData = data;
   }
 
   const onSubmitFromView = (e) => {
     e.preventDefault();
-    // console.log('e', e);
-    // console.log(e.target.length);
 
     let len = e.target.length;
     let elements = Array.from(e.target);
@@ -106,13 +104,13 @@ export const FlightApiJs = () => {
     setData(result);
   };
 
-  const callAirport = async ( url, port, line ) => {
+  const callFlightApiData = async ( url, port, line ) => {
 
     // const fetchApi = async ( data ) => {
   
-    const SERVICE_KEY = process.env.REACT_APP_INCHEON_INT_AIRPORT_WEATHER_INFO_API_KEY;
-    const ARRIVAL_URL = `/B551177/StatusOfPassengerWorldWeatherInfo/getPassengerArrivalsWorldWeather`;
-    const DEPARTURE_URL = `/B551177/StatusOfPassengerWorldWeatherInfo/getPassengerDeparturesWorldWeather`;
+    const SERVICE_KEY = process.env.REACT_APP_INCHEON_INT_AIRPORT_WEATHER_INFO_API_KEY_A;
+    const ARRIVAL_URL = `B551177/StatusOfPassengerWorldWeatherInfo/getPassengerArrivalsWorldWeather`;
+    const DEPARTURE_URL = `B551177/StatusOfPassengerWorldWeatherInfo/getPassengerDeparturesWorldWeather`;
   
     const URL = (url) ? ARRIVAL_URL : DEPARTURE_URL;
     const airport = (port === undefined) ? '' : port;
@@ -121,7 +119,7 @@ export const FlightApiJs = () => {
     // proxy 통하니까 decoding service key 넣어야 작동했음
     const getApi = await axios({
       method: "GET",
-      url: `/weather-api${URL}`,
+      url: `/flight-api/arrival/${ARRIVAL_URL}`,
       params: {
         'serviceKey': `${SERVICE_KEY}`,
         'numOfRows': '20', 
@@ -156,7 +154,7 @@ export const FlightApiJs = () => {
       const port = findAirport(airports, data[1]);
       const line = findAirline(airlines, data[2]);
 
-      callAirport( url, port, line );
+      callFlightApiData( url, port, line );
     }
   }, [data, jsonData])
 
@@ -164,7 +162,7 @@ export const FlightApiJs = () => {
 
   const toFlightApiViewProps = {
     onSubmitFromView,
-    getData,
+    getFlightApiData,
     final
   }
 
