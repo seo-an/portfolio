@@ -4,7 +4,6 @@ const path = require('path');
 require('dotenv').config();
 const app = express();
 
-// const { createProxyMiddleware } = require('http-proxy-middleware');
 
 // Node.js server용 port
 const PORT = 1991;
@@ -47,16 +46,6 @@ if (!process.env.NODE_ENV) {
   app.get('/api/data', (req, res) => {
     res.send('<h1>did you call me?</h1>');
   });
-
-  // app.use('/weather-api', createProxyMiddleware({
-	// 	target: 'http://apis.data.go.kr',
-	// 	changeOrigin: true,
-	// 	timeout: 60000,
-	// 	secure: false, // set secure to false to force http
-	// 	pathRewrite: {
-	// 		'^/weather-api': ''
-	// 	}
-	// }))
 }
 
 
