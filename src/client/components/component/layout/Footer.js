@@ -14,8 +14,8 @@ import { Container, Wrapper, Text } from "../../view/layout/FooterView";
 // }
 
 export const Mail = () => {
-  const naver = `seo-an_@naver.com`;
-  const gmail = `jay2019lee@gmail.com`;
+  const naver = process.env.REACT_APP_PERSONAL_EMAIL_ADDRESS_NAVER;
+  //const gmail = process.env.REACT_APP_PERSONAL_EMAIL_ADDRESS_GMAIL;
 
   const copyMail = ( address ) => {
     return (

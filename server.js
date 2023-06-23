@@ -1,37 +1,38 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+
 require('dotenv').config();
 const app = express();
-const dbConn = require("./database.js");
+const mysqlConn = require("./database.js");
 const { createPool } = require('mysql');
 
-// Node.js server용 port
+// Node.js express server용 port
 const PORT = 1991;
 
 // Database connection
 // const localhostMysql = {
-//   host: process.env.REACT_APP_MYSQL_CONF_LOCALHOST_HOST,
-//   user: process.env.REACT_APP_MYSQL_CONF_LOCALHOST_USER,
-//   password: process.env.REACT_APP_MYSQL_CONF_LOCALHOST_PASSWORD,
-//   database: process.env.REACT_APP_MYSQL_CONF_LOCALHOST_DB,
-//   port: process.env.REACT_APP_MYSQL_CONF_LOCALHOST_PORT
+//   host: process.env.MYSQL_CONF_LOCALHOST_HOST,
+//   user: process.env.MYSQL_CONF_LOCALHOST_USER,
+//   password: process.env.MYSQL_CONF_LOCALHOST_PASSWORD,
+//   database: process.env.MYSQL_CONF_LOCALHOST_DB,
+//   port: process.env.MYSQL_CONF_LOCALHOST_PORT
 // };
 
 // const localServerMysql = {
-//   host: process.env.REACT_APP_MYSQL_CONF_LOCALSERVER_HOST,
-//   user: process.env.REACT_APP_MYSQL_CONF_LOCALSERVER_USER,
-//   password: process.env.REACT_APP_MYSQL_CONF_LOCALSERVER_PASSWORD,
-//   database: process.env.REACT_APP_MYSQL_CONF_LOCALSERVER_DB,
-//   port: process.env.REACT_APP_MYSQL_CONF_LOCALSERVER_PORT
+//   host: process.env.MYSQL_CONF_LOCALSERVER_HOST,
+//   user: process.env.MYSQL_CONF_LOCALSERVER_USER,
+//   password: process.env.MYSQL_CONF_LOCALSERVER_PASSWORD,
+//   database: process.env.MYSQL_CONF_LOCALSERVER_DB,
+//   port: process.env.MYSQL_CONF_LOCALSERVER_PORT
 // };
 
 // const onDevServerMysql = {
-//   host: process.env.REACT_APP_MYSQL_CONF_DEVSERVER_HOST,
-//   user: process.env.REACT_APP_MYSQL_CONF_DEVSERVER_USER,
-//   password: process.env.REACT_APP_MYSQL_CONF_DEVSERVER_PASSWORD,
-//   database: process.env.REACT_APP_MYSQL_CONF_DEVSERVER_DB,
-//   port: process.env.REACT_APP_MYSQL_CONF_DEVSERVER_PORT
+//   host: process.env.MYSQL_CONF_DEVSERVER_HOST,
+//   user: process.env.MYSQL_CONF_DEVSERVER_USER,
+//   password: process.env.MYSQL_CONF_DEVSERVER_PASSWORD,
+//   database: process.env.MYSQL_CONF_DEVSERVER_DB,
+//   port: process.env.MYSQL_CONF_DEVSERVER_PORT
 // };
 
 const onProdServerMysql = {
@@ -42,11 +43,11 @@ const onProdServerMysql = {
   port: process.env.MYSQL_CONF_PRODSERVER_PORT,
 };
 
-// const connection = dbConn.init(onProdServerMysql);
-// dbConn.connect(connection);
-const connection = dbConn.pool(onProdServerMysql);
+// const connection = mysqlConn.init(onProdServerMysql);
+// mysqlConn.connect(connection);
+const connection = mysqlConn.pool(onProdServerMysql);
 
-dbConn.connect(connection, `SELECT * FROM test`);
+
 
 
 
@@ -79,6 +80,7 @@ if (!process.env.NODE_ENV) {
   app.use(cors());
 
   // Define API route (internal API)
+  // get from database
   app.get('/api/data/get', (req, res) => {
     const select = req.query.select;
     const from = req.query.from;
@@ -86,45 +88,53 @@ if (!process.env.NODE_ENV) {
 
     const READ_DATA = (where != '') ? `SELECT ${select} FROM ${from} WHERE ${where}` : `SELECT ${select} FROM ${from}`;
 
-    connection.getConnection((err, conn) => {
-      if(err) {
-        console.error('CANNOT CONNECT TO DATABASE :: ', err);
-        res.status(500).send('server error');
-        return;
-      }
-    })
-    connection.query(READ_DATA, (err, results, fields) => {
-        if(!err) {
-          res.header("content-type", 'application/json');
-          res.send(results);
-        }
-        else res.send(err);
-    });
+    mysqlConn.getConnect(res, connection, READ_DATA);
+
+    // connection.getConnection((err, conn) => {
+    //   if(err) {
+    //     console.error('CANNOT CONNECT TO DATABASE :: ', err);
+    //     res.status(500).send('server error');
+    //     return;
+    //   }
+    // })
+    // connection.query(READ_DATA, (err, results, fields) => {
+    //     if(!err) {
+    //       res.header("content-type", 'application/json');
+    //       res.send(results);
+    //     }
+    //     else res.send(err);
+    // });
   });
 
 
+  // post to database
   app.post('/api/data/post', (req, res) => {
+    console.log('bodybody', JSON.stringify(req.body[0]));
     const data = {...req.body[0]};
-    console.log(data);
-    const name = (data.name === undefined) ? null : data.name;
-    const password = (data.simple_password === undefined) ? null : data.simple_password;
-    const comment = (data.comment === undefined) ? null : data.comment;
 
-    console.log(name, password, comment);
+    const name = (data.name === undefined) ? null : ((data.name === '') ? null : data.name);
+    const password = (data.simple_password === undefined) ? null : ((data.simple_password === '') ? null : data.simple_password);
+    const comment = (data.comment === undefined) ? null : ((data.comment === '') ? null : data.comment);
 
-    // if ((!name) && (!password) && (!comment)) {
-    //   const INSERT_DATA = `
-    //     INSERT INTO ${process.env.DATABASE_TABLE_B} (
-    //       name,
-    //       simple_password,
-    //       comment
-    //     ) VALUE (
-    //       '${name}',
-    //       '${password}',
-    //       '${comment}'
-    //     );
-    //   `;
+    if ((name === null) || (password === null) || (comment === null)) {
+      // handle error
+      res.status(422).send('Unprocessable Entity: 올바른 값을 입력해주세요');
+      return;
+    }
 
+    const INSERT_DATA = `
+      INSERT INTO ${process.env.DATABASE_TABLE_B} (
+        name,
+        simple_password,
+        comment
+      ) VALUE (
+        '${name}',
+        '${password}',
+        '${comment}'
+      );
+    `;
+
+    mysqlConn.getConnect(res, connection, INSERT_DATA);
     //   connection.query(INSERT_DATA, (err, results, fields) => {
     //     if(!err) {
     //       // res.header("content-type", 'application/json');
@@ -135,16 +145,15 @@ if (!process.env.NODE_ENV) {
 
     //   console.log(INSERT_DATA);
     // }
-    res.send(data);
-
+    // res.send(data);
     
   });
 
+  
   // React app
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'build', 'index.html'));
   });
-  
   
 }
 

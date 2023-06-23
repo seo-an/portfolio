@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import styled from "styled-components";
 
 import { FlightApiView } from "../../view/pages/FlightApiView";
 
@@ -33,51 +32,6 @@ const findAirport = ( dataset, word ) => {
   }
 }
 
-
-// const callFlightApiData = async ( url, port, line ) => {
-
-//   // const fetchApi = async ( data ) => {
-
-//   const SERVICE_KEY = process.env.REACT_APP_INCHEON_INT_AIRPORT_WEATHER_INFO_API_KEY;
-//   const ARRIVAL_URL = `/B551177/StatusOfPassengerWorldWeatherInfo/getPassengerArrivalsWorldWeather`;
-//   const DEPARTURE_URL = `/B551177/StatusOfPassengerWorldWeatherInfo/getPassengerDeparturesWorldWeather`;
-
-//   const URL = (url) ? ARRIVAL_URL : DEPARTURE_URL;
-//   const airport = (port === undefined) ? '' : port;
-//   const airline = (line === undefined) ? '' : line; 
-
-//   // proxy 통하니까 decoding service key 넣어야 작동했음
-//   const getApi = await axios({
-//     method: "GET",
-//     url: `/weather-api${URL}`,
-//     params: {
-//       'serviceKey': `${SERVICE_KEY}`,
-//       'numOfRows': '20', 
-//       'pageNo': '1', 
-//       'from_time': '0000', 
-//       'to_time': '2400', 
-//       'airport': `${airport}`,
-//       'flight_id': '',
-//       'airline': `${airline}`,
-//       'lang':'K', 
-//       'type':'json'
-//     },
-//     headers: {
-//       'Content-Type': 'application/json',
-//     },
-//     timeout: 60000,
-//   })
-//   .then(response => response.data.response.body)
-//   .then(data => data)
-//   .catch((error) => {
-//     console.log('! ERROR FAIL TO CONNECT TO fetchApi :: ', error);
-//   });
-// };
-
-  // fetchApi();
-// }
-
-
 export const FlightApiJs = () => {
   
   const [data, setData] = useState();
@@ -105,43 +59,46 @@ export const FlightApiJs = () => {
   };
 
   const callFlightApiData = async ( url, port, line ) => {
-
-    // const fetchApi = async ( data ) => {
-  
     const SERVICE_KEY = process.env.REACT_APP_INCHEON_INT_AIRPORT_WEATHER_INFO_API_KEY_A;
     const ARRIVAL_URL = `B551177/StatusOfPassengerWorldWeatherInfo/getPassengerArrivalsWorldWeather`;
-    const DEPARTURE_URL = `B551177/StatusOfPassengerWorldWeatherInfo/getPassengerDeparturesWorldWeather`;
+    // const DEPARTURE_URL = `B551177/StatusOfPassengerWorldWeatherInfo/getPassengerDeparturesWorldWeather`;
   
-    const URL = (url) ? ARRIVAL_URL : DEPARTURE_URL;
+    // const URL = (url) ? ARRIVAL_URL : DEPARTURE_URL;
     const airport = (port === undefined) ? '' : port;
-    const airline = (line === undefined) ? '' : line; 
+    const airline = (line === undefined) ? '' : line;
+
+    const params = {
+      'serviceKey': `${SERVICE_KEY}`,
+      'numOfRows': '20', 
+      'pageNo': '1', 
+      'from_time': '0000', 
+      'to_time': '2400', 
+      'airport': `${airport}`,
+      'flight_id': '',
+      'airline': `${airline}`,
+      'lang':'K', 
+      'type':'json'
+    }
+
+    const queryString = new URLSearchParams(params).toString()
   
-    // proxy 통하니까 decoding service key 넣어야 작동했음
-    const getApi = await axios({
-      method: "GET",
-      url: `/flight-api/arrival/${ARRIVAL_URL}`,
-      params: {
-        'serviceKey': `${SERVICE_KEY}`,
-        'numOfRows': '20', 
-        'pageNo': '1', 
-        'from_time': '0000', 
-        'to_time': '2400', 
-        'airport': `${airport}`,
-        'flight_id': '',
-        'airline': `${airline}`,
-        'lang':'K', 
-        'type':'json'
-      },
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      timeout: 60000,
-    })
-    .then(response => response.data.response.body)
-    .then(data => setFinal(data))
-    .catch((error) => {
-      console.log('! ERROR FAIL TO CONNECT TO fetchApi :: ', error);
-    });
+    try {
+      const response = await fetch(`/flight-api/arrival/${ARRIVAL_URL}?${queryString}`, {
+        method: "GET",
+      })
+
+      if (!response.ok) {
+				throw new Error('HTTP ERROR TO EXTERNAL API :: status ', response.status);
+			}
+
+      const result = await response.json();
+      const finalData = result.response.body;
+
+      setFinal(finalData);
+
+    } catch (error) {
+      console.error('CAN NOT CONNECT TO EXTERNAL API :: ', error);
+    }
   };
 
   

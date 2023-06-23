@@ -1,5 +1,5 @@
 import styled from "styled-components";
-import { useEffect } from "react";
+// import { useEffect } from "react";
 
 import { ReactComponent as AirplaneSVG } from "../icon/svg/airplane.svg";
 import airlinesInfo from "../../data/AirlinesInfo.json"

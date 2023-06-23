@@ -16,6 +16,11 @@ const SetURL = () => {
       text: 'API 포트폴리오',
     },
     {
+      id: 'handle-rest-api',
+      url: '/handle-rest-api',
+      text: 'REST API 포트폴리오',
+    },
+    {
       id: 'about',
       url: '/about',
       text: 'About',

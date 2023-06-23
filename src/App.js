@@ -4,7 +4,9 @@ import Layout from "./client/components/component/layout/Layout";
 
 import { Home } from "./client/routes/Home";
 import OpenApiPage from "./client/routes/OpenApiPage";
+import RestApiPage from "./client/routes/RestApiPage";
 import About from "./client/routes/About";
+
 
 
 export default function App() {
@@ -15,6 +17,7 @@ export default function App() {
           <Route index element={<Home />}></Route>
           <Route path="/home" element={<Home />}></Route>
           <Route path="/handle-open-api" element={<OpenApiPage />}></Route>
+          <Route path="/handle-rest-api" element={<RestApiPage />}></Route>
           <Route path="/about" element={<About />}></Route>
         </Route>
         <Route path="*" element={<h1>Error 404</h1>}></Route>
