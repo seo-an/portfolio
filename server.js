@@ -158,40 +158,6 @@ if (!process.env.NODE_ENV) {
 }
 
 
-
-// app.get('/api/data/dbcon', (req, res) => {
-//   // Run your MySQL query
-//   // connection.query(`SELECT * FROM test`, (err, results) => {
-//   //   if (err) {
-//   //     console.error('Error executing MySQL query:', err);
-//   //     res.status(500).send('Error executing MySQL query');
-//   //     return;
-//   //   }
-
-//   //   // Log the results
-//   //   console.log('Results:', results);
-
-//   //   // Send the results as a response
-//   //   res.json(results);
-//   // });
-
-//   const { message } = req.body;
-//   console.log('Received message:', message);
-
-//   // JSON 데이터를 받은 후 필요한 처리를 수행
-
-//   const response = { success: true, data: 'Message received' };
-//   res.json(response);
-//   // es.send(result);
-// });
-
-
-
-
-
-
-
-
 // 가장 마지막에
 app.listen(PORT, () => {
     console.log(`Node.js server on :: Server listening on port ${PORT}`);
