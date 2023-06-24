@@ -2,16 +2,6 @@ import { Link } from "react-router-dom";
 
 import { Container, Wrapper, Text } from "../../view/layout/FooterView";
 
-// export const Mail = () => {
-//   const mail = `seo-an_@naver.com`;
-//   return (
-//     <span onClick={async(e) => {
-//       await navigator.clipboard.writeText(mail);
-//       alert(`${mail}이 클립보드에 복사되었습니다.`);
-//       e.preventDefault();
-//     } }>{mail}</span>
-//   )
-// }
 
 export const Mail = () => {
   const naver = process.env.REACT_APP_PERSONAL_EMAIL_ADDRESS_NAVER;
@@ -19,7 +9,7 @@ export const Mail = () => {
 
   const copyMail = ( address ) => {
     return (
-      <span onClick={async(e) => {
+      <span style={{cursor: "pointer"}}onClick={async(e) => {
         await navigator.clipboard.writeText(address);
         alert(`${address} 메일 주소가 클립보드에 복사되었습니다.`);
         e.preventDefault();
