@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-// import axios from "axios";
 
 import { FlightApiView } from "../../view/pages/FlightApiView";
 
@@ -69,7 +68,7 @@ export const FlightApiJs = () => {
 
     const params = {
       'serviceKey': `${SERVICE_KEY}`,
-      'numOfRows': '20', 
+      'numOfRows': '46', 
       'pageNo': '1', 
       'from_time': '0000', 
       'to_time': '2400', 
@@ -100,7 +99,6 @@ export const FlightApiJs = () => {
       console.error('CAN NOT CONNECT TO EXTERNAL API :: ', error);
     }
   };
-
   
   useEffect(() => {
     const airlines = jsonData.airline;
@@ -120,18 +118,13 @@ export const FlightApiJs = () => {
   const toFlightApiViewProps = {
     onSubmitFromView,
     getFlightApiData,
-    final
+    final,
   }
 
 
   return (
     <>
       <FlightApiView props={ { ...toFlightApiViewProps } }/>
-      {/* <div>
-        <form onSubmit={onSubmit}>
-          <input name="test" id="airlines" placeholder="항공사" onChange={catchTyping}></input>
-        </form>
-      </div> */}
     </>
   )
 }

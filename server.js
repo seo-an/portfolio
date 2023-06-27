@@ -1,11 +1,11 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
+// const { createPool } = require('mysql');
 
-require('dotenv').config();
 const app = express();
 const mysqlConn = require("./database.js");
-const { createPool } = require('mysql');
 
 // Node.js express server용 port
 const PORT = 1991;

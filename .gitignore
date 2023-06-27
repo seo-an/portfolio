@@ -18,6 +18,11 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-#setting
-nginx.rtf
-nginx_myapp.rtf
+#settings
+nginx.txt
+nginx_myapp.txt
+nginx-local.txt
+
+# SSL
+localhost.pem
+localhost-key.pem

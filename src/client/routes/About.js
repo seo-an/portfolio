@@ -69,10 +69,18 @@ const About = () => {
             React의 styled-components 라이브러리는 스타일과 관련된 요소들도 개별 컴포넌트로 작동하게 만드는 것을 가능하게 해주었습니다. 제가 구현하고자 하는 구조에 React가 가장 적합다고 생각하였기 때문에 React를 선택하였습니다. </p>
         </Paragraph>
         <Paragraph>
+          <Subtitle><span>with,</span></Subtitle>
+          <p>이 프로젝트는 AWS Lightsail을 통해 호스팅 되고 있습니다.</p>
+          <p>이 프로젝트는 정적 파일 배포, Proxy, Reverse Proxy, HTTPS 통신 등을 위해 Nginx를 웹서버로 이용하고 있습니다.</p>
+          <p>이 프로젝트는 Lightsail에서 제공하는 MySQL 데이터베이스와 연결되어 있습니다.</p>
+        </Paragraph>
+        <Paragraph>
           <Subtitle><span>Layout,</span></Subtitle>
           <p>이 프로젝트는 최소 너비와 최대 너비가 제한된 반응형 웹으로, 모바일 페이지를 별도로 지원하지는 않습니다. 
             최소 너비보다 화면이 줄어든다면 좌우 스크롤이 생기고, 최대 너비보다 화면의 너비가 늘어난다면 내용이 담긴 영역이 가운데에 정렬되게 됩니다.</p>
         </Paragraph>
+
+        <Title><span>Pages</span></Title>
         <Paragraph>
           <Subtitle><span>Home,</span></Subtitle>
           <p>
@@ -83,6 +91,12 @@ const About = () => {
           <Subtitle><span>API 포트폴리오,</span></Subtitle>
           <p>
             API 포트폴리오 화면에는 공공 API 포털에서 받아온 OpenApi가 구현되어 있습니다. 오늘 인천공항의 출발/도착 항공편에 대한 정보를 얻을 수 있어요. (상위 20개 내용만 노출됩니다.)
+          </p>
+        </Paragraph>
+        <Paragraph>
+          <Subtitle><span>REST API 포트폴리오,</span></Subtitle>
+          <p>
+            REST API 포트폴리오 화면에서는 방명록을 작성할 수 있습니다. 작성해주신 방명록은 Database에 저장됩니다.
           </p>
         </Paragraph>
         <Paragraph>
