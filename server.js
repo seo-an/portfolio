@@ -86,7 +86,7 @@ if (!process.env.NODE_ENV) {
     const from = req.query.from;
     const where = req.query.where;
 
-    const READ_DATA = (where != '') ? `SELECT ${select} FROM ${from} WHERE ${where}` : `SELECT ${select} FROM ${from}`;
+    const READ_DATA = (where !== '') ? `SELECT ${select} FROM ${from} WHERE ${where}` : `SELECT ${select} FROM ${from}`;
 
     mysqlConn.getConnect(res, connection, READ_DATA);
 
@@ -109,7 +109,7 @@ if (!process.env.NODE_ENV) {
 
   // post to database
   app.post('/api/data/post', (req, res) => {
-    console.log('bodybody', JSON.stringify(req.body[0]));
+    console.log('in node (/api/data/post) : ', JSON.stringify(req.body[0]));
     const data = {...req.body[0]};
 
     const name = (data.name === undefined) ? null : ((data.name === '') ? null : data.name);
