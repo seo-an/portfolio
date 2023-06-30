@@ -115,6 +115,8 @@ if (!process.env.NODE_ENV) {
     const name = (data.name === undefined) ? null : ((data.name === '') ? null : data.name);
     const password = (data.simple_password === undefined) ? null : ((data.simple_password === '') ? null : data.simple_password);
     const comment = (data.comment === undefined) ? null : ((data.comment === '') ? null : data.comment);
+    const isPublic = true;
+    const secret = false;
 
     if ((name === null) || (password === null) || (comment === null)) {
       // handle error
@@ -139,14 +141,15 @@ if (!process.env.NODE_ENV) {
     //   );
     // `;
     
-
     const INSERT_DATA = `
-      INSERT INTO ${process.env.DATABASE_TABLE_B} (uniqueId, name, simple_password, comment)
+      INSERT INTO ${process.env.DATABASE_TABLE_B} (uniqueId, name, simple_password, comment, isPublic, isSecret)
       SELECT
-        CONCAT(MAX(id)+1,'_${name}','${prefix}') AS uniqueID,
+        CONCAT(1+MAX(id),'_${name}','${prefix}') AS uniqueID,
         '${name}' AS name,
         '${password}' AS simple_password,
-        '${comment}' AS comment
+        '${comment}' AS comment,
+        '${isPublic}' AS isPublic,
+        '${secret}' AS isSecret
       FROM ${process.env.DATABASE_TABLE_B};
     `;
 
