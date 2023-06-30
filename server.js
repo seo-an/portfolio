@@ -122,17 +122,34 @@ if (!process.env.NODE_ENV) {
       return;
     }
 
+    const prefix = String(new Date().getTime());
+    // const uniqueId = String(`${name}${prefix}`);
+
+    // const INSERT_DATA = `
+    //   INSERT INTO ${process.env.DATABASE_TABLE_B} (
+    //     name,
+    //     simple_password,
+    //     comment,
+    //     uniqueId
+    //   ) VALUE (
+    //     '${name}',
+    //     '${password}',
+    //     '${comment}',
+    //     CONCAT(AUTO_INCREMENT, '_${uniqueId}')
+    //   );
+    // `;
+    
+
     const INSERT_DATA = `
-      INSERT INTO ${process.env.DATABASE_TABLE_B} (
-        name,
-        simple_password,
-        comment
-      ) VALUE (
-        '${name}',
-        '${password}',
-        '${comment}'
-      );
+      INSERT INTO ${process.env.DATABASE_TABLE_B} (uniqueId, name, simple_password, comment)
+      SELECT
+        CONCAT(MAX(id)+1,'_${name}','${prefix}') AS uniqueID,
+        '${name}' AS name,
+        '${password}' AS simple_password,
+        '${comment}' AS comment
+      FROM ${process.env.DATABASE_TABLE_B};
     `;
+
 
     mysqlConn.getConnect(res, connection, INSERT_DATA);
     //   connection.query(INSERT_DATA, (err, results, fields) => {

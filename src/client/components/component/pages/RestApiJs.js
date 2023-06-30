@@ -9,17 +9,20 @@ const getValue = (id) => {
 	return getValue;
 };
 
+// const getQuery = () => {
+// 	const cleaning = `DATE_FORMAT(createdAt, '%Y-%m-%d %H:%i:%s') AS createdAt`;
+// 	const getQuery = {
+// 		'select': `id, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,
+// 		'from': `${process.env.REACT_APP_DATABASE_TABLE_B}`,
+// 		'where': ''
+// 	};
 
+// 	return getQuery;
+// }
 
 
 export const RestApiJs = () => {
-	// const [getAndSave, setGetAndSave] = useState('');
 	const [elements, setElements] = useState([]);
-
-	// const unpack = (val) => {
-	// 	setGetAndSave(val);
-	// 	return;
-	// };
 
 	const getReady = ( dat ) => {
 		const result = dat;
@@ -48,9 +51,16 @@ export const RestApiJs = () => {
 					throw new Error('HTTP GET ERROR :: status ', response.status);
 				}
 	
-				const result = await response.json();
-				// unpack(result);
-				getReady(result);
+				let result = await response.json();
+
+				if (result.length === 0) {
+					// database에 자료가 하나도 없을 때 예외처리
+					result = null;
+				} else {
+					getReady(result);
+				}
+				// getReady(result);
+				
 	
 			} catch (error) {
 				console.error('CAN NOT TRY TO FETCH :: ', error);
@@ -1152,7 +1162,7 @@ export const RestApiJs = () => {
 							"lastUpdatedAt": "2023-06-28T07:57:08.000Z"
 					}
 			];
-				// unpack(localTest);
+
 				getReady(localTest);
 				console.log('saved data');
 			}
@@ -1191,6 +1201,13 @@ export const RestApiJs = () => {
 		postData();
 	};
 
+	const cleaning = `DATE_FORMAT(createdAt, '%Y-%m-%d %H:%i:%s') AS createdAt`;
+	const getQuery = {
+		'select': `id, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,
+		'from': `${process.env.REACT_APP_DATABASE_TABLE_B}`,
+		'where': ''
+	};
+
 
 	const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1208,26 +1225,14 @@ export const RestApiJs = () => {
 		// console.log('send', send);
 
 		postToDatabase(send);
+		getFromDatabase(getQuery);
 	};
   
-	const cleaning = `DATE_FORMAT(createdAt, '%Y-%m-%d %H:%i:%s') AS createdAt`;
-	const getQuery = {
-		'select': `id, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,
-		'from': `${process.env.REACT_APP_DATABASE_TABLE_B}`,
-		'where': ''
-	};
-
-
-	
-
 
 	useEffect(() => {
 		// 한 번만 로딩: missing dependency 무시
 		getFromDatabase(getQuery);
 	}, []);
-
-	
-	// getReady(getAndSave);
 	
 
 	return (

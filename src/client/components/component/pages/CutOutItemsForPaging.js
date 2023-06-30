@@ -69,9 +69,9 @@ export const ContentsWrapper = styled.div `
 `
 
 
-export const cutOutItemsForPaging = (jsonData, dataLength) => {
+export const cutOutItemsForPaging = (jsonData, dataLength, reverse) => {
 	if (jsonData.length === 0) return [];
-	const getData = jsonData;
+	const getData = (reverse === 'reverse') ? ([...jsonData].reverse()) : jsonData;
 	const criteria = dataLength;
 
 	const resultContainer = [];
@@ -103,10 +103,10 @@ export const Pagination = ( props ) => {
 
 	const called = props.from;
 
-	const flightOrigin = (called === 'flight') ? ((props.data) ? props.data : []) : [];
+	const flightOrigin = (called === 'flight') ? ((props.data) ? props.data : null) : null;
 	const flightDataPoints = (called === 'flight') ? (props.display) : 0;
 
-	const guestBookOrigin = (called === 'guestBook') ? ((props.data) ? props.data : []) : [];
+	const guestBookOrigin = (called === 'guestBook') ? ((props.data) ? props.data : null) : null;
 	const guestBookDataPoints = (called === 'guestBook') ? (props.display) : 0;
 
 	const interval = (props.interval) ? props.interval : 10;
@@ -327,7 +327,7 @@ export const Pagination = ( props ) => {
 
 
 	if (called === 'guestBook') {
-		const jsonToArray = cutOutItemsForPaging(guestBookOrigin, guestBookDataPoints);
+		const jsonToArray = cutOutItemsForPaging(guestBookOrigin, guestBookDataPoints, 'reverse');
 		const guestBookData = externalApi(jsonToArray, guestBookDataPoints, interval);
 		const back = (Math.ceil((guestBookOrigin.length/guestBookDataPoints)/interval) - 1);
 
@@ -336,10 +336,10 @@ export const Pagination = ( props ) => {
 			const id = event.target.id;
 			const criteria = Math.ceil((guestBookOrigin.length/guestBookDataPoints)/interval);
 			
-			// console.log('now in getNowOnNumber() : ', onPage, pgNum, interval < pgNum);
+			console.log('now in getNowOnNumber() : ', onPage, pgNum, interval < pgNum);
 	
 			if (id === 'prev') {
-				// console.log('prev', onPage, pgNum);
+				console.log('prev', onPage, pgNum);
 				if (interval < pgNum) {
 					setPgNum(0);
 				}
@@ -361,25 +361,33 @@ export const Pagination = ( props ) => {
 					setOnPage(criteria);
 					return;
 				}
-				// console.log('next', onPage, pgNum);
+				console.log('next', onPage, pgNum);
 				setOnPage(onPage + 1);
 				setPgNum(0);
 				return;
 			};
 		}
 
-		console.log('test', jsonToArray, guestBookData);
-
 		return (
 			<>
 				<div>
-					{
+					{/* {
 						(onPage === (back+1)) ? 
 							<>{guestBookData[0][back][pgNum]}</> : 
-							( (pgNum > interval || pgNum === interval) ? 
+							( (pgNum > interval) ? 
 								<>{guestBookData[0][onPage][(pgNum-(interval*onPage))]}</> : 
-								<>{guestBookData[0][onPage][pgNum]}</> 
+								(	(pgNum === interval || pgNum < interval) ? <>{guestBookData[0][onPage][pgNum]}</> :
+									<></>
+								)
 							)
+					} */}
+					{
+						(onPage === (back+1)) ? 
+						<>{guestBookData[0][back][pgNum]}</> : 
+						( (pgNum > interval || pgNum === interval) ? 
+							<>{guestBookData[0][onPage][(pgNum-(interval*onPage))]}</> : 
+							<>{guestBookData[0][onPage][pgNum]}</> 
+						)
 					}
 				</div>
 				<PaginationWrap>
