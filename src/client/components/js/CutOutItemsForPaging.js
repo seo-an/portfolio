@@ -19,6 +19,11 @@ export const Numbers = styled.a `
 	margin: 4px;
 	cursor: pointer;
 
+	&.selected {
+		color: rgb(243, 114, 25, 1); //#f37219
+		font-weight: bold;
+	}
+
 	& span {
 		display: flex;
 		width: 24px;
@@ -28,14 +33,19 @@ export const Numbers = styled.a `
 `;
 export const PaginationWrap = styled.div `
 	display: flex;
+	width: 100%;
+	padding: 16px 0px;
+	justify-content: center;
 	flex-wrap: nowrap;
-	margin: 8px 0px;
 `;
-
 export const ContentsWrapper = styled.div `
 	&.flight {
 		display: flex;
-		margin: 8px;
+		margin: 0px 8px;
+
+		&:first-child {
+			margin: 8px 8px 0px 8px;
+		}
 
 		& ul {
 			margin: 8px 0px;
@@ -49,6 +59,10 @@ export const ContentsWrapper = styled.div `
 		display: flex;
 		margin: 8px 8px 16px 8px;
 		flex-wrap: wrap;
+
+		&:first-child {
+			margin: 16px 8px 16px 8px;
+		}
 
 		.forName {
 			display: flex;
@@ -110,51 +124,55 @@ export const Pagination = ( props ) => {
 	const guestBookDataPoints = (called === 'guestBook') ? (props.display) : 0;
 
 	const interval = (props.interval) ? props.interval : 10;
+
+
+	const clearClass = ( element, label ) => {
+		// element = 클래스를 적용할 단위
+		
+		if (element.parentElement) {
+			console.log('here');
+			const parent = element.parentElement;
+			for (let i = 0; i < parent.children.length; i++) {
+				// console.log('huh', parent.children[i].classList.contains(label));
+				if (parent.children[i].classList.contains(label)) {
+					// console.log('here', i);
+					// parent.children[i].classList.remove(label);
+					parent.children[i].classList.toggle(label);
+				}
+			}
+		} else {
+			return;
+		}
+		
+	}
+
+
+	const selectObj = ( element, label ) => {
+		// console.log(element, label);
+		const papa = (element.parentElement) ? element.parentElement : element;
+		// const grandpa = element.parentElement.parentElement;
+
+		clearClass(papa, label);
+		// console.log('right', (clearClass(papa, 'selected')));
+
+		papa.classList.add(label);
+
+		
+		// console.log('1', papa.classList.contains('selected'), grandpa.classList.contains('selected'))
+		
+		return;
+	}
 	
 	const getPageNumber = (event) => {
 		event.preventDefault();
-		const val = (event.target.textContent) - 1;
+		const el = event.target;
+		const label = 'selected';
+		const val = (el.textContent) - 1;
 		setPgNum(val);
-		// console.log('in getPageNumber() : ', pgNum);
+
+		selectObj (el, label);
 		return;
 	};
-
-	// const getNowOnNumber = (event) => {
-	// 	event.preventDefault();
-	// 	const id = event.target.id;
-	// 	const criteria = Math.ceil((flightOrigin.length/flightDataPoints)/interval);
-		
-	// 	// console.log('now in getNowOnNumber() : ', onPage, pgNum, interval < pgNum);
-
-	// 	if (id === 'prev') {
-	// 		// console.log('prev', onPage, pgNum);
-	// 		if (interval < pgNum) {
-	// 			setPgNum(0);
-	// 		}
-	// 		if(criteria === onPage || criteria < onPage) {
-	// 			const num = ((criteria - 2) < 0) ? 0 : (criteria - 2);
-	// 			setOnPage(num);
-	// 			setPgNum(0);
-	// 			return;
-	// 		}
-	// 		if (onPage < 1) {
-	// 			setOnPage(0); 
-	// 			setPgNum(0); 
-	// 			return;
-	// 		} 
-	// 		setOnPage(onPage - 1);
-	// 		return;
-	// 	} else if (id === 'next') {
-	// 		if(criteria === onPage || criteria < onPage) {
-	// 			setOnPage(criteria);
-	// 			return;
-	// 		}
-	// 		// console.log('next', onPage, pgNum);
-	// 		setOnPage(onPage + 1);
-	// 		setPgNum(0);
-	// 		return;
-	// 	};
-	// }
 
 
 	const externalApi = ( data, pt, intv ) => {
@@ -186,7 +204,7 @@ export const Pagination = ( props ) => {
 
 			newArray(dataItem, _interval);
 			newArray(dataNum, _interval);
-
+			
 			const array = resultContainer.reduce((acc, curr, index) => {
 				if (index < count) {
 					acc.forItems.push(curr);
@@ -209,14 +227,22 @@ export const Pagination = ( props ) => {
 				let today = new Date();
 		
 				for (let i = 0; i < original.length; i++) {
-					numElements.push(<Numbers key={`num${i}`} onClick={getPageNumber}><span>{i+1}</span></Numbers>);
-
+					if (i % _interval === 0) {
+						numElements.push(<Numbers key={`num${i}`} className="selected" onClick={getPageNumber}><span>{i+1}</span></Numbers>);
+					} else {
+						numElements.push(<Numbers key={`num${i}`} onClick={getPageNumber}><span>{i+1}</span></Numbers>);
+					}
+					
 					for (let j = 0; j < dataPoints; j++) {
 						itemElements[j] = (original[i][j]) ? (<ContentsWrapper className="flight" key={`item${j+1}+${j}+${today.getTime()}`}>
 							<ul>
+								<li>항공편: {original[i][j].flightId}</li>
+								<li>상태: {(original[i][j].remark) ? original[i][j].remark : '확인되지 않음'}</li> 
+								<li>습도: {(original[i][j].himidity)? `${original[i][j].himidity}%` : '확인되지 않음'}</li>
+								<li>풍속: {(original[i][j].wind)? `${original[i][j].wind}m/s` : '확인되지 않음'}</li>
+								<li>관측 기온: {(original[i][j].temp)? `${original[i][j].temp}℃` : '확인되지 않음'}</li>
 								<li>항공사: {original[i][j].airline}</li>
 								<li>공항: {original[i][j].airport}</li>
-								<li>상태: {original[i][j].remark}</li> 
 							</ul>
 						</ContentsWrapper>) : null;
 			
@@ -237,12 +263,16 @@ export const Pagination = ( props ) => {
 				let today = new Date();
 		
 				for (let i = 0; i < original.length; i++) {
-					numElements.push(<Numbers key={`num${i}`} onClick={getPageNumber}><span>{i+1}</span></Numbers>);
-
+					if (i % _interval === 0) {
+						numElements.push(<Numbers key={`num${i}`} className="selected" onClick={getPageNumber}><span>{i+1}</span></Numbers>);
+					} else {
+						numElements.push(<Numbers key={`num${i}`} onClick={getPageNumber}><span>{i+1}</span></Numbers>);
+					}
+					// console.log(i%_interval);
 					for (let j = 0; j < dataPoints; j++) {
 						itemElements[j] = (original[i][j]) ? (<ContentsWrapper className="guestBook" key={`item${j+1}+${j}+${today.getTime()}`}>
 							<div className="forName">이름: {original[i][j].name}</div>
-							<div className="forDate">날짜: {original[i][j].createdAt}</div> 
+							<div className="forDate">날짜: {original[i][j].createdAt}</div>
 							<div className="forContent">내용: {original[i][j].comment}</div>
 						</ContentsWrapper>) : null;
 			
@@ -250,7 +280,7 @@ export const Pagination = ( props ) => {
 					}
 				}
 
-				// console.log('in externalApi : /flight/ : ', numElements, itemsElements);
+				// console.log('in externalApi : /guestBook/ : ', numElements, itemsElements);
 				const result = forPagenationData(itemsElements, numElements);
 				return result;
 			}
@@ -262,18 +292,21 @@ export const Pagination = ( props ) => {
 	// const flightData = externalApi(jsonToArray, flightDataPoints, interval);
 	// const back = (Math.ceil((flightOrigin.length/flightDataPoints)/interval) - 1);
 
+	
+
+
 	if (called === 'flight') {
 		const jsonToArray = cutOutItemsForPaging(flightOrigin, flightDataPoints);
 		const flightData = externalApi(jsonToArray, flightDataPoints, interval);
+		const originLength = Math.ceil(flightOrigin.length/flightDataPoints);
 		const back = (Math.ceil((flightOrigin.length/flightDataPoints)/interval) - 1);
 
-		const getNowOnNumber = (event) => {
+		const getNowOnPage = (event) => {
 			event.preventDefault();
 			const id = event.target.id;
 			const criteria = Math.ceil((flightOrigin.length/flightDataPoints)/interval);
 			
-			// console.log('now in getNowOnNumber() : ', onPage, pgNum, interval < pgNum);
-	
+			// console.log('now in getNowOnPage() : ', onPage, pgNum, interval < pgNum);
 			if (id === 'prev') {
 				// console.log('prev', onPage, pgNum);
 				if (interval < pgNum) {
@@ -287,9 +320,9 @@ export const Pagination = ( props ) => {
 				}
 				if (onPage < 1) {
 					setOnPage(0); 
-					setPgNum(0); 
+					setPgNum(0);
 					return;
-				} 
+				}
 				setOnPage(onPage - 1);
 				return;
 			} else if (id === 'next') {
@@ -306,7 +339,7 @@ export const Pagination = ( props ) => {
 
 		return (
 			<>
-				<div>
+				<>
 					{
 						(onPage === (back+1)) ? 
 							<>{flightData[0][back][pgNum]}</> : 
@@ -315,11 +348,39 @@ export const Pagination = ( props ) => {
 								<>{flightData[0][onPage][pgNum]}</> 
 							)
 					}
-				</div>
+				</>
 				<PaginationWrap>
-					<GoFront id="prev" onClick={getNowOnNumber}>{`<`}</GoFront>
-						{(onPage === (back+1)) ? <>{flightData[1][back]}</> : <>{flightData[1][onPage]}</>}
-					<GoRear id="next" onClick={getNowOnNumber}>{`>`}</GoRear>
+					{ (originLength < interval || originLength === interval) ? (
+						<>
+							{(onPage === (back+1)) ? <>{flightData[1][back]}</> : <>{flightData[1][onPage]}</>}
+						</> ) : (
+							(flightData.length > 0 && onPage === 0) ? (
+								<>
+									{(onPage === (back+1)) ? <>{flightData[1][back]}</> : <>{flightData[1][onPage]}</>}
+									<GoRear class={`rear`} id="next" onClick={getNowOnPage}>{`>`}</GoRear>
+								</> ) : (
+									(onPage > 0 && onPage < flightData.length) ? (
+										(flightData.length === flightData[0].length || flightData.length === flightData[1].length) ? (
+											<>
+											<GoFront id="prev" onClick={getNowOnPage}>{`<`}</GoFront>
+												{(onPage === (back+1)) ? <>{flightData[1][back]}</> : <>{flightData[1][onPage]}</>}
+											</>
+										) : (
+											<>
+											<GoFront id="prev" onClick={getNowOnPage}>{`<`}</GoFront>
+												{(onPage === (back+1)) ? <>{flightData[1][back]}</> : <>{flightData[1][onPage]}</>}
+											<GoRear class={`rear`} id="next" onClick={getNowOnPage}>{`>`}</GoRear>
+											</>
+										)
+									) : (
+										<>
+										<GoFront id="prev" onClick={getNowOnPage}>{`<`}</GoFront>
+											{(onPage === (back+1)) ? <>{flightData[1][back]}</> : <>{flightData[1][onPage]}</>}
+										</>
+									)
+							)
+						)
+					}
 				</PaginationWrap>
 			</>
 		);
@@ -329,17 +390,22 @@ export const Pagination = ( props ) => {
 	if (called === 'guestBook') {
 		const jsonToArray = cutOutItemsForPaging(guestBookOrigin, guestBookDataPoints, 'reverse');
 		const guestBookData = externalApi(jsonToArray, guestBookDataPoints, interval);
+		const originLength = Math.ceil(guestBookOrigin.length/guestBookDataPoints);
 		const back = (Math.ceil((guestBookOrigin.length/guestBookDataPoints)/interval) - 1);
-
-		const getNowOnNumber = (event) => {
+		
+		// console.log(guestBookData, originLength, interval, 
+		// '전체 길이가 한 페이지 이하일 때 ',(originLength < interval || originLength === interval),
+		// '마지막 페이지에 갔을 때', (onPage === guestBookData.length && guestBookData.length > 0),
+		// '첫 번째 페이지에 있고 한 페이지 이상을 가지고 있을 때', (onPage === 0 && guestBookData.length > 0));
+		
+		const getNowOnPage = (event) => {
 			event.preventDefault();
 			const id = event.target.id;
 			const criteria = Math.ceil((guestBookOrigin.length/guestBookDataPoints)/interval);
-			
-			console.log('now in getNowOnNumber() : ', onPage, pgNum, interval < pgNum);
-	
+
+			// console.log('now in getNowOnPage() : ', onPage, pgNum, interval < pgNum);
 			if (id === 'prev') {
-				console.log('prev', onPage, pgNum);
+				// console.log('prev', onPage, pgNum);
 				if (interval < pgNum) {
 					setPgNum(0);
 				}
@@ -351,9 +417,9 @@ export const Pagination = ( props ) => {
 				}
 				if (onPage < 1) {
 					setOnPage(0); 
-					setPgNum(0); 
+					setPgNum(0);
 					return;
-				} 
+				}
 				setOnPage(onPage - 1);
 				return;
 			} else if (id === 'next') {
@@ -361,7 +427,7 @@ export const Pagination = ( props ) => {
 					setOnPage(criteria);
 					return;
 				}
-				console.log('next', onPage, pgNum);
+				// console.log('next', onPage, pgNum);
 				setOnPage(onPage + 1);
 				setPgNum(0);
 				return;
@@ -370,17 +436,7 @@ export const Pagination = ( props ) => {
 
 		return (
 			<>
-				<div>
-					{/* {
-						(onPage === (back+1)) ? 
-							<>{guestBookData[0][back][pgNum]}</> : 
-							( (pgNum > interval) ? 
-								<>{guestBookData[0][onPage][(pgNum-(interval*onPage))]}</> : 
-								(	(pgNum === interval || pgNum < interval) ? <>{guestBookData[0][onPage][pgNum]}</> :
-									<></>
-								)
-							)
-					} */}
+				<>
 					{
 						(onPage === (back+1)) ? 
 						<>{guestBookData[0][back][pgNum]}</> : 
@@ -389,13 +445,44 @@ export const Pagination = ( props ) => {
 							<>{guestBookData[0][onPage][pgNum]}</> 
 						)
 					}
-				</div>
+				</>
 				<PaginationWrap>
-					<GoFront id="prev" onClick={getNowOnNumber}>{`<`}</GoFront>
-						{(onPage === (back+1)) ? <>{guestBookData[1][back]}</> : <>{guestBookData[1][onPage]}</>}
-					<GoRear class={`rear`} id="next" onClick={getNowOnNumber}>{`>`}</GoRear>
+					{ (originLength < interval || originLength === interval) ? (
+						<>
+							{(onPage === (back+1)) ? <>{guestBookData[1][back]}</> : <>{guestBookData[1][onPage]}</>}
+						</> ) : (
+							(guestBookData.length > 0 && onPage === 0) ? (
+								<>
+									{(onPage === (back+1)) ? <>{guestBookData[1][back]}</> : <>{guestBookData[1][onPage]}</>}
+									<GoRear class={`rear`} id="next" onClick={getNowOnPage}>{`>`}</GoRear>
+								</> ) : (
+									(onPage > 0 && onPage < guestBookData.length) ? (
+										(guestBookData.length === guestBookData[0].length || guestBookData.length === guestBookData[1].length) ? (
+											<>
+											<GoFront id="prev" onClick={getNowOnPage}>{`<`}</GoFront>
+												{(onPage === (back+1)) ? <>{guestBookData[1][back]}</> : <>{guestBookData[1][onPage]}</>}
+											</>
+										) : (
+											<>
+											<GoFront id="prev" onClick={getNowOnPage}>{`<`}</GoFront>
+												{(onPage === (back+1)) ? <>{guestBookData[1][back]}</> : <>{guestBookData[1][onPage]}</>}
+											<GoRear class={`rear`} id="next" onClick={getNowOnPage}>{`>`}</GoRear>
+											</>
+										)
+									) : (
+										<>
+										<GoFront id="prev" onClick={getNowOnPage}>{`<`}</GoFront>
+											{(onPage === (back+1)) ? <>{guestBookData[1][back]}</> : <>{guestBookData[1][onPage]}</>}
+										</>
+									)
+							)
+						)
+					}
 				</PaginationWrap>
 			</>
 		);
 	}
+
+	
+
 };

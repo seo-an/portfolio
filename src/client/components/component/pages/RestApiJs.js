@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
-import { Pagination } from "./CutOutItemsForPaging";
+
+import { RestApiView } from "../../view/pages/RestApiView";
+import { Pagination } from "../../js/CutOutItemsForPaging";
 
 const getValue = (id) => {
 	const getId = id;
@@ -26,7 +28,7 @@ export const RestApiJs = () => {
 
 	const getReady = ( dat ) => {
 		const result = dat;
-		console.log(dat);
+		// console.log(dat);
 		if (result === null) {
 			setElements(<></>);
 			return;
@@ -1164,7 +1166,7 @@ export const RestApiJs = () => {
 			];
 
 				getReady(localTest);
-				console.log('saved data');
+				// console.log('saved data');
 			}
 		};
 	
@@ -1202,12 +1204,25 @@ export const RestApiJs = () => {
 	};
 
 	const cleaning = `DATE_FORMAT(createdAt, '%Y-%m-%d %H:%i:%s') AS createdAt`;
-	const getQuery = {
-		'select': `id, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,
-		'from': `${process.env.REACT_APP_DATABASE_TABLE_B}`,
-		'where': ''
-	};
+	let getQuery = '';
 
+	if (process.env.REACT_APP_NODE_ENV === 'production') {
+		// for real data
+		getQuery = {
+			'select': `id, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,
+			'from': `${process.env.REACT_APP_DATABASE_TABLE_PROD_API}`,
+			'where': ''
+		};
+	} else if (process.env.REACT_APP_NODE_ENV === '') {
+		// for test data
+		getQuery = {
+			'select': `id, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,
+			'from': `${process.env.REACT_APP_DATABASE_TABLE_DEV_TEST}`,
+			'where': ''
+		};
+	}
+	
+	
 
 	const handleSubmit = async (e) => {
     e.preventDefault();
@@ -1215,6 +1230,24 @@ export const RestApiJs = () => {
 		const inputName = getValue('name');
 		const inputPassword = getValue('simple_password');
 		const inputComment = getValue('comment');
+
+		if (inputName.length > 50) {
+			return alert(`${inputName.length} 글자는 너무 길어서 이름으로 등록할 수 없어요. 50 글자 아래로 맞춰주세요.`);
+		} else if (inputName.length === 0) {
+			return alert(`이름을 입력해주세요.`);
+		}
+
+		if (inputPassword.length > 50) {
+			return alert(`${inputPassword.length} 글자는 너무 길어서 패스워드로 등록할 수 없어요. 50 글자 아래로 맞춰주세요.`);
+		} else if (inputPassword.length === 0) {
+			return alert(`패스워드를 입력해주세요.`);
+		}
+
+		if (inputComment.length > 512) {
+			return alert(`내용이 ${inputComment.length} 글자에요. 너무 길어서 등록할 수 없어요. 500 글자 아래로 맞춰주세요!`);
+		} else if (inputComment.length === 0) {
+			return alert(`내용을 입력해주세요.`);
+		}
 
 		const send = {
 			'name': inputName,
@@ -1233,31 +1266,16 @@ export const RestApiJs = () => {
 		// 한 번만 로딩: missing dependency 무시
 		getFromDatabase(getQuery);
 	}, []);
+
+
+	const toRestApiViewProps = {
+    handleSubmit,
+    elements,
+  }
 	
 
 	return (
-		<>
-			<div>
-				<h1>방명록</h1>
-				<form onSubmit={handleSubmit}>
-					<div>
-						<div>
-							<input type="text" id="name" placeholder="이름"></input>
-							<input type="text" id="simple_password" placeholder="비밀번호"></input>
-							<input type="text" id="comment" placeholder="내용"></input>
-						</div>
-						<div>
-							<button type="submit">등록</button>
-						</div>
-					</div>
-				</form>
-			</div>
-			<div>
-				{elements}
-			</div>
-		</>
+		<RestApiView props={ toRestApiViewProps }/>
   );
 
 }
-
-// export default RestApi;

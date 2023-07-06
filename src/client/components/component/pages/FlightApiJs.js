@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 
-// import airlinesInfo from "../../data/AirlinesInfo.json";
+import airlinesInfo from "../../data/AirlinesInfo.json";
 import { FlightApiView } from "../../view/pages/FlightApiView";
-import { Pagination } from "../../component/pages/CutOutItemsForPaging.js";
+import { Pagination } from "../../js/CutOutItemsForPaging.js";
 
 
 const findAirline = ( dataset, word ) => {
@@ -12,9 +12,11 @@ const findAirline = ( dataset, word ) => {
 
   let result = null;
 
-  let i = 0;
-  for (i;i<len;) {
-    if ( set[i].companyName === w ) return result = set[i].codeIATA;
+  for (let i = 0;i < len;) {
+    if ( set[i].companyName === w ) {
+      result = set[i].codeIATA;
+      return result;
+    }
     else i++;
   }
 }
@@ -26,28 +28,24 @@ const findAirport = ( dataset, word ) => {
 
   let result = null;
 
-  let i = 0;
-  for (i;i<len;) {
-    if ( set[i].airportName === w ) return result = set[i].codeAirport;
+  for (let i = 0;i < len;) {
+    if ( set[i].airportName === w ) {
+      result = set[i].codeAirport;
+      return result;
+    }
     else i++;
   }
 }
 
 export const FlightApiJs = () => {
   const [data, setData] = useState();
-  // const [final, setFinal] = useState();
   const [elements, setElements] = useState([]);
-  let jsonData = null;
 
-  const getFlightApiData = (data) => {
-    // 여기서 검색기능
-    return jsonData = data;
-  };
 
   const getReady = ( dat ) => {
     const result = dat;
-    if (result === null) {
-      setElements(<></>);
+    if (result === 'nothing') {
+      setElements(<p>검색 결과가 존재하지 않습니다.</p>);
       return;
     } else {
       setElements(<Pagination data={result} display={5} interval={10} from={`flight`} />);
@@ -67,22 +65,31 @@ export const FlightApiJs = () => {
     for (i;i<len-1;i++) {
       result.push(elements[i].value);
     }
-
     setData(result);
   };
 
   const callFlightApiData = async ( url, port, line ) => {
+    
     const SERVICE_KEY = process.env.REACT_APP_INCHEON_INT_AIRPORT_WEATHER_INFO_API_KEY_A;
+    
     const ARRIVAL_URL = `B551177/StatusOfPassengerWorldWeatherInfo/getPassengerArrivalsWorldWeather`;
-    // const DEPARTURE_URL = `B551177/StatusOfPassengerWorldWeatherInfo/getPassengerDeparturesWorldWeather`;
-  
-    // const URL = (url) ? ARRIVAL_URL : DEPARTURE_URL;
+    const DEPARTURE_URL = `B551177/StatusOfPassengerWorldWeatherInfo/getPassengerDeparturesWorldWeather`;
+    
+    let URL = '';
     const airport = (port === undefined) ? '' : port;
     const airline = (line === undefined) ? '' : line;
 
+    if (url === 'ARRIVAL_URL') {
+      URL = ARRIVAL_URL;
+    }
+    if (url === 'DEPARTURE_URL') {
+      URL = DEPARTURE_URL;
+    }
+    
+
     const params = {
       'serviceKey': `${SERVICE_KEY}`,
-      'numOfRows': '46', 
+      'numOfRows': '', 
       'pageNo': '1', 
       'from_time': '0000', 
       'to_time': '2400', 
@@ -96,7 +103,7 @@ export const FlightApiJs = () => {
     const queryString = new URLSearchParams(params).toString()
   
     try {
-      const response = await fetch(`/flight-api/arrival/${ARRIVAL_URL}?${queryString}`, {
+      const response = await fetch(`/flight-api/arrival/${URL}?${queryString}`, {
         method: "GET",
       })
 
@@ -107,10 +114,9 @@ export const FlightApiJs = () => {
       const result = await response.json();
       const finalData = result.response.body;
 
-      // setFinal(finalData);
-
-      const items = (finalData === undefined) ? {items: null} : finalData;
+      const items = (finalData.items.length === 0) ? {items: 'nothing'} : finalData;
       let sendItems = items.items;
+
       getReady(sendItems);
       
     } catch (error) {
@@ -1168,9 +1174,9 @@ export const FlightApiJs = () => {
   };
   
   useEffect(() => {
-    const airlines = jsonData.airline;
-    const airports = jsonData.airport;
-
+    const airports = airlinesInfo.airport;
+    const airlines = airlinesInfo.airline;
+    
     if ( !(data === undefined) ) {
       const url = data[0];
       const port = findAirport(airports, data[1]);
@@ -1178,18 +1184,14 @@ export const FlightApiJs = () => {
 
       callFlightApiData( url, port, line );
     }
-  }, [data, jsonData]);
+  }, [data]);
 
   
   const toFlightApiViewProps = {
     onSubmitFromView,
-    getFlightApiData,
     elements,
   }
-  // const finalData = (final === undefined) ? {items: null} : final;
-  // let result = finalData.items;
-  // console.log('fifty fifty', final);
-  // getReady(finalData);
+  console.log('lasdnflkawejlfkn', elements);
 
   return (
     <>
