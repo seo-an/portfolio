@@ -1,0 +1,28 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+
+# production
+/build
+
+# misc
+myApp.conf
+aws console.txt
+
+#env var
+.env
+
+#logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+#settings
+nginx.txt
+nginx_myapp.txt
+nginx-local.txt
+
+# SSL
+localhost.pem
+localhost-key.pem
