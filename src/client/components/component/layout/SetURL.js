@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 
-import { MenuForSetUrl as Menu } from "../view/layout/NavView";
+import { MenuForSetUrl as Menu } from "../../view/layout/NavView";
 
 
 const SetURL = () => {

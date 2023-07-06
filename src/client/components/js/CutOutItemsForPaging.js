@@ -239,7 +239,7 @@ export const Pagination = ( props ) => {
 								<li>항공편: {original[i][j].flightId}</li>
 								<li>상태: {(original[i][j].remark) ? original[i][j].remark : '확인되지 않음'}</li> 
 								<li>습도: {(original[i][j].himidity)? `${original[i][j].himidity}%` : '확인되지 않음'}</li>
-								<li>풍속: {(original[i][j].wind)? `${original[i][j].wind}m/s` : '확인되지 않음'}</li>
+								<li>풍속: {(original[i][j].wind)? `${original[i][j].wind}㎧` : '확인되지 않음'}</li>
 								<li>관측 기온: {(original[i][j].temp)? `${original[i][j].temp}℃` : '확인되지 않음'}</li>
 								<li>항공사: {original[i][j].airline}</li>
 								<li>공항: {original[i][j].airport}</li>

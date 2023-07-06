@@ -1,5 +1,6 @@
 import styled from "styled-components";
 
+import { GrayButtonWithSolidBorder as Button } from "../common/Button";
 import { ReactComponent as AirplaneSVG } from "../icon/svg/airplane.svg";
 import airlinesInfo from "../../data/AirlinesInfo.json"
 
@@ -79,7 +80,7 @@ export const FlightApiView = ( fromFlightApiJs ) => {
                 <option key={dat.codeICAO} value={dat.companyName} />
               )}
             </datalist>
-          <button type="submit">불러오기</button>
+          <Button inline type="submit">불러오기</Button>
         </form>
       </Wrapper>
             

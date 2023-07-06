@@ -2,11 +2,6 @@ import { useCallback, useRef, useState } from "react";
 import { SvgImgView } from "../../view/pages/SvgImgView";
 
 
-// export const test = () => {
-//   console.log('test');
-// }
-
-
 export const SetColorData = (arry) => {
   const array = [...arry];
   const colorOpt = array.map((item) => (

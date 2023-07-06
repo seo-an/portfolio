@@ -99,6 +99,8 @@ const About = () => {
             REST API 포트폴리오 화면에서는 방명록을 작성할 수 있습니다. 작성해주신 방명록은 Database에 저장됩니다.
           </p>
         </Paragraph>
+
+        <Title><span>마치며,</span></Title>
         <Paragraph>
           <p>한 걸음 더 나아가는 만큼, 한 가지 더 구현하여 적용할 예정이니 생각나실 때 한 번씩 찾아와 주세요!</p>
         </Paragraph>

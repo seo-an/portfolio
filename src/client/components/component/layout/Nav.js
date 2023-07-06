@@ -1,4 +1,4 @@
-import SetURL from "../../data/SetURL";
+import SetURL from "./SetURL";
 
 import { Wrapper } from "../../view/layout/NavView";
 

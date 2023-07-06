@@ -1,5 +1,7 @@
 import styled, { css } from "styled-components";
 
+import { GrayButtonWithSolidBorder as Button } from "../common/Button";
+
 
 export const Container = styled.div `
   display: flex;
@@ -93,7 +95,7 @@ export const RestApiView = ( fromRestApiJs ) => {
 								<Textarea type="text" id="comment" placeholder="내용"></Textarea>
 							</Content>
 							<Content mgt10>
-								<button type="submit">등록</button>
+								<Button type="submit">등록</Button>
 							</Content>
 						</form>
 					</Wrapper>
