@@ -19,7 +19,7 @@ export const Mail = () => {
   const handleCopy = async (mail) => {
     const string = mail;
     try {
-      const permissionStatus = await navigator.permissions.query({ name: 'clipboard-write' });
+      const permissionStatus = await navigator.permissions.query({ name: "clipboard-write" });
       if (permissionStatus.state === 'granted' || permissionStatus.state === 'prompt') {
         // 클립보드 권한이 이미 허용되어 있음
         // console.log('클립보드 권한이 이미 허용되어 있습니다.');
@@ -32,13 +32,15 @@ export const Mail = () => {
       
     } catch (error) {
       console.error('Fail to load Cpilpboard API');
+      alert(`클립보드로 복사할 수 없습니다.
+메일 주소는 ${string} 입니다.`);
     }
   }
 
   const copyMail = () => {
     return (
       <span onClick={(event) => {
-        // event.preventDefault();
+        event.preventDefault();
         handleCopy(naver);
       } } style={{cursor: "pointer"}}>클릭해서 메일 주소 복사하기</span>
     )
