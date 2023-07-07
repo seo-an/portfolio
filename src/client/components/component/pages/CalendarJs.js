@@ -5,8 +5,8 @@ import { CalendarView } from "../../view/pages/CalendarView";
 
 
 export const Calendar = () => {
-  const [now, setNow] = useState(getDate());
-  const [temp, setTemp] = useState(getDate());
+  const [now, setNow] = useState(getDates());
+  const [temp, setTemp] = useState(getDates());
   const [calendar, setCalendar] = useState([]);
 
   const buttonText = {
@@ -31,14 +31,12 @@ export const Calendar = () => {
     }
   
     const r = Object.values(thisOne);
-
     return r;
   }
 
 
-  function getDate(d) {
+  function getDates(d) {
     const dat = (d === undefined ? new Date() : new Date(d));
-
     const r = setDateInfo(dat);
 
     return r;
@@ -53,7 +51,6 @@ export const Calendar = () => {
     const dd = data[2];
 
     const string = `${yy}-${(mm < 10 ? '0'+mm : mm)}-${dd}`;
-
     return string;
   }
 
@@ -69,7 +66,6 @@ export const Calendar = () => {
   
     const lastDatesOfMonth = [31, leap, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     const lastDateOfThisMonth = lastDatesOfMonth[mm];
-  
     return lastDateOfThisMonth;
   }
 
@@ -80,13 +76,12 @@ export const Calendar = () => {
 
     const yy = date[0];
     const mm = date[1];
-    const dd = 1;
+    const dd = '01';
 
     const newDate = [yy, mm, dd];
     const str = getDateString(newDate);
 
     const firstDay = new Date(str).getDay();
-
     return firstDay;
   }, [])
 
@@ -103,7 +98,6 @@ export const Calendar = () => {
     const str = getDateString(newDate);
 
     const lastDay = new Date(str).getDay();
-
     return lastDay;
   }, [])
 
@@ -173,7 +167,7 @@ export const Calendar = () => {
   const flipOver = (e) => {
     const val = e.target.innerText;
     if (val === buttonText.today) {
-      setNow(() => getDate());
+      setNow(() => getDates());
       setTemp(() => now);
       return;
     }
@@ -199,7 +193,6 @@ export const Calendar = () => {
 
   }, [temp, setDays]);
 
-  // console.log(calendar);
   const year = temp[0];
   const month = (temp[1] + 1);
   const week = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];

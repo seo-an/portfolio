@@ -152,7 +152,6 @@ export const CalendarView = ({ year, month, week, calendar, buttonText, flipOver
           <Container right>
             <GridTable>
               {week.map((item, index) => (<TableCellText day key={index}>{item}</TableCellText>))}
-
               {calendar.map((item) => { 
                 if (item.month < month - 1 || item.month > month - 1) {
                   return (<TableCell over key={item.id}>
