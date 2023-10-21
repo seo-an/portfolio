@@ -67,6 +67,9 @@ const onProdServerMysql = {
 // }
 
 
+// pm2 option 넣고...
+
+
 if (process.env.NODE_ENV === '') {
   const devConnection = mysqlConn.pool(onDevServerMysql);
 
@@ -208,8 +211,9 @@ if (process.env.NODE_ENV === '') {
   });
 }
 
-
 // 가장 마지막에
 app.listen(PORT, () => {
     console.log(`Node.js server on :: Server listening on port ${PORT}`);
+    // const http = require('http');
+    // process.send('ready');
 });
