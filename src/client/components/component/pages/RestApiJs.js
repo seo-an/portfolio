@@ -1213,7 +1213,7 @@ export const RestApiJs = () => {
 			'from': `${process.env.REACT_APP_DATABASE_TABLE_PROD_API}`,
 			'where': ''
 		};
-	} else if (process.env.REACT_APP_NODE_ENV === '') {
+	} else {
 		// for test data
 		getQuery = {
 			'select': `id, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,

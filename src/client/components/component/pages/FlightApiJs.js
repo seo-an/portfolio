@@ -80,7 +80,7 @@ export const FlightApiJs = () => {
     const airline = (line === undefined) ? '' : line;
 
     if (url === 'ARRIVAL_URL') {
-      URL = ARRIVAL_URL;
+			URL = ARRIVAL_URL;
     }
     if (url === 'DEPARTURE_URL') {
       URL = DEPARTURE_URL;
@@ -1191,7 +1191,7 @@ export const FlightApiJs = () => {
     onSubmitFromView,
     elements,
   }
-  console.log('lasdnflkawejlfkn', elements);
+  console.log('api is working', elements);
 
   return (
     <>
