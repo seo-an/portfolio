@@ -45,7 +45,7 @@ export const RestApiJs = () => {
 	
 		const getData = async () => {
 			try {
-				const response = await fetch(`/api/data/get?${queryString}`, {
+				const response = await fetch(`/api/guestbook/data?${queryString}`, {
 					method: "GET",
 				});
 	
@@ -1179,7 +1179,7 @@ export const RestApiJs = () => {
 	
 		const postData = async () => {
 			try {
-				const response = await fetch(`/api/data/post`, {
+				const response = await fetch(`/api/guestbook/data`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json"

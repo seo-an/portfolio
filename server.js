@@ -20,7 +20,7 @@ const dbConnection = mysqlConn.pool(envSetting.mysqlServerConf);
 
 // Define API route (internal API)
 // get from database
-app.get('/api/data/get', (req, res) => {
+app.get('/api/guestbook/data', (req, res) => {
   const select = req.query.select;
   const from = req.query.from;
   const where = req.query.where;
@@ -32,8 +32,8 @@ app.get('/api/data/get', (req, res) => {
 
 
 // post to database
-app.post('/api/data/post', (req, res) => {
-  console.log('in node (/api/data/post) : ', JSON.stringify(req.body[0]));
+app.post('/api/guestbook/data', (req, res) => {
+  console.log('in node (/api/guestbook/data) to post : ', JSON.stringify(req.body[0]));
   const data = {...req.body[0]};
 
   const name = (data.name === undefined) ? null : ((data.name === '') ? null : data.name);
