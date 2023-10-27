@@ -3,7 +3,7 @@ import { forwardRef } from "react"
 import styled from "styled-components";
 
 // import { ReactComponent as SvgImgCamping } from "../image/svg/camping.svg";
-import { CampingSvg as SvgCamping } from "../image/svgComponents/CampingSvg";
+import { CampingSvg as SvgCamping } from "../../../assets/image/camping/CampingSvg";
 
 
 export const Container = styled.div `

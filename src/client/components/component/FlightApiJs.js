@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 
-import airlinesInfo from "../../data/AirlinesInfo.json";
+import airlinesInfo from "../data/AirlinesInfo.json";
 import { FlightApiView } from "../../view/pages/FlightApiView";
-import { Pagination } from "../../js/CutOutItemsForPaging.js";
+import { Pagination } from "../../action/CutOutItemsForPaging";
 
 
 const findAirline = ( dataset, word ) => {

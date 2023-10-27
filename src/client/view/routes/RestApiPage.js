@@ -1,4 +1,4 @@
-import { RestApiJs } from "../components/component/pages/RestApiJs";
+import { RestApiJs } from "../../components/component/RestApiJs";
 
 const RestApi = () => {
   return (

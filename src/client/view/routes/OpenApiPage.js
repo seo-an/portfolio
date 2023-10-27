@@ -1,4 +1,4 @@
-import { FlightApiJs } from "../components/component/pages/FlightApiJs";
+import { FlightApiJs } from "../../components/component/FlightApiJs";
 
 const OpenApi = () => {
   return (

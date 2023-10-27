@@ -1,5 +1,6 @@
 import styled from "styled-components";
 
+import SetURL from "./SetURL";
 
 export const Wrapper = styled.nav `
   display: flex;
@@ -29,3 +30,23 @@ export const MenuForSetUrl = styled.div `
     font-size: 1em;
   }
 `;
+
+const Nav = ({ nowScroll }) => {
+  return (
+    (nowScroll ? (
+      <>
+        <Wrapper scrl>
+          <SetURL />
+        </Wrapper>
+      </>
+    ) : (
+      <>
+        <Wrapper>
+          <SetURL />
+        </Wrapper>
+      </>
+    ))
+  )
+}
+
+export default Nav;

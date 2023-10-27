@@ -1,8 +1,8 @@
 import React from 'react';
 import * as ReactDOMClient from 'react-dom/client';
 
-import GlobalStyle from './client/components/view/common/GlobalStyle';
-import GlobalFonts from './client/components/view/common/GlobalFonts';
+import GlobalStyle from './styles/global/GlobalStyle';
+import GlobalFonts from './styles/global/GlobalFonts';
 import App from './App';
 
 

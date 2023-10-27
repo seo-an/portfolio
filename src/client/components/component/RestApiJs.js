@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 
 import { RestApiView } from "../../view/pages/RestApiView";
-import { Pagination } from "../../js/CutOutItemsForPaging";
+import { Pagination } from "../../action/CutOutItemsForPaging";
 
 const getValue = (id) => {
 	const getId = id;
@@ -1163,9 +1163,11 @@ export const RestApiJs = () => {
 							"createdAt": "2023-06-28 16:57:08",
 							"lastUpdatedAt": "2023-06-28T07:57:08.000Z"
 					}
-			];
+				];
 
 				getReady(localTest);
+
+				// getReady(null);
 				// console.log('saved data');
 			}
 		};

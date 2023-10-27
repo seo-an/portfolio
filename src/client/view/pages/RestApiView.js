@@ -1,6 +1,6 @@
 import styled, { css } from "styled-components";
 
-import { GrayButtonWithSolidBorder as Button } from "../common/Button";
+import { GrayButtonWithSolidBorder as Button } from "../../../styles/common/Button";
 
 
 export const Container = styled.div `
@@ -67,17 +67,18 @@ export const Name = styled.div `
 	display: flex;
 `
 
-
 export const RestApiView = ( fromRestApiJs ) => {
   // console.log('in view', fromRestApiJs.props.handleSubmit);
-  
+	
+	// const isDataNull = !(fromRestApiJs.props.elements.props.data);
+
   return (
     <>
 			<Container>
 				<Wrapper>
 					<Title>방명록</Title>
 				</Wrapper>
-
+				
 				<Wrapper>
 					<Wrapper w50p>
 						<Content>
