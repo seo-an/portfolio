@@ -22,13 +22,13 @@ module.exports = {
 
       connection.query(query, (err, results) => {
         if(err) {
-          res.send('Query execution error: ', err);
+          res.status(400).send('Query execution error: ', err);
           connection.release();
           return;
         }
 
         res.header("content-type", 'application/json');
-        res.send(results);
+        res.status(200).send(results);
 
         connection.release();
       });
@@ -49,7 +49,7 @@ module.exports = {
 
       connection.query(query, (err, results) => {
         if(err) {
-          res.send(err);
+          res.status(400).send(err);
           connection.release();
           return;
         }
