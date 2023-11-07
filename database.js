@@ -8,7 +8,7 @@ module.exports = {
     return conn;
   },
   getConnect: async function(res, pool, queryString) {
-    // console.log('연결', pool, '쿼리', queryString);
+    console.log('요청', res, '연결', pool, '쿼리', queryString);
     const query = queryString;
     
     await pool.getConnection((err, connection) => {
@@ -35,7 +35,7 @@ module.exports = {
     });
   },
   postConnect: async function(res, pool, queryString) {
-    // console.log('연결', pool, '쿼리', queryString);
+    console.log('요청', res, '연결', pool, '쿼리', queryString);
     const query = queryString;
     
     await pool.getConnection((err, connection) => {
