@@ -14,7 +14,7 @@ module.exports = {
   },{
     name: 'prod-node-server',
     cwd: process.env.PM2_PROD_PATH,
-    script: './server.js',
+    script: 'node server.js',
     source: process.env.PM2_PROD_PATH,
     post_update: ['npm install', 'pm2 restart prod-node-server']
   }]
@@ -37,3 +37,7 @@ module.exports = {
 //     post_update: ['npm install', 'pm2 restart prod-node-server']
 //   }]
 // };
+
+// out_file: 
+// error_file: 
+// pid_file: 

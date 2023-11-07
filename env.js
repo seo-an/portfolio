@@ -6,13 +6,6 @@ let API_INPUT_DATA_TO_THIS_TABLE = null;
 if (process.env.NODE_ENV === 'local') {
 
 	NODE_SERVER_PORT = process.env.NODE_LOCAL_PORT;
-	mysqlHostConf = {
-		host: process.env.MYSQL_CONF_LOCAL_HOST_HOST,
-		user: process.env.MYSQL_CONF_LOCAL_HOST_USER,
-		password: process.env.MYSQL_CONF_LOCAL_HOST_PASSWORD,
-		database: process.env.MYSQL_CONF_LOCAL_HOST_DB,
-		port: process.env.MYSQL_CONF_LOCAL_HOST_PORT
-	};
 	mysqlServerConf = {
 		host: process.env.MYSQL_CONF_LOCAL_SERVER_HOST,
 		user: process.env.MYSQL_CONF_LOCAL_SERVER_USER,
@@ -26,7 +19,7 @@ if (process.env.NODE_ENV === 'local') {
 
 } else if (process.env.NODE_ENV === 'staging') {
 
-	NODE_SERVER_PORT = NODE_STAGING_PORT;
+	NODE_SERVER_PORT = process.env.NODE_STAGING_PORT;
 
 	// onStagingServerMysql
 	mysqlServerConf = {
@@ -41,7 +34,7 @@ if (process.env.NODE_ENV === 'local') {
 
 } else if (process.env.NODE_ENV === 'production') {
 
-	NODE_SERVER_PORT = NODE_PROD_PORT;
+	NODE_SERVER_PORT = process.env.NODE_PROD_PORT;
 
 	// onProdServerMysql
 	mysqlServerConf = {
