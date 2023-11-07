@@ -3,7 +3,7 @@ import { RestApiJs } from "../../components/component/RestApiJs";
 const RestApi = () => {
   return (
     <>
-      <RestApiJs></RestApiJs>
+      <RestApiJs />
     </>
   )
 }

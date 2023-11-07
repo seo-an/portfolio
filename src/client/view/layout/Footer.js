@@ -61,7 +61,7 @@ export const Mail = () => {
       
     } catch (error) {
       console.error('Fail to load Cpilpboard API');
-      alert(`클립보드로 복사할 수 없습니다.
+      alert(`사파리를 사용중이신가요? 클립보드로 복사할 수 없습니다.
 메일 주소는 ${string} 입니다.`);
     }
   }

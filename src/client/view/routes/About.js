@@ -51,7 +51,8 @@ const About = () => {
   return (
     <>
       <Container>
-        <Title><span>프론트엔드 개발자를 꿈꾸는 이서안의 포트폴리오입니다.</span></Title>
+        {/* <Title><span>프론트엔드 개발자를 꿈꾸는 이서안의 포트폴리오입니다.</span></Title> */}
+        <Title><span>Project,</span></Title>
         <Paragraph>
           <Subtitle><span>이 프로젝트는요,</span></Subtitle>
           <p>Node.js와 React로 이루어졌습니다. 
@@ -69,6 +70,10 @@ const About = () => {
             React의 styled-components 라이브러리는 스타일과 관련된 요소들도 개별 컴포넌트로 작동하게 만드는 것을 가능하게 해주었습니다. 제가 구현하고자 하는 구조에 React가 가장 적합다고 생각하였기 때문에 React를 선택하였습니다. </p>
         </Paragraph>
         <Paragraph>
+          <p>프로젝트 구조가 VAC 패턴을 따르도록 도전해 보았습니다. JSX와 CSS는 View에, JS나 기능개발 등은 Action에, Component는 View와 Action 중간에서 서로를 연결하고 추가적으로 필요한 기능을 포함하도록 하였습니다.</p>
+          <p>완벽한 VAC 패턴이라고 하기에는 부족함이 있을 수 있겠습니다만, 한 번쯤은 보여지는 페이지에 따라 코드를 구분짓는 것 말고 기능과 역할에 따라 구분하는 프로젝트를 진행해 보고 싶은 욕심이 있었습니다.</p>
+        </Paragraph>
+        <Paragraph>
           <Subtitle><span>with,</span></Subtitle>
           <p>이 프로젝트는 AWS Lightsail을 통해 호스팅 되고 있습니다.</p>
           <p>이 프로젝트는 정적 파일 배포, Proxy, Reverse Proxy, HTTPS 통신 등을 위해 Nginx를 웹서버로 이용하고 있습니다.</p>
@@ -78,13 +83,14 @@ const About = () => {
           <Subtitle><span>Layout,</span></Subtitle>
           <p>이 프로젝트는 최소 너비와 최대 너비가 제한된 반응형 웹으로, 모바일 페이지를 별도로 지원하지는 않습니다. 
             최소 너비보다 화면이 줄어든다면 좌우 스크롤이 생기고, 최대 너비보다 화면의 너비가 늘어난다면 내용이 담긴 영역이 가운데에 정렬되게 됩니다.</p>
+          <p>Layout은 상단에 nav 메뉴바, 중앙에 main 컨텐츠, 하단에 footer를 가지는 전통적인 구조를 따랐습니다.</p>
         </Paragraph>
 
         <Title><span>Pages</span></Title>
         <Paragraph>
           <Subtitle><span>Home,</span></Subtitle>
           <p>
-            Home 화면에는 컴포넌트로 담아낸 SVG 이미지와 JavaScript로 직접 구현한 캘린더가 구현되어 있어요.
+            Home 화면에서는 제가 구현해 본 기능들을 편안하게 확인하실 수 있도록 카드식으로 나열해 보았습니다. 각 카드를 클릭하시면 해당 내용을 새 창에서 확인하실 수 있습니다.
           </p>
         </Paragraph>
         <Paragraph>
@@ -92,6 +98,7 @@ const About = () => {
           <p>
             API 포트폴리오 화면에는 공공 API 포털에서 받아온 OpenApi가 구현되어 있습니다. 오늘 인천공항에서 출발하거나 인천공항에 도착하는 항공편에 관련된 날씨 정보를 얻을 수 있어요.
           </p>
+          <p>공항이나 항공사 정보를 이용해서 검색도 가능합니다.</p>
         </Paragraph>
         <Paragraph>
           <Subtitle><span>REST API 포트폴리오,</span></Subtitle>

@@ -1,7 +1,8 @@
 import styled, { css } from "styled-components";
 
 import { GrayButtonWithSolidBorder as Button } from "../../../styles/common/Button";
-
+import { Pagination } from "../../../utils/pagination";
+import { contentsDelete } from "../../action/actionsForRestApi"
 
 export const Container = styled.div `
   display: flex;
@@ -17,31 +18,22 @@ export const Wrapper = styled.div `
 	margin: 16px 16px;
   flex-wrap: wrap;
 
-	${props =>
-    props.w50p &&
-    css`
-			width: 50%;
-			margin: 16px 0px;
-			flex-wrap: nowrap;
-		`
+	&.w50p {
+		width: 50%;
+		margin: 16px 0px;
+		flex-wrap: nowrap;
 	}
-  
+
 `;
 export const Content = styled.div `
 	display: block;
 
-	${props =>
-    props.mgb10 &&
-    css`
-			margin: 0 0 10px 0;
-		`
+	&.mgb10 {
+		margin: 0 0 10px 0;
 	}
 
-	${props =>
-    props.mgt10 &&
-    css`
-			margin: 10px 0 0 0;
-		`
+	&.mgt10 {
+		margin: 10px 0 0 0;
 	}
 
 	& button {
@@ -67,10 +59,8 @@ export const Name = styled.div `
 	display: flex;
 `
 
-export const RestApiView = ( fromRestApiJs ) => {
-  // console.log('in view', fromRestApiJs.props.handleSubmit);
-	
-	// const isDataNull = !(fromRestApiJs.props.elements.props.data);
+export const RestApiResultDisplay = ( conf ) => {
+	const goPagination = conf.props;
 
   return (
     <>
@@ -80,27 +70,14 @@ export const RestApiView = ( fromRestApiJs ) => {
 				</Wrapper>
 				
 				<Wrapper>
-					<Wrapper w50p>
-						<Content>
-							{fromRestApiJs.props.elements}
+					<Wrapper className="w50p">
+						<Content id="guestbookDisplay">
+							<Pagination props={ { ...goPagination } }/>
 						</Content>
 					</Wrapper>
-
-					<Wrapper w50p>
-						<form onSubmit={fromRestApiJs.props.handleSubmit}>
-							<Content mgb10>
-								<Input type="text" id="name" placeholder="이름"></Input>
-								<Input type="text" id="simple_password" placeholder="비밀번호"></Input>
-							</Content>
-							<Content>
-								<Textarea type="text" id="comment" placeholder="내용"></Textarea>
-							</Content>
-							<Content mgt10>
-								<Button type="submit">등록</Button>
-							</Content>
-						</form>
-					</Wrapper>
+					
 				</Wrapper>
+				<button onClick={contentsDelete}>삭제</button>
 			</Container>
 		</>
   )

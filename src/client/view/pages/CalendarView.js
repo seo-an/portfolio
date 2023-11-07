@@ -15,7 +15,6 @@ export const Container = styled.div `
   height: 100%;
   flex-wrap: wrap;
   align-content: flex-start;
-  font-family: "DalseoDarling";
 `;
 
 export const Wrapper = styled.div `
@@ -68,7 +67,8 @@ export const Month = styled.div `
   height: 80px;
   margin: 0 16px 0 8px;
   justify-content: center;
-  font-size: 5em;
+  align-items: center;
+  font-size: 4em;
 `;
 
 export const GridTable = styled.div `

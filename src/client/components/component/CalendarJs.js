@@ -67,7 +67,7 @@ export const Calendar = () => {
     const lastDatesOfMonth = [31, leap, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
     const lastDateOfThisMonth = lastDatesOfMonth[mm];
     return lastDateOfThisMonth;
-  }
+  };
 
 
   // 달의 첫 시작 요일
@@ -83,7 +83,7 @@ export const Calendar = () => {
 
     const firstDay = new Date(str).getDay();
     return firstDay;
-  }, [])
+  }, []);
 
 
   // 달의 마지막 요일
@@ -99,7 +99,7 @@ export const Calendar = () => {
 
     const lastDay = new Date(str).getDay();
     return lastDay;
-  }, [])
+  }, []);
 
 
   // Interaction function
@@ -113,7 +113,7 @@ export const Calendar = () => {
       data[1] = data[1] - 1;
       setTemp(() => data);
     }
-  }
+  };
 
 
   const goToNextMonth = () => {
@@ -126,7 +126,7 @@ export const Calendar = () => {
       data[1] = data[1] + 1;
       setTemp(() => data);
     }
-  }
+  };
 
 
   const setDays = useCallback((arry) => {
@@ -161,7 +161,7 @@ export const Calendar = () => {
     }
 
     return days;
-  }, [now, getFirstDayOfMonth, getLastDayOfMonth])
+  }, [now, getFirstDayOfMonth, getLastDayOfMonth]);
 
 
   const flipOver = (e) => {
@@ -181,7 +181,7 @@ export const Calendar = () => {
       // 이 때는 temp가 안변해용
       return;
     }
-  }
+  };
   
 
   useEffect(() => {
@@ -205,7 +205,7 @@ export const Calendar = () => {
     calendar,
     buttonText,
     flipOver,
-  };
+  }
 
   
   return (

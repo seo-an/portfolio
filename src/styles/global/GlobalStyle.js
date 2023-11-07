@@ -1,9 +1,11 @@
 import { createGlobalStyle } from "styled-components";
 
 const GlobalStyle = createGlobalStyle `
-  body {
+
+  html, body {
     margin: 0;
-    font-family: "LineSeed";
+    font-family: 'seoanCocktail';
+    font-style: normal;
     font-size: 16px;
     color: #333;
 
@@ -27,7 +29,7 @@ const GlobalStyle = createGlobalStyle `
   }
 
   button {
-    font-family: "LineSeed";
+    font-weight: 400;
   }
 
   #root {

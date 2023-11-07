@@ -22,14 +22,15 @@ const dbConnection = mysqlConn.pool(envSetting.mysqlServerConf);
 // get from database
 app.get('/api/guestbook/data', (req, res) => {
   const select = req.query.select;
-  const from = req.query.from;
+  // const from = req.query.from; // 똑같잖아?
+  const from = envSetting.API_INPUT_DATA_TO_THIS_TABLE;
   const where = req.query.where;
 
   const READ_DATA = (where !== '') ? `SELECT ${select} FROM ${from} WHERE ${where}` : `SELECT ${select} FROM ${from}`;
 
+  console.log()
   mysqlConn.getConnect(res, dbConnection, READ_DATA);
 });
-
 
 // post to database
 app.post('/api/guestbook/data', (req, res) => {
@@ -68,17 +69,12 @@ app.post('/api/guestbook/data', (req, res) => {
 
 
 
-if (process.env.NODE_ENV === 'local') {
-  // 정적파일
-  app.use(express.static(path.join(__dirname, 'build')));
-
-} else if (process.env.NODE_ENV === 'production') {
-  // React app
-  // '*' 으로 설정하면 react가 route의 전권을 가져갈 수 있음
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'build', 'index.html'));
-  });
-}
+app.use(express.static(path.join(__dirname, 'build', 'index.html')));
+// '*' 으로 설정하면 react가 route의 전권을 가져갈 수 있음
+// react가 route의 전권을 가져가게 되면 여기서 routing endpoint를 결정하는 것은 의미가 없음
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'build', 'index.html'));
+});
 
 
 // 가장 마지막에

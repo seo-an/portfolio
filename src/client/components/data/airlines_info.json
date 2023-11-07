@@ -1,0 +1,1391 @@
+{
+  "airline": [
+      {
+          "codeICAO": "SBI",
+          "codeIATA": "S7",
+          "companyName": "S7 항공"
+      },
+      {
+          "codeICAO": "GIA",
+          "codeIATA": "GA",
+          "companyName": "가루다인도네시아항공"
+      },
+      {
+          "codeICAO": "KAL",
+          "codeIATA": "KE",
+          "companyName": "대한항공"
+      },
+      {
+          "codeICAO": "DAL",
+          "codeIATA": "DL",
+          "companyName": "델타항공"
+      },
+      {
+          "codeICAO": "LAO",
+          "codeIATA": "QV",
+          "companyName": "라오항공"
+      },
+      {
+          "codeICAO": "RAM",
+          "codeIATA": "AT",
+          "companyName": "로얄 에어 모로코"
+      },
+      {
+          "codeICAO": "DLH",
+          "codeIATA": "LH",
+          "companyName": "루프트한자항공"
+      },
+      {
+          "codeICAO": "MDA",
+          "codeIATA": "AE",
+          "companyName": "만다린항공"
+      },
+      {
+          "codeICAO": "MAS",
+          "codeIATA": "MH",
+          "companyName": "말레이시아항공"
+      },
+      {
+          "codeICAO": "MGL",
+          "codeIATA": "OM",
+          "companyName": "몽골항공"
+      },
+      {
+          "codeICAO": "SOO",
+          "codeIATA": "9S",
+          "companyName": "미국남부화물항공"
+      },
+      {
+          "codeICAO": "HVN",
+          "codeIATA": "VN",
+          "companyName": "베트남항공"
+      },
+      {
+          "codeICAO": "VJC",
+          "codeIATA": "VJ",
+          "companyName": "비엣젯항공"
+      },
+      {
+          "codeICAO": "CSC",
+          "codeIATA": "3U",
+          "companyName": "사천항공"
+      },
+      {
+          "codeICAO": "CDG",
+          "codeIATA": "SC",
+          "companyName": "산동항공"
+      },
+      {
+          "codeICAO": "CSH",
+          "codeIATA": "FM",
+          "companyName": "상하이항공"
+      },
+      {
+          "codeICAO": "CEB",
+          "codeIATA": "5J",
+          "companyName": "세부퍼시픽항공"
+      },
+      {
+          "codeICAO": "SNJ",
+          "codeIATA": "6J",
+          "companyName": "솔라시드 항공"
+      },
+      {
+          "codeICAO": "SWM",
+          "codeIATA": "ZA",
+          "companyName": "스카이 앙코르 항공"
+      },
+      {
+          "codeICAO": "TGW",
+          "codeIATA": "TR",
+          "companyName": "스쿠트타이거항공"
+      },
+      {
+          "codeICAO": "AZQ",
+          "codeIATA": "7L",
+          "companyName": "실크웨이웨스트항공"
+      },
+      {
+          "codeICAO": "CSZ",
+          "codeIATA": "ZH",
+          "companyName": "심천항공"
+      },
+      {
+          "codeICAO": "SIA",
+          "codeIATA": "SQ",
+          "companyName": "싱가포르항공"
+      },
+      {
+          "codeICAO": "SGD",
+          "codeIATA": "XO",
+          "companyName": "씨에어"
+      },
+      {
+          "codeICAO": "AAL",
+          "codeIATA": "AA",
+          "companyName": "아메리칸항공"
+      },
+      {
+          "codeICAO": "AAR",
+          "codeIATA": "OZ",
+          "companyName": "아시아나항공"
+      },
+      {
+          "codeICAO": "GTI",
+          "codeIATA": "5Y",
+          "companyName": "아틀라스항공"
+      },
+      {
+          "codeICAO": "AZA",
+          "codeIATA": "AZ",
+          "companyName": "알리탈리아 항공"
+      },
+      {
+          "codeICAO": "SYL",
+          "codeIATA": "R3",
+          "companyName": "야쿠티아 항공"
+      },
+      {
+          "codeICAO": "YZR",
+          "codeIATA": "Y8",
+          "companyName": "양쯔강익스프레스항공"
+      },
+      {
+          "codeICAO": "UAE",
+          "codeIATA": "EK",
+          "companyName": "에미레이트항공"
+      },
+      {
+          "codeICAO": "EVA",
+          "codeIATA": "BR",
+          "companyName": "에바항공"
+      },
+      {
+          "codeICAO": "AMU",
+          "codeIATA": "NX",
+          "companyName": "에어 마카오"
+      },
+      {
+          "codeICAO": "AEA",
+          "codeIATA": "UX",
+          "companyName": "에어 유로파"
+      },
+      {
+          "codeICAO": "AFR",
+          "codeIATA": "AF",
+          "companyName": "에어 프랑스"
+      },
+      {
+          "codeICAO": "3SX",
+          "codeIATA": "3S",
+          "companyName": "에어로로직"
+      },
+      {
+          "codeICAO": "AFL",
+          "codeIATA": "SU",
+          "companyName": "에어로플로트항공"
+      },
+      {
+          "codeICAO": "ABW",
+          "codeIATA": "RU",
+          "companyName": "에어브릿지"
+      },
+      {
+          "codeICAO": "ASV",
+          "codeIATA": "RS",
+          "companyName": "에어서울"
+      },
+      {
+          "codeICAO": "KZR",
+          "codeIATA": "KC",
+          "companyName": "에어아스타나"
+      },
+      {
+          "codeICAO": "EZD",
+          "codeIATA": "Z2",
+          "companyName": "에어아시아 필리핀"
+      },
+      {
+          "codeICAO": "XAX",
+          "codeIATA": "D7",
+          "companyName": "에어아시아엑스"
+      },
+      {
+          "codeICAO": "AIC",
+          "codeIATA": "AI",
+          "companyName": "에어인디아"
+      },
+      {
+          "codeICAO": "AIH",
+          "codeIATA": "KJ",
+          "companyName": "에어인천"
+      },
+      {
+          "codeICAO": "AJX",
+          "codeIATA": "NQ",
+          "companyName": "에어재팬"
+      },
+      {
+          "codeICAO": "ACA",
+          "codeIATA": "AC",
+          "companyName": "에어캐나다"
+      },
+      {
+          "codeICAO": "AHK",
+          "codeIATA": "LD",
+          "companyName": "에어홍콩"
+      },
+      {
+          "codeICAO": "ETH",
+          "codeIATA": "ET",
+          "companyName": "에티오피아항공"
+      },
+      {
+          "codeICAO": "ETD",
+          "codeIATA": "EY",
+          "companyName": "에티하드 항공"
+      },
+      {
+          "codeICAO": "BAW",
+          "codeIATA": "BA",
+          "companyName": "영국항공"
+      },
+      {
+          "codeICAO": "SHU",
+          "codeIATA": "HZ",
+          "companyName": "오로라항공"
+      },
+      {
+          "codeICAO": "UZB",
+          "codeIATA": "HY",
+          "companyName": "우즈베키스탄항공"
+      },
+      {
+          "codeICAO": "UAL",
+          "codeIATA": "UA",
+          "companyName": "유나이티드항공"
+      },
+      {
+          "codeICAO": "UIA",
+          "codeIATA": "B7",
+          "companyName": "유니항공"
+      },
+      {
+          "codeICAO": "UPS",
+          "codeIATA": "5X",
+          "companyName": "유피에스항공"
+      },
+      {
+          "codeICAO": "ESR",
+          "codeIATA": "ZE",
+          "companyName": "이스타항공"
+      },
+      {
+          "codeICAO": "JAL",
+          "codeIATA": "JL",
+          "companyName": "일본항공"
+      },
+      {
+          "codeICAO": "JJA",
+          "codeIATA": "7C",
+          "companyName": "제주항공"
+      },
+      {
+          "codeICAO": "JAI",
+          "codeIATA": "9W",
+          "companyName": "제트 에어웨이즈"
+      },
+      {
+          "codeICAO": "CCA",
+          "codeIATA": "CA",
+          "companyName": "중국국제항공"
+      },
+      {
+          "codeICAO": "CSN",
+          "codeIATA": "CZ",
+          "companyName": "중국남방항공"
+      },
+      {
+          "codeICAO": "CES",
+          "codeIATA": "MU",
+          "companyName": "중국동방항공"
+      },
+      {
+          "codeICAO": "CYZ",
+          "codeIATA": "CF",
+          "companyName": "중국우정항공"
+      },
+      {
+          "codeICAO": "CXA",
+          "codeIATA": "MF",
+          "companyName": "중국하문항공"
+      },
+      {
+          "codeICAO": "CKK",
+          "codeIATA": "CK",
+          "companyName": "중국화물항공"
+      },
+      {
+          "codeICAO": "CAL",
+          "codeIATA": "CI",
+          "companyName": "중화항공"
+      },
+      {
+          "codeICAO": "JNA",
+          "codeIATA": "LJ",
+          "companyName": "진에어"
+      },
+      {
+          "codeICAO": "CSA",
+          "codeIATA": "OK",
+          "companyName": "체코항공"
+      },
+      {
+          "codeICAO": "CQH",
+          "codeIATA": "9C",
+          "companyName": "춘추항공"
+      },
+      {
+          "codeICAO": "CLX",
+          "codeIATA": "CV",
+          "companyName": "카고룩스항공"
+      },
+      {
+          "codeICAO": "QTR",
+          "codeIATA": "QR",
+          "companyName": "카타르항공"
+      },
+      {
+          "codeICAO": "VAV",
+          "codeIATA": "K6",
+          "companyName": "캄보디아 앙코르 항공"
+      },
+      {
+          "codeICAO": "CPA",
+          "codeIATA": "CX",
+          "companyName": "캐세이패시픽항공"
+      },
+      {
+          "codeICAO": "KLM",
+          "codeIATA": "KL",
+          "companyName": "케이엘엠네덜란드항공"
+      },
+      {
+          "codeICAO": "QFA",
+          "codeIATA": "QF",
+          "companyName": "콴타스항공"
+      },
+      {
+          "codeICAO": "TAX",
+          "codeIATA": "XJ",
+          "companyName": "타이에어아시아엑스"
+      },
+      {
+          "codeICAO": "THA",
+          "codeIATA": "TG",
+          "companyName": "타이항공"
+      },
+      {
+          "codeICAO": "THY",
+          "codeIATA": "TK",
+          "companyName": "터키항공"
+      },
+      {
+          "codeICAO": "GCR",
+          "codeIATA": "GS",
+          "companyName": "텐진 에어라인"
+      },
+      {
+          "codeICAO": "TWB",
+          "codeIATA": "TW",
+          "companyName": "티웨이항공"
+      },
+      {
+          "codeICAO": "GAP",
+          "codeIATA": "2P",
+          "companyName": "팔익스프레스 항공"
+      },
+      {
+          "codeICAO": "AAP",
+          "codeIATA": "8Y",
+          "companyName": "팬퍼시픽항공"
+      },
+      {
+          "codeICAO": "FDX",
+          "codeIATA": "FX",
+          "companyName": "페덱스"
+      },
+      {
+          "codeICAO": "PAC",
+          "codeIATA": "PO",
+          "companyName": "폴라에어카고"
+      },
+      {
+          "codeICAO": "LOT",
+          "codeIATA": "LO",
+          "companyName": "폴란드항공"
+      },
+      {
+          "codeICAO": "APJ",
+          "codeIATA": "MM",
+          "companyName": "피치항공"
+      },
+      {
+          "codeICAO": "FIN",
+          "codeIATA": "AY",
+          "companyName": "핀에어"
+      },
+      {
+          "codeICAO": "PAL",
+          "codeIATA": "PR",
+          "companyName": "필리핀항공"
+      },
+      {
+          "codeICAO": "HAL",
+          "codeIATA": "HA",
+          "companyName": "하와이안항공"
+      },
+      {
+          "codeICAO": "HKE",
+          "codeIATA": "UO",
+          "companyName": "홍콩익스프레스항공"
+      },
+      {
+          "codeICAO": "CRK",
+          "codeIATA": "HX",
+          "companyName": "홍콩항공"
+      }
+  ],
+  "airport": [
+      {
+          "id": "id1",
+          "codeAirport": "AMS",
+          "airportName": "암스테르담"
+      },
+      {
+          "id": "id2",
+          "codeAirport": "KTM",
+          "airportName": "카트만두"
+      },
+      {
+          "id": "id3",
+          "codeAirport": "OSL",
+          "airportName": "오슬로"
+      },
+      {
+          "id": "id4",
+          "codeAirport": "NOU",
+          "airportName": "누메아"
+      },
+      {
+          "id": "id5",
+          "codeAirport": "AKL",
+          "airportName": "오클랜드"
+      },
+      {
+          "id": "id6",
+          "codeAirport": "KHH",
+          "airportName": "가오슝"
+      },
+      {
+          "id": "id7",
+          "codeAirport": "TPE",
+          "airportName": "타이페이"
+      },
+      {
+          "id": "id8",
+          "codeAirport": "CPH",
+          "airportName": "코펜하겐"
+      },
+      {
+          "id": "id9",
+          "codeAirport": "MUC",
+          "airportName": "뮌헨"
+      },
+      {
+          "id": "id10",
+          "codeAirport": "CGN",
+          "airportName": "쾰른"
+      },
+      {
+          "id": "id11",
+          "codeAirport": "FRA",
+          "airportName": "프랑크푸르트"
+      },
+      {
+          "id": "id12",
+          "codeAirport": "VTE",
+          "airportName": "비엔티안"
+      },
+      {
+          "id": "id13",
+          "codeAirport": "OVB",
+          "airportName": "노보시비르스크"
+      },
+      {
+          "id": "id14",
+          "codeAirport": "SVO",
+          "airportName": "모스크바"
+      },
+      {
+          "id": "id15",
+          "codeAirport": "VVO",
+          "airportName": "블라디보스토크"
+      },
+      {
+          "id": "id16",
+          "codeAirport": "UUS",
+          "airportName": "사할린"
+      },
+      {
+          "id": "id17",
+          "codeAirport": "LED",
+          "airportName": "상트페테르부르크"
+      },
+      {
+          "id": "id18",
+          "codeAirport": "YKS",
+          "airportName": "야쿠츠크"
+      },
+      {
+          "id": "id19",
+          "codeAirport": "IKT",
+          "airportName": "이르쿠츠크"
+      },
+      {
+          "id": "id20",
+          "codeAirport": "KHV",
+          "airportName": "하바로프스크"
+      },
+      {
+          "id": "id21",
+          "codeAirport": "BEY",
+          "airportName": "베이루트"
+      },
+      {
+          "id": "id22",
+          "codeAirport": "LUX",
+          "airportName": "룩셈부르크"
+      },
+      {
+          "id": "id23",
+          "codeAirport": "BKI",
+          "airportName": "코타키나발루"
+      },
+      {
+          "id": "id24",
+          "codeAirport": "KUL",
+          "airportName": "쿠알라룸푸르"
+      },
+      {
+          "id": "id25",
+          "codeAirport": "PEN",
+          "airportName": "페낭"
+      },
+      {
+          "id": "id26",
+          "codeAirport": "MLE",
+          "airportName": "말레"
+      },
+      {
+          "id": "id27",
+          "codeAirport": "ULN",
+          "airportName": "울란바토르"
+      },
+      {
+          "id": "id28",
+          "codeAirport": "GUM",
+          "airportName": "괌"
+      },
+      {
+          "id": "id29",
+          "codeAirport": "JFK",
+          "airportName": "뉴욕"
+      },
+      {
+          "id": "id30",
+          "codeAirport": "EWR",
+          "airportName": "뉴욕/뉴어크"
+      },
+      {
+          "id": "id31",
+          "codeAirport": "DFW",
+          "airportName": "댈러스"
+      },
+      {
+          "id": "id32",
+          "codeAirport": "DTW",
+          "airportName": "디트로이트"
+      },
+      {
+          "id": "id33",
+          "codeAirport": "LAS",
+          "airportName": "라스베이거스"
+      },
+      {
+          "id": "id34",
+          "codeAirport": "LAX",
+          "airportName": "로스앤젤레스"
+      },
+      {
+          "id": "id35",
+          "codeAirport": "MIA",
+          "airportName": "마이애미"
+      },
+      {
+          "id": "id36",
+          "codeAirport": "MEM",
+          "airportName": "멤피스"
+      },
+      {
+          "id": "id37",
+          "codeAirport": "SPN",
+          "airportName": "사이판"
+      },
+      {
+          "id": "id38",
+          "codeAirport": "SFO",
+          "airportName": "샌프란시스코"
+      },
+      {
+          "id": "id39",
+          "codeAirport": "SEA",
+          "airportName": "시애틀"
+      },
+      {
+          "id": "id40",
+          "codeAirport": "ORD",
+          "airportName": "시카고"
+      },
+      {
+          "id": "id41",
+          "codeAirport": "ATL",
+          "airportName": "애틀랜타"
+      },
+      {
+          "id": "id42",
+          "codeAirport": "ANC",
+          "airportName": "앵커리지"
+      },
+      {
+          "id": "id43",
+          "codeAirport": "ILN",
+          "airportName": "에어본  에어파크"
+      },
+      {
+          "id": "id44",
+          "codeAirport": "IAD",
+          "airportName": "워싱턴"
+      },
+      {
+          "id": "id45",
+          "codeAirport": "IND",
+          "airportName": "인디애나폴리스"
+      },
+      {
+          "id": "id46",
+          "codeAirport": "PHL",
+          "airportName": "필라델피아"
+      },
+      {
+          "id": "id47",
+          "codeAirport": "HNL",
+          "airportName": "호놀룰루"
+      },
+      {
+          "id": "id48",
+          "codeAirport": "HOU",
+          "airportName": "휴스턴"
+      },
+      {
+          "id": "id49",
+          "codeAirport": "RGN",
+          "airportName": "양곤"
+      },
+      {
+          "id": "id50",
+          "codeAirport": "BAH",
+          "airportName": "바레인"
+      },
+      {
+          "id": "id51",
+          "codeAirport": "DAC",
+          "airportName": "다카"
+      },
+      {
+          "id": "id52",
+          "codeAirport": "CCS",
+          "airportName": "마이케티아"
+      },
+      {
+          "id": "id53",
+          "codeAirport": "DAD",
+          "airportName": "다낭"
+      },
+      {
+          "id": "id54",
+          "codeAirport": "HAN",
+          "airportName": "하노이"
+      },
+      {
+          "id": "id55",
+          "codeAirport": "SGN",
+          "airportName": "호찌민"
+      },
+      {
+          "id": "id56",
+          "codeAirport": "BRU",
+          "airportName": "브뤼셀"
+      },
+      {
+          "id": "id57",
+          "codeAirport": "SOF",
+          "airportName": "소피아"
+      },
+      {
+          "id": "id58",
+          "codeAirport": "GRU",
+          "airportName": "상파울루"
+      },
+      {
+          "id": "id59",
+          "codeAirport": "BWN",
+          "airportName": "반다르스리브가완"
+      },
+      {
+          "id": "id60",
+          "codeAirport": "CMB",
+          "airportName": "콜롬보"
+      },
+      {
+          "id": "id61",
+          "codeAirport": "GOT",
+          "airportName": "고테버그"
+      },
+      {
+          "id": "id62",
+          "codeAirport": "STO",
+          "airportName": "스톡홀름"
+      },
+      {
+          "id": "id63",
+          "codeAirport": "BSL",
+          "airportName": "바젤"
+      },
+      {
+          "id": "id64",
+          "codeAirport": "ZRH",
+          "airportName": "취리히"
+      },
+      {
+          "id": "id65",
+          "codeAirport": "MAD",
+          "airportName": "마드리드"
+      },
+      {
+          "id": "id66",
+          "codeAirport": "BCN",
+          "airportName": "바르셀로나"
+      },
+      {
+          "id": "id67",
+          "codeAirport": "SIN",
+          "airportName": "싱가포르"
+      },
+      {
+          "id": "id68",
+          "codeAirport": "DXB",
+          "airportName": "두바이"
+      },
+      {
+          "id": "id69",
+          "codeAirport": "AUH",
+          "airportName": "아부다비"
+      },
+      {
+          "id": "id70",
+          "codeAirport": "BUE",
+          "airportName": "부에노스 아이레스"
+      },
+      {
+          "id": "id71",
+          "codeAirport": "GYD",
+          "airportName": "바쿠"
+      },
+      {
+          "id": "id72",
+          "codeAirport": "LHR",
+          "airportName": "런던/히드로"
+      },
+      {
+          "id": "id73",
+          "codeAirport": "MEL",
+          "airportName": "멜버른"
+      },
+      {
+          "id": "id74",
+          "codeAirport": "BNE",
+          "airportName": "브리즈번"
+      },
+      {
+          "id": "id75",
+          "codeAirport": "SYD",
+          "airportName": "시드니"
+      },
+      {
+          "id": "id76",
+          "codeAirport": "VIE",
+          "airportName": "비엔나"
+      },
+      {
+          "id": "id77",
+          "codeAirport": "TAS",
+          "airportName": "타슈켄트"
+      },
+      {
+          "id": "id78",
+          "codeAirport": "THR",
+          "airportName": "테헤란"
+      },
+      {
+          "id": "id79",
+          "codeAirport": "TLV",
+          "airportName": "텔아비브"
+      },
+      {
+          "id": "id80",
+          "codeAirport": "CAI",
+          "airportName": "카이로"
+      },
+      {
+          "id": "id81",
+          "codeAirport": "FCO",
+          "airportName": "로마"
+      },
+      {
+          "id": "id82",
+          "codeAirport": "MXP",
+          "airportName": "밀라노"
+      },
+      {
+          "id": "id83",
+          "codeAirport": "DEL",
+          "airportName": "델리"
+      },
+      {
+          "id": "id84",
+          "codeAirport": "BOM",
+          "airportName": "뭄바이"
+      },
+      {
+          "id": "id85",
+          "codeAirport": "MAA",
+          "airportName": "첸나이"
+      },
+      {
+          "id": "id86",
+          "codeAirport": "DPS",
+          "airportName": "덴파사르"
+      },
+      {
+          "id": "id87",
+          "codeAirport": "CGK",
+          "airportName": "자카르타"
+      },
+      {
+          "id": "id88",
+          "codeAirport": "KOJ",
+          "airportName": "가고시마"
+      },
+      {
+          "id": "id89",
+          "codeAirport": "KMQ",
+          "airportName": "고마쓰"
+      },
+      {
+          "id": "id90",
+          "codeAirport": "KMJ",
+          "airportName": "구마모토"
+      },
+      {
+          "id": "id91",
+          "codeAirport": "KKJ",
+          "airportName": "기타큐슈"
+      },
+      {
+          "id": "id92",
+          "codeAirport": "NGS",
+          "airportName": "나가사키"
+      },
+      {
+          "id": "id93",
+          "codeAirport": "NGO",
+          "airportName": "나고야"
+      },
+      {
+          "id": "id94",
+          "codeAirport": "KIJ",
+          "airportName": "니가타"
+      },
+      {
+          "id": "id95",
+          "codeAirport": "TAK",
+          "airportName": "다카마쓰"
+      },
+      {
+          "id": "id96",
+          "codeAirport": "TOY",
+          "airportName": "도야마"
+      },
+      {
+          "id": "id97",
+          "codeAirport": "NRT",
+          "airportName": "도쿄/ 나리타"
+      },
+      {
+          "id": "id98",
+          "codeAirport": "HND",
+          "airportName": "도쿄/ 하네다"
+      },
+      {
+          "id": "id99",
+          "codeAirport": "MYJ",
+          "airportName": "마쓰야마"
+      },
+      {
+          "id": "id100",
+          "codeAirport": "KMI",
+          "airportName": "미야자키"
+      },
+      {
+          "id": "id101",
+          "codeAirport": "CTS",
+          "airportName": "삿포로"
+      },
+      {
+          "id": "id102",
+          "codeAirport": "SDJ",
+          "airportName": "센다이"
+      },
+      {
+          "id": "id103",
+          "codeAirport": "FSZ",
+          "airportName": "시즈오카"
+      },
+      {
+          "id": "id104",
+          "codeAirport": "AKJ",
+          "airportName": "아사히카와"
+      },
+      {
+          "id": "id105",
+          "codeAirport": "AOJ",
+          "airportName": "아오모리"
+      },
+      {
+          "id": "id106",
+          "codeAirport": "OSA",
+          "airportName": "오사카"
+      },
+      {
+          "id": "id107",
+          "codeAirport": "KIX",
+          "airportName": "오사카/ 간사이"
+      },
+      {
+          "id": "id108",
+          "codeAirport": "OIT",
+          "airportName": "오이타"
+      },
+      {
+          "id": "id109",
+          "codeAirport": "OKJ",
+          "airportName": "오카야마"
+      },
+      {
+          "id": "id110",
+          "codeAirport": "OKA",
+          "airportName": "오키나와"
+      },
+      {
+          "id": "id111",
+          "codeAirport": "YGJ",
+          "airportName": "요나고"
+      },
+      {
+          "id": "id112",
+          "codeAirport": "HKD",
+          "airportName": "하코다테"
+      },
+      {
+          "id": "id113",
+          "codeAirport": "FKS",
+          "airportName": "후쿠시마"
+      },
+      {
+          "id": "id114",
+          "codeAirport": "FUK",
+          "airportName": "후쿠오카"
+      },
+      {
+          "id": "id115",
+          "codeAirport": "HIJ",
+          "airportName": "히로시마"
+      },
+      {
+          "id": "id116",
+          "codeAirport": "CAN",
+          "airportName": "광저우"
+      },
+      {
+          "id": "id117",
+          "codeAirport": "KWL",
+          "airportName": "구이린(계림)"
+      },
+      {
+          "id": "id118",
+          "codeAirport": "KWE",
+          "airportName": "구이양"
+      },
+      {
+          "id": "id119",
+          "codeAirport": "NNG",
+          "airportName": "난닝"
+      },
+      {
+          "id": "id120",
+          "codeAirport": "NKG",
+          "airportName": "난징"
+      },
+      {
+          "id": "id121",
+          "codeAirport": "KHN",
+          "airportName": "난창"
+      },
+      {
+          "id": "id122",
+          "codeAirport": "NGB",
+          "airportName": "닝보"
+      },
+      {
+          "id": "id123",
+          "codeAirport": "DLC",
+          "airportName": "다롄"
+      },
+      {
+          "id": "id124",
+          "codeAirport": "LJG",
+          "airportName": "리장"
+      },
+      {
+          "id": "id125",
+          "codeAirport": "MFM",
+          "airportName": "마카오"
+      },
+      {
+          "id": "id126",
+          "codeAirport": "MDG",
+          "airportName": "무단장"
+      },
+      {
+          "id": "id127",
+          "codeAirport": "PEK",
+          "airportName": "베이징"
+      },
+      {
+          "id": "id128",
+          "codeAirport": "PVG",
+          "airportName": "상하이/ 푸동"
+      },
+      {
+          "id": "id129",
+          "codeAirport": "XMN",
+          "airportName": "샤먼"
+      },
+      {
+          "id": "id130",
+          "codeAirport": "SIA",
+          "airportName": "서안"
+      },
+      {
+          "id": "id131",
+          "codeAirport": "SHE",
+          "airportName": "선양"
+      },
+      {
+          "id": "id132",
+          "codeAirport": "SZX",
+          "airportName": "선전"
+      },
+      {
+          "id": "id133",
+          "codeAirport": "SJW",
+          "airportName": "스자좡"
+      },
+      {
+          "id": "id134",
+          "codeAirport": "XIY",
+          "airportName": "시안"
+      },
+      {
+          "id": "id135",
+          "codeAirport": "SYX",
+          "airportName": "싼야"
+      },
+      {
+          "id": "id136",
+          "codeAirport": "YNJ",
+          "airportName": "옌지"
+      },
+      {
+          "id": "id137",
+          "codeAirport": "YNZ",
+          "airportName": "옌청"
+      },
+      {
+          "id": "id138",
+          "codeAirport": "YNT",
+          "airportName": "옌타이"
+      },
+      {
+          "id": "id139",
+          "codeAirport": "URC",
+          "airportName": "우루무치"
+      },
+      {
+          "id": "id140",
+          "codeAirport": "WEH",
+          "airportName": "웨이하이"
+      },
+      {
+          "id": "id141",
+          "codeAirport": "CGO",
+          "airportName": "정저우"
+      },
+      {
+          "id": "id142",
+          "codeAirport": "TNA",
+          "airportName": "지난"
+      },
+      {
+          "id": "id143",
+          "codeAirport": "CSX",
+          "airportName": "창사"
+      },
+      {
+          "id": "id144",
+          "codeAirport": "CGQ",
+          "airportName": "창춘"
+      },
+      {
+          "id": "id145",
+          "codeAirport": "CTU",
+          "airportName": "청두"
+      },
+      {
+          "id": "id146",
+          "codeAirport": "CKG",
+          "airportName": "충칭"
+      },
+      {
+          "id": "id147",
+          "codeAirport": "TAO",
+          "airportName": "칭다오"
+      },
+      {
+          "id": "id148",
+          "codeAirport": "KMG",
+          "airportName": "쿤밍"
+      },
+      {
+          "id": "id149",
+          "codeAirport": "TSN",
+          "airportName": "톈진"
+      },
+      {
+          "id": "id150",
+          "codeAirport": "HRB",
+          "airportName": "하얼빈"
+      },
+      {
+          "id": "id151",
+          "codeAirport": "HAK",
+          "airportName": "하이커우"
+      },
+      {
+          "id": "id152",
+          "codeAirport": "HGH",
+          "airportName": "항저우"
+      },
+      {
+          "id": "id153",
+          "codeAirport": "HKG",
+          "airportName": "홍콩"
+      },
+      {
+          "id": "id154",
+          "codeAirport": "HIA",
+          "airportName": "화이안"
+      },
+      {
+          "id": "id155",
+          "codeAirport": "PRG",
+          "airportName": "프라하"
+      },
+      {
+          "id": "id156",
+          "codeAirport": "STI",
+          "airportName": "산티아고"
+      },
+      {
+          "id": "id157",
+          "codeAirport": "TSE",
+          "airportName": "아스타나"
+      },
+      {
+          "id": "id158",
+          "codeAirport": "ALA",
+          "airportName": "알마티"
+      },
+      {
+          "id": "id159",
+          "codeAirport": "DOH",
+          "airportName": "도하"
+      },
+      {
+          "id": "id160",
+          "codeAirport": "REP",
+          "airportName": "시엠립"
+      },
+      {
+          "id": "id161",
+          "codeAirport": "PNH",
+          "airportName": "프놈펜"
+      },
+      {
+          "id": "id162",
+          "codeAirport": "YVR",
+          "airportName": "밴쿠버"
+      },
+      {
+          "id": "id163",
+          "codeAirport": "YYC",
+          "airportName": "캘거리"
+      },
+      {
+          "id": "id164",
+          "codeAirport": "YYZ",
+          "airportName": "토론토"
+      },
+      {
+          "id": "id165",
+          "codeAirport": "KWI",
+          "airportName": "쿠웨이트"
+      },
+      {
+          "id": "id166",
+          "codeAirport": "FRU",
+          "airportName": "비슈케크"
+      },
+      {
+          "id": "id167",
+          "codeAirport": "BKK",
+          "airportName": "방콕"
+      },
+      {
+          "id": "id168",
+          "codeAirport": "DMK",
+          "airportName": "방콕/돈므앙"
+      },
+      {
+          "id": "id169",
+          "codeAirport": "CNX",
+          "airportName": "치앙마이"
+      },
+      {
+          "id": "id170",
+          "codeAirport": "HKT",
+          "airportName": "푸껫"
+      },
+      {
+          "id": "id171",
+          "codeAirport": "IST",
+          "airportName": "이스탄불"
+      },
+      {
+          "id": "id172",
+          "codeAirport": "ASB",
+          "airportName": "아쉬가바트"
+      },
+      {
+          "id": "id173",
+          "codeAirport": "ROR",
+          "airportName": "코로르"
+      },
+      {
+          "id": "id174",
+          "codeAirport": "WAW",
+          "airportName": "바르샤바"
+      },
+      {
+          "id": "id175",
+          "codeAirport": "CDG",
+          "airportName": "파리"
+      },
+      {
+          "id": "id176",
+          "codeAirport": "NAN",
+          "airportName": "난디"
+      },
+      {
+          "id": "id177",
+          "codeAirport": "HEL",
+          "airportName": "헬싱키"
+      },
+      {
+          "id": "id178",
+          "codeAirport": "MNL",
+          "airportName": "마닐라"
+      },
+      {
+          "id": "id179",
+          "codeAirport": "CEB",
+          "airportName": "세부"
+      },
+      {
+          "id": "id180",
+          "codeAirport": "SFS",
+          "airportName": "수비크"
+      },
+      {
+          "id": "id181",
+          "codeAirport": "KLO",
+          "airportName": "칼리보"
+      },
+      {
+          "id": "id182",
+          "codeAirport": "CRK",
+          "airportName": "클라크필드"
+      },
+      {
+          "id": "id183",
+          "codeAirport": "TAE",
+          "airportName": "대구"
+      },
+      {
+          "id": "id184",
+          "codeAirport": "PUS",
+          "airportName": "부산"
+      },
+      {
+          "id": "id185",
+          "codeAirport": "GMP",
+          "airportName": "서울/ 김포"
+      },
+      {
+          "id": "id186",
+          "codeAirport": "CJU",
+          "airportName": "제주"
+      }
+  ]
+}
