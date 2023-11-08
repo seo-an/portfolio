@@ -11,16 +11,16 @@ module.exports = {
     script: 'node server.js',
     source: process.env.PM2_PROD_PATH,
     post_update: ['npm install', 'pm2 restart staging-node-server'],
-    out_file: '$HOME/logs/pm2/<pid>-staging-<app name>-out.log',
-    error_file: '$HOME/logs/pm2/<pid>-staging-<app name>-error.log'
+    out_file: '/home/ubuntu/logs/pm2/<pid>-staging-<app name>-out.log',
+    error_file: '/home/ubuntu/logs/pm2/<pid>-staging-<app name>-error.log'
   },{
     name: 'prod-node-server',
     cwd: process.env.PM2_PROD_PATH,
     script: 'node server.js',
     source: process.env.PM2_PROD_PATH,
     post_update: ['npm install', 'pm2 restart prod-node-server'],
-    out_file: '$HOME/logs/pm2/<pid>-prod-<app name>-out.log',
-    error_file: '$HOME/logs/pm2/<pid>-prod-<app name>-error.log'
+    out_file: '/home/ubuntu/logs/pm2/<pid>-prod-<app name>-out.log',
+    error_file: '/home/ubuntu/logs/pm2/<pid>-prod-<app name>-error.log'
   }]
 };
 
