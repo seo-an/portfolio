@@ -41,6 +41,3 @@ module.exports = {
 //     post_update: ['npm install', 'pm2 restart prod-node-server']
 //   }]
 // };
-
-// out_file: '$HOME/logs/pm2/<pid>-<app name>-out.log'
-// error_file: '$HOME/logs/pm2/<pid>-<app name>-error.log'

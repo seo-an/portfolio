@@ -34,7 +34,7 @@ app.get('/api/guestbook/data', (req, res) => {
 
 // post to database
 app.post('/api/guestbook/data', (req, res) => {
-  console.log('in node (/api/guestbook/data) to post : ', JSON.stringify(req.body[0]));
+  console.log('Node.js server post to (/api/guestbook/data) : ', JSON.stringify(req.body[0]));
   const data = {...req.body[0]};
 
   const name = (data.name === undefined) ? null : ((data.name === '') ? null : data.name);
@@ -45,7 +45,10 @@ app.post('/api/guestbook/data', (req, res) => {
 
   if ((name === null) || (password === null) || (comment === null)) {
     // handle error
-    res.status(422).send('Unprocessable Entity: 올바른 값을 입력해주세요');
+    res.status(422).send({
+      message: 'Unprocessable Entity: 올바른 값을 입력해주세요',
+      data: ''
+    });
     return;
   }
 

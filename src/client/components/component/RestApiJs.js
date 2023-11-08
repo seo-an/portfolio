@@ -5,24 +5,12 @@ import DATABASE_GET_RAW_TEST_DATA from "../data/database_get_raw_test_data.json"
 import { RestApiInputForm } from "../../view/pages/RestApiInputForm";
 import { RestApiResultDisplay } from "../../view/pages/RestApiResultDisplay";
 
-import { contentsDelete } from "../../action/actionsForRestApi";
+import { getValue } from "../../action/actionsForRestApi";
 import { requestToDatabase, postToDatabase } from "../../../utils/databaseCRUD";
 import { descending } from "../../../utils/sort";
 import { toggleSelect } from "../../../utils/toggleClasses";
 
-const getValue = (id) => {
-	const getId = id;
-	const getElement = document.getElementById(getId);
-	const getValue = getElement.value;
 
-	const initialize = () => {
-		getElement.value = '';
-	}
-
-	initialize();
-
-	return getValue;
-};
 
 
 export const RestApiJs = () => {
@@ -96,7 +84,7 @@ export const RestApiJs = () => {
 				comment: reg_comment.exec(_comment)[1]
 			}
 
-			console.log('1123414', nowClicked);
+			// console.log('1123414', nowClicked);
 		}
 			
 	}
@@ -127,31 +115,6 @@ export const RestApiJs = () => {
 			return acc;
 		}, { elements: [], classified: [] });
 
-
-		// // classList에서 검색하고 이미 있으면 지우고 없으면 추가
-		// const toggleSelect = ( parent, child, classNametag ) => {
-		// 	// 부모한테서 getElementsByClassName으로 클래스 가잔 것 다 가져옴
-		// 	// 
-
-		// 	// for (let i = 0; i < parent.children.length; i++) {}
-		// 	console.log('jjj', parent.children.length);
-		// 	// console.log('in toggle this', parent, child, classNametag);
-
-		// 	// const aa = parent.getElementsByClassName(classNametag);
-		// 	// console.log('see see', aa.length > 0);
-		// 	if (parent.getElementsByClassName(classNametag).length > 0) {
-		// 		console.log('yes');
-		// 		child.classList.toggle(classNametag, 'false');
-		// 	} else {
-		// 		child.classList.toggle(classNametag, 'true');
-		// 	}
-			
-		// }
-
-
-
-		
-
 		
 		const cooked = [];
 		let today = new Date();
@@ -181,12 +144,16 @@ export const RestApiJs = () => {
 
 	useEffect(() => {
 		const cleaning = `DATE_FORMAT(createdAt, '%Y-%m-%d %H:%i:%s') AS createdAt`;
+		// const getQuery = {
+		// 	'select': `id, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,
+		// };
 		const getQuery = {
 			'select': `id, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,
 			'where': ``
 		};
 
 		requestToDatabase(url, getQuery).then((res) => setPageView(res));
+		requestToDatabase(url, getQuery).then((res) => console.log('rrr',res));
 	}, [trigger]);
 
 

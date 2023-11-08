@@ -1,7 +1,7 @@
 import getTestData from "../components/data/api_get_test_data.json"
 
 export const requestDataFromFlightApi = async ( url, port, line ) => {
-  console.info('call api function', url, port, line);
+  // console.info('call api function', url, port, line);
 	const SERVICE_KEY = process.env.REACT_APP_INCHEON_INT_AIRPORT_WEATHER_INFO_API_KEY_A;
 	
 	const ARRIVAL_URL = `B551177/StatusOfPassengerWorldWeatherInfo/getPassengerArrivalsWorldWeather`;
@@ -18,8 +18,6 @@ export const requestDataFromFlightApi = async ( url, port, line ) => {
 		URL = DEPARTURE_URL;
 	}
 	
-	console.log('here??', URL);
-
 	const params = {
 		'serviceKey': `${SERVICE_KEY}`,
 		'numOfRows': '', 
@@ -35,7 +33,7 @@ export const requestDataFromFlightApi = async ( url, port, line ) => {
 
 	const queryString = new URLSearchParams(params).toString();
 
-	console.log('????', URL, '??', `/flight-api/${URL}?${queryString}`);
+	// console.log('????', URL, '??', `/flight-api/${URL}?${queryString}`);
 	try {
 		const response = await fetch(`/flight-api/${URL}?${queryString}`, {
 			method: "GET",

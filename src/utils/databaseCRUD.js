@@ -1,6 +1,6 @@
 export const requestToDatabase = async (url, parameter) => {
 	const queryString = new URLSearchParams(parameter).toString();
-
+	console.log('test', `${url}?${queryString}`);
 		try {
 			const response = await fetch(`${url}?${queryString}`, {
 				method: "GET",
@@ -12,12 +12,12 @@ export const requestToDatabase = async (url, parameter) => {
 
 			let result = await response.json();
 
-			if (result.length === 0) {
+			if (result.data.length === 0) {
 				// database에 자료가 하나도 없을 때 예외처리
 				return result = 'nothing';
 			} else {
-				console.log('타이이임!!', result);
-				return result;
+				// 최종
+				return result.data;
 			}
 
 		} catch (error) {

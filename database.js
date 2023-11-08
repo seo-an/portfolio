@@ -8,53 +8,74 @@ module.exports = {
     return conn;
   },
   getConnect: async function(res, pool, queryString) {
-    console.log('요청', res, '연결', pool, '쿼리', queryString);
+    // console.log('연결', pool, '쿼리', queryString);
     const query = queryString;
     
     await pool.getConnection((err, connection) => {
       if (err) {
         console.error('! CAN NOT CONNECT TO DATABASE ::', err);
-        res.status(500).send('Server error : to database');
+        res.status(500).send({
+          message: 'Server error : can not connect to database',
+          data: err
+        });
+        // connection.release();
         return;
       } 
       
       console.info(`SUCCESS! Database connected`);
 
       connection.query(query, (err, results) => {
+        
         if(err) {
-          res.status(400).send('Query execution error: ', err);
+          res.status(400).send({
+            message: 'Query execution error',
+            data: err
+          });
           connection.release();
           return;
         }
 
         res.header("content-type", 'application/json');
-        res.status(200).send(results);
+        res.status(200).send({
+          message: '200 OK',
+          data: results
+        });
 
         connection.release();
       });
     });
   },
   postConnect: async function(res, pool, queryString) {
-    console.log('요청', res, '연결', pool, '쿼리', queryString);
+    // console.log('연결', pool, '쿼리', queryString);
     const query = queryString;
     
     await pool.getConnection((err, connection) => {
       if (err) {
         console.error('! CAN NOT CONNECT TO DATABASE ::', err);
-        res.status(500).send('Server error : to database');
+        res.status(500).send({
+          message: 'Server error : can not connect to database',
+          data: err
+        });
+        // connection.release();
         return;
-      } 
+      }
 
       console.info(`SUCCESS! Database connected`);
 
       connection.query(query, (err, results) => {
         if(err) {
-          res.status(400).send(err);
+          res.status(400).send({
+            message: 'Query execution error',
+            data: err
+          });
           connection.release();
           return;
         }
 
-        res.status(200).send('post completed');
+        res.status(200).send({
+          message: '200 OK',
+          data: 'post completed'
+        });
         connection.release();
 
       });

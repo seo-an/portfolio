@@ -33,7 +33,6 @@ export const FlightApiJs = () => {
     for (i;i<len-1;i++) {
       result.push(test[i].value);
     }
-		console.log('rrr', result);
 		return setSearchObj(result);
   };
 
