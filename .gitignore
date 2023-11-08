@@ -12,6 +12,7 @@ aws console.txt
 
 #env var
 .env
+ecosystem.config.js
 
 #logs
 npm-debug.log*
