@@ -153,7 +153,6 @@ export const RestApiJs = () => {
 		};
 
 		requestToDatabase(url, getQuery).then((res) => setPageView(res));
-		requestToDatabase(url, getQuery).then((res) => console.log('rrr',res));
 	}, [trigger]);
 
 
