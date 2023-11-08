@@ -2,13 +2,13 @@ module.exports = {
   apps : [{
     name: 'local-node-server',
     cwd: process.env.PM2_LOCAL_PATH,
-    script: './server.js',
+    script: 'server.js',
     source: process.env.PM2_LOCAL_PATH,
     post_update: ['npm install', 'pm2 restart local-node-server']
   },{
     name: 'staging-node-server',
     cwd: process.env.PM2_PROD_PATH,
-    script: 'node server.js',
+    script: 'server.js',
     source: process.env.PM2_PROD_PATH,
     post_update: ['npm install', 'pm2 restart staging-node-server'],
     out_file: '/home/ubuntu/logs/pm2/<pid>-staging-<app name>-out.log',
@@ -16,7 +16,7 @@ module.exports = {
   },{
     name: 'prod-node-server',
     cwd: process.env.PM2_PROD_PATH,
-    script: 'node server.js',
+    script: 'server.js',
     source: process.env.PM2_PROD_PATH,
     post_update: ['npm install', 'pm2 restart prod-node-server'],
     out_file: '/home/ubuntu/logs/pm2/<pid>-prod-<app name>-out.log',
