@@ -2,6 +2,7 @@
 
 # dependencies
 /node_modules
+/src/styles/css
 /test
 
 # production

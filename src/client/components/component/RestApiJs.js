@@ -94,7 +94,8 @@ export const RestApiJs = () => {
 		let raw = null;
 
 		if (dat === 'nothing')  {
-			raw = DATABASE_GET_RAW_TEST_DATA;
+			// raw = DATABASE_GET_RAW_TEST_DATA;
+			return setElements(dat);
 		} else {
 			raw = dat;
 		};
@@ -131,8 +132,7 @@ export const RestApiJs = () => {
 		// console.log('dinner is serving', cooked);
 
 		// raw data 넘기기
-		setElements(descending(cooked));
-		return;
+		return setElements(descending(cooked));
 	};
 
 	const goPagination = {
