@@ -8,7 +8,7 @@ import About from "./client/view/routes/About";
 
 import { Calendar } from "./client/components/component/CalendarJs";
 import { SvgImg } from "./client/components/component/SvgImgJs";
-import TestComponent from "./test/TestComponent";
+// import TestComponent from "./test/TestComponent";
 // import { as TestComponent} from "";
 
 
@@ -29,7 +29,6 @@ export default function App() {
 
               <Route path="/calendar" element={<Calendar />}></Route>
               <Route path="/svg-component" element={<SvgImg />}></Route>
-              <Route path="/test-component" element={<TestComponent />}></Route>
             </Route>
             <Route path="*" element={<h1>Error 404</h1>}></Route>
           </Routes>
