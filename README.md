@@ -14,25 +14,25 @@ main 브랜치는 seo-an.com 에서 호스팅되고 있습니다.<br>
 <br>
 <br>
 <프로젝트 폴더 구성><br>
-├─ public
-    ├─ fonts
-├─ src
-    ├─ assets
-        ├─ icon
-        ├─ image
-    ├─ client
-        ├─ action
-        ├─ components
-            ├─ component
-            ├─ data
-        ├─ view
-            ├─ layout
-            ├─ pages
-            ├─ routes
-    ├─ styles
-        ├─ common
-        ├─ global
-    ├─ utils
+├─ public<br>
+&emsp;├─ fonts<br>
+├─ src<br>
+&emsp;├─ assets<br>
+&emsp;&emsp;├─ icon<br>
+&emsp;&emsp;├─ image<br>
+&emsp;├─ client<br>
+&emsp;&emsp;├─ action<br>
+&emsp;&emsp;├─ components<br>
+&emsp;&emsp;&emsp;├─ component<br>
+&emsp;&emsp;&emsp;├─ data<br>
+&emsp;&emsp;├─ view<br>
+&emsp;&emsp;&emsp;├─ layout<br>
+&emsp;&emsp;&emsp;├─ pages<br>
+&emsp;&emsp;&emsp;├─ routes<br>
+&emsp;├─ styles<br>
+&emsp;&emsp;├─ common<br>
+&emsp;&emsp;├─ global<br>
+&emsp;├─ utils<br>
 <br>
 <br>
 🤖 routes 폴더에는 App의 상단 메뉴와 대응되는 리액트 컴포넌트들이 위치하고 있습니다. 해당 페이지에서 보여주고 싶은 내용은 모두 이 리액트 컴포넌트들을 통해 노출됩니다. 이 폴더의 파일들은 App.js에서 라우팅 됩니다.<br>
