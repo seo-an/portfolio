@@ -40,8 +40,6 @@ export default function App() {
 
           {/* 에러 및 테스트 */}
           <Route path="*" element={<h1>Error 404</h1>}></Route>
-          <Route path="/dev-test" element={<DevTestView />}></Route>
-          
         </Routes>
       </BrowserRouter>
     </>

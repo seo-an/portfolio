@@ -29,9 +29,12 @@
     "server": "node server.js",
     "preclient": "npm run build && set HTTPS=true && set SSL_CRT_FILE=./localhost.pem && set SSL_KEY_FILE=./localhost-key.pem",
     "client": "concurrently --kill-others-on-fail \"react-scripts start\" \"npm run server\"",
+    "prelocal": "npm bun sass && npm run build",
     "local": "set HTTPS=true && set SSL_CRT_FILE=./localhost.pem && set SSL_KEY_FILE=./localhost-key.pem && npm run server",
-    "staging": "",
-    "prod": "NODE_ENV=production npm run server"
+    "prestaging": "npm run build",
+    "staging": "node server.js",
+    "preprod": "npm run build",
+    "prod": "node server.js"
   },
   "eslintConfig": {
     "extends": [
