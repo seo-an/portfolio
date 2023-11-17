@@ -5,7 +5,7 @@ import Home from "./client/view/routes/Home";
 import OpenApiPage from "./client/view/routes/OpenApiPage";
 import RestApiPage from "./client/view/routes/RestApiPage";
 import About from "./client/view/routes/About";
-import { DevTestView } from "./_dev_test/DevTestView";
+// import { DevTestView } from "./_dev_test/DevTestView";
 
 import { Calendar } from "./client/components/component/CalendarJs";
 import { SvgImg } from "./client/components/component/SvgImgJs";
@@ -40,6 +40,8 @@ export default function App() {
 
           {/* 에러 및 테스트 */}
           <Route path="*" element={<h1>Error 404</h1>}></Route>
+          {/* <Route path="/dev-test" element={<DevTestView />}></Route> */}
+          
         </Routes>
       </BrowserRouter>
     </>
