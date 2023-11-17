@@ -2,7 +2,7 @@ import styled, { css } from "styled-components";
 
 import { GrayButtonWithSolidBorder as Button } from "../../../styles/common/Button";
 import { Pagination } from "../../../utils/pagination";
-import { contentsDelete } from "../../action/actionsForRestApi"
+
 
 export const Container = styled.div `
   display: flex;
@@ -77,7 +77,7 @@ export const RestApiResultDisplay = ( conf ) => {
 					</Wrapper>
 					
 				</Wrapper>
-				<button onClick={contentsDelete}>삭제</button>
+				{/* <button onClick={}>삭제</button> */}
 			</Container>
 		</>
   )

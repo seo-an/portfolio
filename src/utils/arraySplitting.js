@@ -4,7 +4,7 @@ export const arraySplitting = (array, num) => {
 	const newArray = [];
 
 	const splitting = (data, devidedBy) => {
-		// console.log('888', data, devidedBy);
+
 		if (data.length < devidedBy) return newArray.push(data);
 
 		const arry = data.slice(0, devidedBy);

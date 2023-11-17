@@ -1,6 +1,6 @@
 export const requestToDatabase = async (url, parameter) => {
 	const queryString = new URLSearchParams(parameter).toString();
-	// console.log('test', `${url}?${queryString}`);
+
 		try {
 			const response = await fetch(`${url}?${queryString}`, {
 				method: "GET",

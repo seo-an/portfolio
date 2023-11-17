@@ -33,7 +33,6 @@ export const requestDataFromFlightApi = async ( url, port, line ) => {
 
 	const queryString = new URLSearchParams(params).toString();
 
-	// console.log('????', URL, '??', `/flight-api/${URL}?${queryString}`);
 	try {
 		const response = await fetch(`/flight-api/${URL}?${queryString}`, {
 			method: "GET",

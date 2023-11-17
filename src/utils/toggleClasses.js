@@ -1,4 +1,4 @@
-export const toggleSelect = ( parent, child, classNametag ) => {
+export const addClassRemoveClass = ( parent, child, classNametag ) => {
 
 	const len = parent.children.length;
 	const decision = ((child.querySelector('input')) ? 'withCheckbox' : 'withoutCheckbox');
@@ -39,6 +39,25 @@ export const toggleSelect = ( parent, child, classNametag ) => {
 	
 };
 
+
+export const addClassRemainClass = ( parent, child, classNametag ) => {
+
+	const len = parent.children.length;
+
+  for (let i = 0; i < len; i++) {
+    if (parent.children[i].classList.contains(classNametag)) {
+      parent.children[i].classList.remove(classNametag);
+    }
+  }
+  child.classList.add(classNametag);
+
+  return child;
+};
+
+
+export const simpleToggleClass = ( element, classNametag ) => {
+	element.classList.toggle(classNametag);
+}
 
 
 // const clearClass = ( element, label ) => {

@@ -42,7 +42,7 @@ export const LinkWrapper = styled.div `
 	justify-content: center;
 `;
 
-export const LinkCardsView = ( props ) => {
+export const HomeCardsView = ( props ) => {
 	const data = props.props.data;
 
 	return (
@@ -52,38 +52,14 @@ export const LinkCardsView = ( props ) => {
 					{data.map( (dat) => (
 						<CardWrapper key={dat.id} onClick={handleClickDiv} style={{cursor: 'pointer'}}>
 							<LinkWrapper>
-								<Link to={dat.link} style={{textDecoration: 'none', textDecorationColor: 'inherit', color: 'inherit'}}>{dat.text}</Link>
+								<Link to={dat.link} style={{textDecoration: 'none', textDecorationColor: 'inherit', color: 'inherit', padding: '16px'}}>{dat.text}</Link>
 							</LinkWrapper>
 						</CardWrapper>
 					) )}
 
 					<CardWrapper>
 						<LinkWrapper>
-							<p>준비중</p>
-						</LinkWrapper>
-					</CardWrapper>
-
-					<CardWrapper>
-						<LinkWrapper>
-							<p>준비중</p>
-						</LinkWrapper>
-					</CardWrapper>
-
-					<CardWrapper>
-						<LinkWrapper>
-							<p>준비중</p>
-						</LinkWrapper>
-					</CardWrapper>
-
-					<CardWrapper>
-						<LinkWrapper>
-							<p>준비중</p>
-						</LinkWrapper>
-					</CardWrapper>
-
-					<CardWrapper>
-						<LinkWrapper>
-							<p>준비중</p>
+							<p style={{padding: '16px'}}>준비중 (무한 스크롤, 기간산정 기능, 그림판, 스톱워치)</p>
 						</LinkWrapper>
 					</CardWrapper>
 

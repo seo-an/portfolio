@@ -6,11 +6,9 @@ import { RestApiInputForm } from "../../view/pages/RestApiInputForm";
 import { RestApiResultDisplay } from "../../view/pages/RestApiResultDisplay";
 
 import { getValue } from "../../action/actionsForRestApi";
-import { requestToDatabase, postToDatabase } from "../../../utils/databaseCRUD";
+import { requestToDatabase, postToDatabase } from "../../../utils/withDatabaseDoCRUD";
 import { descending } from "../../../utils/sort";
-import { toggleSelect } from "../../../utils/toggleClasses";
-
-
+import { addClassRemoveClass } from "../../../utils/toggleClasses";
 
 
 export const RestApiJs = () => {
@@ -67,7 +65,7 @@ export const RestApiJs = () => {
 		const grandParent = e.currentTarget.closest('#paginationItems');
 		const parent = e.currentTarget.closest('#guestbookList');
 
-		const justClicked = toggleSelect(grandParent, parent, 'selected');
+		const justClicked = addClassRemoveClass(grandParent, parent, 'selected');
 		
 		if (justClicked) {
 			const _name = parent.querySelector('.forName').innerText;

@@ -4,6 +4,7 @@ import styled from "styled-components";
 
 import { isNotNull, isThisNumber } from "./detectDataType";
 import { arraySplitting } from './arraySplitting';
+import { addClassRemainClass } from "./toggleClasses";
 
 
 /**
@@ -108,19 +109,19 @@ export const List = styled.div `
 `
 
 
-export const toggleClass = ( parent, child, classNametag ) => {
+// export const toggleClass = ( parent, child, classNametag ) => {
 
-	const len = parent.children.length;
+// 	const len = parent.children.length;
 
-  for (let i = 0; i < len; i++) {
-    if (parent.children[i].classList.contains(classNametag)) {
-      parent.children[i].classList.remove(classNametag);
-    }
-  }
-  child.classList.add(classNametag);
+//   for (let i = 0; i < len; i++) {
+//     if (parent.children[i].classList.contains(classNametag)) {
+//       parent.children[i].classList.remove(classNametag);
+//     }
+//   }
+//   child.classList.add(classNametag);
 
-  return child;
-};
+//   return child;
+// };
 
 
 const dataProcessing = (jsonData, pageSize, paginationSize, handleEvent) => {
@@ -159,7 +160,7 @@ export const Pagination = ( props ) => {
 		const val = (parent.textContent) - 1;
 		setNowPage(val);
 
-		toggleClass(grandParent, parent, label);
+		addClassRemainClass(grandParent, parent, label);
     console.log(val);
     return;
   };
