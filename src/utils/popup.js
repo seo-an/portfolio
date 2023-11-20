@@ -1,5 +1,5 @@
 import { isThisString } from "./detectDataType";
-import { findByRegEx } from "./withRegExDoThis";
+import { findAfterWordByRegEx } from "./withRegExDoFindWord";
 import { simpleToggleClass } from "./toggleClasses";
 
 // 윈도우 팝업
@@ -19,14 +19,14 @@ const rewriteString = ( str, position ) => {
 	const reg = {};
 	const result = {};
 	
-	reg.widthVal = findByRegEx(str, widthRegex);
-	reg.heightVal = findByRegEx(str, heightRegex);
-	reg.leftVal = findByRegEx(str, leftRegex);
-	reg.topVal = findByRegEx(str, topRegex);
+	reg.widthVal = findAfterWordByRegEx(str, widthRegex);
+	reg.heightVal = findAfterWordByRegEx(str, heightRegex);
+	reg.leftVal = findAfterWordByRegEx(str, leftRegex);
+	reg.topVal = findAfterWordByRegEx(str, topRegex);
 
 	const defaultWidth = 700;
 	const defaultHeight = 550;
-
+	console.log('ffff', reg);
 	result.widthString = (reg.widthVal ? `width=${reg.widthVal}, ` : `width=${defaultWidth}px, `);
 	result.heightString = (reg.heightVal ? `height=${reg.heightVal}, ` : `height=${defaultHeight}px, `);
 
