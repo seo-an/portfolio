@@ -9,6 +9,7 @@ import { copyToClipboard } from "../../../utils/copyToClipboard";
 export const Container = styled.footer `
   width: ${props => (props.scrl ? 'calc(100% - 24px)' : 'calc(100% - 16px)')};
   margin: ${props => (props.scrl ? '8px 16px 8px 8px' : '8px')};
+  grid-row: 3;
 `;
 
 export const Wrapper = styled.div `
@@ -64,6 +65,12 @@ export const Footer = ({ nowScroll }) => {
                 window.open(`https://github.com/seo-an`);
               }}>Github 바로가기</Link>  |  Mail: <span id='copyMail' onClick={handleCopy} style={{cursor: "pointer"}}>클릭해서 메일 주소 복사하기</span>  |  오늘도 행복한 하루 보내세요 :D
             </Text>
+            {/* <div>
+              이서안  Seoan Lee  |  <Link to={`https://github.com/seo-an`} target={'_blank'} onClick={(event) => {
+                event.preventDefault();
+                window.open(`https://github.com/seo-an`);
+              }}>Github 바로가기</Link>  |  Mail: <span id='copyMail' onClick={handleCopy} style={{cursor: "pointer"}}>클릭해서 메일 주소 복사하기</span>  |  오늘도 행복한 하루 보내세요 :D
+            </div> */}
           </Wrapper>
         </Container>
       </>

@@ -161,7 +161,7 @@ export const Pagination = ( props ) => {
 		setNowPage(val);
 
 		addClassRemainClass(grandParent, parent, label);
-    console.log(val);
+    // console.log(val);
     return;
   };
 

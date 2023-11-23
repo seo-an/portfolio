@@ -12,6 +12,7 @@ export const Wrapper = styled.nav `
   align-items: center;
   background-color: #fff;
   border-bottom: 1px solid #bfbfbf;
+  grid-row: 1;
 `;
 
 export const MenuForSetUrl = styled.div `

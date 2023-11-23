@@ -24,6 +24,13 @@ export const HomeCardsJs = () => {
 		}
 	];
 
+	// ,
+	// 	{
+	// 		id: `date-range-selection`,
+	// 		link: `/date-range-selection`,
+	// 		text: '일정 계산'
+	// 	}
+
 	return (
 		<HomeCardsView props = { { data } }/>
 	);

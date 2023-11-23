@@ -1,5 +1,9 @@
 import styled from "styled-components";
 
+import { CalendarReactJsPowered as reactCalendar } from "../../components/component/CalendarReactJsPowered";
+import { VanillaCalendarExampleView } from "./VanillaCalendarExampleView";
+
+
 
 export const colorSun = '#ef6464';
 export const colorSat = '#5252eb';
@@ -130,48 +134,56 @@ export const Button = styled.div `
 // text-shadow: 2px 0px 1px #bfbfbf;
 
 
-export const CalendarView = ({ year, month, week, calendar, buttonText, flipOver }) => {
+export const CalendarView = () => {
+  const reactCalendarPage = reactCalendar();
+
   return (
     <>
-      <Container main>
+      <div>
+        <h1>리액트 캘린더</h1>
+        <Container main>
 
-        <Title right pseudoBefore>
-          <Year>{year}</Year>
-        </Title>
+          <Title right pseudoBefore>
+            <Year>{reactCalendarPage.year}</Year>
+          </Title>
 
-        <Wrapper>
-          <Container left>
-            <Month>{(month < 10 ? ('0' + month) : month)}</Month>
-            <ButtonContainer>
-              <Button onClick={flipOver}>{buttonText.prev}</Button>
-              <Button onClick={flipOver}>{buttonText.today}</Button>
-              <Button onClick={flipOver}>{buttonText.next}</Button>
-            </ButtonContainer>
-          </Container>
+          <Wrapper>
+            <Container left>
+              <Month>{(reactCalendarPage.month < 10 ? ('0' + reactCalendarPage.month) : reactCalendarPage.month)}</Month>
+              <ButtonContainer>
+                <Button onClick={reactCalendarPage.flipOver}>{reactCalendarPage.buttonText.prev}</Button>
+                <Button onClick={reactCalendarPage.flipOver}>{reactCalendarPage.buttonText.today}</Button>
+                <Button onClick={reactCalendarPage.flipOver}>{reactCalendarPage.buttonText.next}</Button>
+              </ButtonContainer>
+            </Container>
 
-          <Container right>
-            <GridTable>
-              {week.map((item, index) => (<TableCellText day key={index}>{item}</TableCellText>))}
-              {calendar.map((item) => { 
-                if (item.month < month - 1 || item.month > month - 1) {
-                  return (<TableCell over key={item.id}>
-                    {item.day === 0 ? <TableCellText sun>{item.date}</TableCellText> : (item.day === 6 ? <TableCellText sat>{item.date}</TableCellText> : (<TableCellText>{item.date}</TableCellText>))}
-                  </TableCell>)
-                } else if (item.onToday) {
-                  return (<TableCell point key={item.id}>
-                    {item.day === 0 ? <TableCellText sun>{item.date}</TableCellText> : (item.day === 6 ? <TableCellText sat>{item.date}</TableCellText> : (<TableCellText>{item.date}</TableCellText>))}
-                  </TableCell>)
-                } else {
-                  return (<TableCell key={item.id}>
-                    {item.day === 0 ? <TableCellText sun>{item.date}</TableCellText> : (item.day === 6 ? <TableCellText sat>{item.date}</TableCellText> : (<TableCellText>{item.date}</TableCellText>))}
-                  </TableCell>)
-                }
-              })}
-            </GridTable>
-          </Container>
-        </Wrapper>
+            <Container right>
+              <GridTable>
+                {reactCalendarPage.week.map((item, index) => (<TableCellText day key={index}>{item}</TableCellText>))}
+                {reactCalendarPage.calendarPage.map((item) => { 
+                  if (item.month < reactCalendarPage.month - 1 || item.month > reactCalendarPage.month - 1) {
+                    return (<TableCell over key={item.id}>
+                      {item.day === 0 ? <TableCellText sun>{item.date}</TableCellText> : (item.day === 6 ? <TableCellText sat>{item.date}</TableCellText> : (<TableCellText>{item.date}</TableCellText>))}
+                    </TableCell>)
+                  } else if (item.onToday) {
+                    return (<TableCell point key={item.id}>
+                      {item.day === 0 ? <TableCellText sun>{item.date}</TableCellText> : (item.day === 6 ? <TableCellText sat>{item.date}</TableCellText> : (<TableCellText>{item.date}</TableCellText>))}
+                    </TableCell>)
+                  } else {
+                    return (<TableCell key={item.id}>
+                      {item.day === 0 ? <TableCellText sun>{item.date}</TableCellText> : (item.day === 6 ? <TableCellText sat>{item.date}</TableCellText> : (<TableCellText>{item.date}</TableCellText>))}
+                    </TableCell>)
+                  }
+                })}
+              </GridTable>
+            </Container>
+          </Wrapper>
 
-      </Container>
+        </Container>
+      </div>
+      {/* <div>
+        <VanillaCalendarExampleView />
+      </div> */}
     </>
   )
 };

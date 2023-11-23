@@ -3,11 +3,10 @@ import { useEffect, useState, useCallback } from "react";
 // import { Container, Wrapper, ButtonContainer, FlipButton as Button, Title, GridTable, TableCell, TableCellText, YearWrapper as Year, MonthWrapper as Month } from "../../view/pages/CalendarView";
 import { CalendarView } from "../../view/pages/CalendarView";
 
-
-export const Calendar = () => {
+export const CalendarReactJsPowered = () => {
   const [now, setNow] = useState(getDates());
   const [temp, setTemp] = useState(getDates());
-  const [calendar, setCalendar] = useState([]);
+  const [calendarPage, setCalendarPage] = useState([]);
 
   const buttonText = {
     prev: '<',
@@ -131,7 +130,7 @@ export const Calendar = () => {
 
   const setDays = useCallback((arry) => {
     const currentDate = [...arry];
-
+    console.log('🥕🥕', currentDate);
     const startDay = getFirstDayOfMonth(currentDate);
     const lastDay = getLastDayOfMonth(currentDate);
     const endDate = getEndOfMonth(currentDate);
@@ -189,7 +188,7 @@ export const Calendar = () => {
     // console.info('temp :: ', temp);
     // console.info('now :: ', now);
 
-    setCalendar(() => setDays(temp));
+    setCalendarPage(() => setDays(temp));
 
   }, [temp, setDays]);
 
@@ -202,13 +201,11 @@ export const Calendar = () => {
     year,
     month,
     week,
-    calendar,
+    calendarPage,
     buttonText,
     flipOver,
   }
-
+  // console.log('??????????????', calendarProps);
   
-  return (
-    <CalendarView {...calendarProps}/>
-  )
+  return calendarProps;
 }
