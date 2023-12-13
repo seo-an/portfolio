@@ -1,9 +1,12 @@
-import { FlightApiJs } from "../../components/component/FlightApiJs";
+import { PapagoTransJS } from "../../components/component/PapagoTransJs";
+// import { PapagoTransForm } from "../pages/PapagoTransForm";
 
-const OpenApi = () => {
+
+export const OpenApi = () => {
+  
   return (
     <>
-      <FlightApiJs />
+      <PapagoTransJS />
     </>
   )
 }

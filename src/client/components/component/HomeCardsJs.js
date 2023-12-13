@@ -13,6 +13,11 @@ export const HomeCardsJs = () => {
 			text: '컴포넌트형 SVG'
 		},
 		{
+			id: `api-datas-go-kr`,
+			link: `/api-datas-go-kr`,
+			text: '공공API 데이터 불러오기 - 인천공항 항공편 정보'
+		},
+		{
 			id: `modal`,
 			link: `/modal`,
 			text: '모달 팝업'

@@ -5,7 +5,7 @@ import AIRLINES_INFO from "../data/airlines_info.json";
 import { requestDataFromFlightApi as callApiData } from "../../action/requestDataFromFlightApi";
 import { findAirline, findAirport } from "../../action/actionsForFlightApi";
 
-import FlightApiSearchForm from "../../view/pages/FlightApiSearchForm";
+import FlightApiSearchForm from "../../view/pages/FlightApiSearchForm.js";
 import FlightApiResultDisplay from "../../view/pages/FlightApiResultDisplay.js";
 
 

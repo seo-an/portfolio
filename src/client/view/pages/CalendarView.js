@@ -1,9 +1,6 @@
 import styled from "styled-components";
 
 import { CalendarReactJsPowered as reactCalendar } from "../../components/component/CalendarReactJsPowered";
-import { VanillaCalendarExampleView } from "./VanillaCalendarExampleView";
-
-
 
 export const colorSun = '#ef6464';
 export const colorSat = '#5252eb';
@@ -181,9 +178,6 @@ export const CalendarView = () => {
 
         </Container>
       </div>
-      {/* <div>
-        <VanillaCalendarExampleView />
-      </div> */}
     </>
   )
 };

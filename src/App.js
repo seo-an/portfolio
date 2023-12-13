@@ -7,9 +7,10 @@ import RestApiPage from "./client/view/routes/RestApiPage";
 import About from "./client/view/routes/About";
 // import { DevTestView } from "./_dev_test/DevTestView";
 
-import { CalendarReactJsPowered } from "./client/components/component/CalendarReactJsPowered";
+// import { CalendarReactJsPowered } from "./client/components/component/CalendarReactJsPowered";
 import { CalendarView } from "./client/view/pages/CalendarView";
 import { SvgImg } from "./client/components/component/SvgImgJs";
+import { FlightApiJs } from "./client/components/component/FlightApiJs";
 import { ModalExamplePageView } from "./client/view/pages/ModalExamplePageView";
 import { WindowPopupExamplePageView } from "./client/view/pages/WindowPopupExamplePageView";
 import { DateRangeExamplePageView } from "./client/view/pages/DateRangeExamplePageView";
@@ -34,6 +35,7 @@ export default function App() {
             {/* 카드 메뉴 */}
             <Route path="/calendar" element={<CalendarView />}></Route>
             <Route path="/svg-component" element={<SvgImg />}></Route>
+            <Route path="/api-datas-go-kr" element={<FlightApiJs />}></Route>
             <Route path="/modal" element={<ModalExamplePageView />}></Route>
             <Route path="/window-popup" element={<WindowPopupExamplePageView />}></Route>
             {/* <Route path="/date-range-selection" element={<DateRangeExamplePageView />}></Route> */}

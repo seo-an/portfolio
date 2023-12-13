@@ -72,7 +72,8 @@ export const getPopupPageInfo = ( parameters ) => {
 
 };
 
-export const windowPopup = () => {
+// submit function 받을 준비
+export const windowPopup = ( func ) => {
 	popped(winPop.url, winPop.target, winPop.features);
 };
 
@@ -163,7 +164,8 @@ export const modalPopupAllowClickOuterSpace = () => {
 };
 
 
-export const modalPopupDisallowClickOuterSpace = () => {
+// submit function 받을 준비
+export const modalPopupDisallowClickOuterSpace = ( func ) => {
 	const modalBody = document.createElement('div');
 	const modalCore = document.createElement('div');
 	
