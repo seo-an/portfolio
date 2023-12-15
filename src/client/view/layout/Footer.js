@@ -63,7 +63,10 @@ export const Footer = ({ nowScroll }) => {
               이서안  Seoan Lee  |  <Link to={`https://github.com/seo-an`} target={'_blank'} onClick={(event) => {
                 event.preventDefault();
                 window.open(`https://github.com/seo-an`);
-              }}>Github 바로가기</Link>  |  Mail: <span id='copyMail' onClick={handleCopy} style={{cursor: "pointer"}}>클릭해서 메일 주소 복사하기</span>  |  오늘도 행복한 하루 보내세요 :D
+              }}>Github 바로가기</Link>  |  <Link to={`https://seo-an.notion.site/seo-an/Seoan-Lee-b28a4bab30f84e0da7c04284a747ea8a`} target={'_blank'} onClick={(event) => {
+                event.preventDefault();
+                window.open(`https://seo-an.notion.site/seo-an/Seoan-Lee-b28a4bab30f84e0da7c04284a747ea8a`);
+              }}>Notion 바로가기</Link>  |  Mail: <span id='copyMail' onClick={handleCopy} style={{cursor: "pointer"}}>클릭해서 메일 주소 복사하기</span>  |  오늘도 행복한 하루 보내세요 :D
             </Text>
             {/* <div>
               이서안  Seoan Lee  |  <Link to={`https://github.com/seo-an`} target={'_blank'} onClick={(event) => {
@@ -84,7 +87,10 @@ export const Footer = ({ nowScroll }) => {
               이서안  Seoan Lee  |  <Link to={`https://github.com/seo-an`} target={'_blank'} onClick={(event) => {
                 event.preventDefault();
                 window.open(`https://github.com/seo-an`);
-              }}>Github 바로가기</Link>  |  Mail: <span id='copyMail' onClick={handleCopy} style={{cursor: "pointer"}}>클릭해서 메일 주소 복사하기</span>  |  오늘도 행복한 하루 보내세요 :D
+              }}>Github 바로가기</Link>  |  <Link to={`https://seo-an.notion.site/seo-an/Seoan-Lee-b28a4bab30f84e0da7c04284a747ea8a`} target={'_blank'} onClick={(event) => {
+                event.preventDefault();
+                window.open(`https://seo-an.notion.site/seo-an/Seoan-Lee-b28a4bab30f84e0da7c04284a747ea8a`);
+              }}>Notion 바로가기</Link>  |  Mail: <span id='copyMail' onClick={handleCopy} style={{cursor: "pointer"}}>클릭해서 메일 주소 복사하기</span>  |  오늘도 행복한 하루 보내세요 :D
             </Text>
           </Wrapper>
         </Container>
