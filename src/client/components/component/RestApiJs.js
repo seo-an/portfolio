@@ -6,12 +6,14 @@ import { RestApiInputForm } from "../../view/pages/RestApiInputForm";
 import { RestApiResultDisplay } from "../../view/pages/RestApiResultDisplay";
 
 import { getValue } from "../../action/actionsForRestApi";
-import { requestToDatabase, postToDatabase } from "../../../utils/withDatabaseDoCRUD";
+import { requestToDatabase, postToDatabase, deleteInDatabase } from "../../../utils/withDatabaseDoCRUD";
 import { descending } from "../../../utils/sort";
 import { addClassRemoveClass } from "../../../utils/toggleClasses";
 
 
 export const RestApiJs = () => {
+	const [elements, setElements] = useState([]);
+	const [trigger, setTrigger] = useState('');
 
 	const url = '/api/guestbook/data';
 
@@ -52,16 +54,12 @@ export const RestApiJs = () => {
 		setTrigger(Math.random());
 	};
 
-	const [elements, setElements] = useState([]);
-	const [trigger, setTrigger] = useState('');
-
 	const pageSize = 5;
 	const paginationSize = 10;
 
-
-
-	const clickList = (e) => {
-			
+	
+	const clickList = (e, id) => {
+		// id는 uniqueId
 		const grandParent = e.currentTarget.closest('#paginationItems');
 		const parent = e.currentTarget.closest('#guestbookList');
 
@@ -77,14 +75,16 @@ export const RestApiJs = () => {
 			const reg_comment = /내용: (.+)/;
 
 			const nowClicked = {
+				uniqueId: id,
 				name: reg_name.exec(_name)[1],
 				createdAt: reg_date.exec(_date)[1],
 				comment: reg_comment.exec(_comment)[1]
 			}
 
-			// console.log('1123414', nowClicked);
+			const deleteAction = deleteInDatabase(url, nowClicked);
+			setTrigger(deleteAction);
 		}
-			
+
 	}
 
 
@@ -98,28 +98,25 @@ export const RestApiJs = () => {
 			raw = dat;
 		};
 
-    // const raw = dat;
 		const len = raw.length;
-
 
 		const cooking = raw.reduce((acc, curr, index) => {
 			if (index < len) {
 				acc.elements.push({name: curr.name, createdAt: curr.createdAt, comment: curr.comment});
-				acc.classified.push({id: curr.id, pwd: curr.simple_password, lastUpdatedAt: curr.lastUpdatedAt});
-				// console.log('1', 'acc', acc, 'curr', curr.comment, 'index', index);
+				acc.classified.push({id: curr.uniqueId, pwd: curr.simple_password, lastUpdatedAt: curr.lastUpdatedAt});
+				// console.log('1', curr.id, 'acc', acc, 'curr', curr.comment, 'index', index);
 			} else {
 				acc.elements.push({name: curr.name, createdAt: curr.createdAt, comment: curr.comment});
-				acc.classified.push({id: curr.id, pwd: curr.simple_password, lastUpdatedAt: curr.lastUpdatedAt});
+				acc.classified.push({id: curr.uniqueId, pwd: curr.simple_password, lastUpdatedAt: curr.lastUpdatedAt});
 			}
 			return acc;
 		}, { elements: [], classified: [] });
-
-		
+		// console.log('cooking dinner', cooking);
 		const cooked = [];
 		let today = new Date();
 
 		for (let i = 1; i < len + 1; i++) {
-			cooked.push( (cooking.elements[i-1]) ? (<div className="guestBook" id="guestbookList" key={`item+${i}+${today.getTime()}`} onClick={clickList}>
+			cooked.push( (cooking.elements[i-1]) ? (<div className="guestBook" id="guestbookList" key={`${cooking.classified[i-1].id}`} onClick={(e) => clickList(e, cooking.classified[i-1].id)}>
 				<input type="checkbox" name="checkbox"/>
 				<div className="forName">이름: {cooking.elements[i-1].name}</div>
 				<div className="forDate">날짜: {cooking.elements[i-1].createdAt}</div>
@@ -146,7 +143,7 @@ export const RestApiJs = () => {
 		// 	'select': `id, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,
 		// };
 		const getQuery = {
-			'select': `id, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,
+			'select': `uniqueId, name, simple_password, comment, ${cleaning}, lastUpdatedAt`,
 			'where': ``
 		};
 

@@ -1,15 +1,22 @@
-div.modal-body {
+div.modal-background {
   position: absolute;
   display: flex;
   width: 100%;
-  height: 100%;
+  height: auto;
   top: 0;
   left: 0;
-  align-items: center;
-  justify-content: center;
   background-color: rgba(118, 118, 118, 0.55);
 }
-div.modal-body .modal-core {
+div.modal-background div.modal-body {
+  position: fixed;
+  display: grid;
+  width: 100%;
+  height: 100vh;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+}
+div.modal-background div.modal-body .modal-core {
   display: flex;
   width: 200px;
   height: 200px;
@@ -17,9 +24,14 @@ div.modal-body .modal-core {
   justify-content: center;
   background-color: white;
 }
-div.modal-body .modal-core.delete-guestbook-confirm {
+div.modal-background div.modal-body .modal-core.delete-guestbook-confirm {
   width: 500px;
   height: 200px;
+}
+div.modal-background div.modal-body .modal-button {
+  display: flex;
+  margin-top: 8px;
+  justify-content: end;
 }
 
 /*# sourceMappingURL=style.css.map */

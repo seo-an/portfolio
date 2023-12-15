@@ -20,19 +20,6 @@ const dbConnection = mysqlConn.pool(envSetting.mysqlServerConf);
 
 
 // Define API route (internal API)
-// get from database
-app.get('/api/guestbook/data', (req, res) => {
-  const select = req.query.select;
-  // const from = req.query.from; // 똑같잖아?
-  const from = envSetting.API_INPUT_DATA_TO_THIS_TABLE;
-  const where = req.query.where;
-
-  const READ_DATA = (where !== '') ? `SELECT ${select} FROM ${from} WHERE ${where}` : `SELECT ${select} FROM ${from}`;
-
-  console.log()
-  mysqlConn.getConnect(res, dbConnection, READ_DATA);
-});
-
 // post to database
 app.post('/api/guestbook/data', (req, res) => {
   console.log('Node.js server post to (/api/guestbook/data) : ', JSON.stringify(req.body[0]));
@@ -42,7 +29,7 @@ app.post('/api/guestbook/data', (req, res) => {
   const password = (data.simple_password === undefined) ? null : ((data.simple_password === '') ? null : data.simple_password);
   const comment = (data.comment === undefined) ? null : ((data.comment === '') ? null : data.comment);
   const isPublic = true;
-  const encoded = false;
+  const isEncoded = false;
 
   if ((name === null) || (password === null) || (comment === null)) {
     // handle error
@@ -57,19 +44,42 @@ app.post('/api/guestbook/data', (req, res) => {
 
   // for real data
   const INSERT_DATA = `
-    INSERT INTO ${envSetting.API_INPUT_DATA_TO_THIS_TABLE} (uniqueId, name, simple_password, comment, isPublic, isSecret)
+    INSERT INTO ${envSetting.API_INPUT_DATA_TO_THIS_TABLE} (uniqueId, name, simple_password, comment, isPublic, isEncoded)
     SELECT
-      CONCAT(1+MAX(id),'_${name}','${prefix}') AS uniqueID,
+      CONCAT(IFNULL(1 + MAX(id), 1),'_${name}','${prefix}') AS uniqueID,
       '${name}' AS name,
       '${password}' AS simple_password,
       '${comment}' AS comment,
       '${isPublic}' AS isPublic,
-      '${encoded}' AS isSecret
+      '${isEncoded}' AS isEncoded
     FROM ${envSetting.API_INPUT_DATA_TO_THIS_TABLE};
   `;
 
   mysqlConn.getConnect(res, dbConnection, INSERT_DATA);
 });
+
+// get from database
+app.get('/api/guestbook/data', (req, res) => {
+  const select = req.query.select;
+  // const from = req.query.from; // 똑같잖아?
+  const from = envSetting.API_INPUT_DATA_TO_THIS_TABLE;
+  const where = req.query.where;
+
+  const READ_DATA = (where !== '') ? `SELECT ${select} FROM ${from} WHERE ${where}` : `SELECT ${select} FROM ${from}`;
+
+  mysqlConn.getConnect(res, dbConnection, READ_DATA);
+});
+
+// delete in database
+app.delete('/api/guestbook/data/:id', (req, res) => {
+  const uniqueId = req.params.id;
+
+  const DELETE_DATA = `DELETE FROM ${envSetting.API_INPUT_DATA_TO_THIS_TABLE} WHERE uniqueId = '${uniqueId}';`;
+
+  mysqlConn.getConnect(res, dbConnection, DELETE_DATA);
+
+  res.status(200).json('DELETE DATA: SUCCESS', responses);
+})
 
 
 // const http = require('http');

@@ -1,3 +1,30 @@
+import { modalPopupDisallowClickOuterSpace, getPopupCoreMessage } from "./popup";
+
+export const postToDatabase = async (url, dat) => {
+	const data = [dat];
+
+	try {
+		const response = await fetch(`${url}`, {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json"
+			},
+			body: JSON.stringify(data)
+		});
+
+		if (!response.ok) {
+			throw new Error('HTTP POST ERROR :: status ', response.status);
+		}
+		
+		if (response.ok) {
+			alert('방명록이 등록되었습니다. 신나요!');
+		}
+
+	} catch (error) {
+		console.error('CAN NOT TRY TO FETCH :: ', error);
+	}
+};
+
 export const requestToDatabase = async (url, parameter) => {
 	const queryString = new URLSearchParams(parameter).toString();
 
@@ -29,56 +56,37 @@ export const requestToDatabase = async (url, parameter) => {
 		}
 };
 
+export const deleteInDatabase = async (url, dat) => {
+	// const data = [dat]; // uniqueId
+	const id = dat.uniqueId;
 
-export const postToDatabase = async (url, dat) => {
-	const data = [dat];
+	getPopupCoreMessage(`
+		<div style="display: flex;flex-wrap: wrap;justify-content: center;">
+			<p>비밀번호를 입력해주세요</p>
+			<input type="text" id="deleteToDatabase" placeholder="비밀번호"/>
+		</div>
+	`);
 
-	try {
-		const response = await fetch(`${url}`, {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/json"
-			},
-			body: JSON.stringify(data)
-		});
+	console.log(document.querySelector('input#deleteToDatabase'));
+	modalPopupDisallowClickOuterSpace();
 
-		if (!response.ok) {
-			throw new Error('HTTP POST ERROR :: status ', response.status);
-		}
-		
-		if (response.ok) {
-			alert('방명록이 등록되었습니다. 신나요!');
-		}
-
-	} catch (error) {
-		console.error('CAN NOT TRY TO FETCH :: ', error);
-	}
-};
-
-
-export const deleteToDatabase = async (url, dat) => {
-	const data = [dat];
-
-	console.log('dd func', url, dat);
-
+	// 밑에는 삭제기능 완성된 것!
 	// try {
-	// 	const response = await fetch(`${url}`, {
-	// 		method: "DELETE",
-	// 		headers: {
-	// 			"Content-Type": "application/json"
-	// 		},
-	// 		body: JSON.stringify(data)
-	// 	});
+	// 	const response = await fetch(`${url}/${id}`, {
+  //     method: 'DELETE',
+	// 	})
 
 	// 	if (!response.ok) {
-	// 		throw new Error('HTTP POST ERROR :: status ', response.status);
+	// 		throw new Error('HTTP DELETE ERROR :: status ', response.status);
 	// 	}
 		
-	// 	if (response.ok) {
-	// 		alert('삭제되었습니다.');
-	// 	}
+	// 	alert('삭제되었습니다.')
+
+	// 	return new Date().getMilliseconds();
 
 	// } catch (error) {
 	// 	console.error('CAN NOT TRY TO FETCH :: ', error);
 	// }
 };
+
+

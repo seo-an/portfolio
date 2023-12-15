@@ -63,13 +63,11 @@ const popped = ( url, target, windowFeatures ) => {
 };
 
 export const getPopupPageInfo = ( parameters ) => {
-
 	winPop.url = isThisString(parameters.url) || '/error';
 	winPop.target = isThisString(parameters.target) || '_blank';
 	winPop.features = setWindowFeatures(parameters.features, parameters.location) || '';
 	
 	return;
-
 };
 
 // submit function 받을 준비
@@ -83,6 +81,7 @@ const modal = {
 	elements: '',
 	cssName: '',
 	message: '',
+	buttonText: '',
 };
 
 export const getPopupElementsAndCustomCssName = ( cssClass ) => {
@@ -94,22 +93,33 @@ export const getPopupCoreMessage = ( html ) => {
 };
 
 const setMessage = ( ingredients ) => {
-	const messageWrapper = (ingredients.elements).children[0];
+	const messageWrapper = (ingredients.elements.children[0].classList.contains('modal-body')) ? ingredients.elements.children[0] : ingredients.elements;
 
 	if (messageWrapper.classList.contains('modal-core') === true) {
 		messageWrapper.innerHTML = ingredients.message;
+	} else if (messageWrapper.children[0].classList.contains('modal-core') === true) {
+		messageWrapper.children[0].innerHTML = ingredients.message;
 	}
 };
 
-const createModalExitButton = ( parent, className, text ) => {
+const createModalExitButton = ( parent, toggleClassName, text, modalSubmit ) => {
+	let upbringing = null;
+	const standard = parent;
+
+	if (parent.children[0].classList.contains('modal-body')) {
+		upbringing = parent.children[0];
+	} else {
+		upbringing = parent;
+	}
+
 	const modalExitButtonWrap = document.createElement('div');
-	modalExitButtonWrap.classList.add('button-wrap'); // 나중에 css 추가
-	const MODAL_TOGGLE_CSS_CLASS_NAME = (isThisString(className) ? className : 'popped');
+	modalExitButtonWrap.classList.add('modal-button');
+	const MODAL_TOGGLE_CSS_CLASS_NAME = (isThisString(toggleClassName) ? toggleClassName : 'popped');
 	const BUTTON_TEXT = (isThisString(text) ? text : '확인');
 
 	const clickEvent = (event) => {
-		simpleToggleClass(parent, MODAL_TOGGLE_CSS_CLASS_NAME);
-		document.body.removeChild(parent);
+		simpleToggleClass(standard, MODAL_TOGGLE_CSS_CLASS_NAME);
+		document.body.removeChild(standard);
 
 		event.target.removeEventListener('click', (event) => clickEvent(event));
 	};
@@ -120,72 +130,86 @@ const createModalExitButton = ( parent, className, text ) => {
 		clickEvent(event);
 	});
 
-	parent.appendChild(modalExitButtonWrap);
+	upbringing.appendChild(modalExitButtonWrap);
 	modalExitButtonWrap.appendChild(button);
 	
 	return;
 };
 
 
-
-export const modalPopupAllowClickOuterSpace = () => {
+export const modalPopupAllowClickOuterSpace = ( buttonText ) => {
+	const modalBackground = document.createElement('div');
+	modalBackground.style.height = (document.body.clientHeight < window.innerHeight) ? `${window.innerHeight}px` : `${document.body.clientHeight}px`;
 
 	const modalBody = document.createElement('div');
 	const modalCore = document.createElement('div');
 
+	const MODAL_BACKGROUND_CSS_CLASS_NAME = 'modal-background';
 	const MODAL_BODY_CSS_CLASS_NAME = 'modal-body';
 	const MODAL_CORE_CSS_CLASS_NAME = 'modal-core';
 	const MODAL_TOGGLE_CSS_CLASS_NAME = 'popped';
 
+	const MODAL_BUTTON_TEXT = buttonText || '확인';
+
+	modalBackground.classList.add(MODAL_BACKGROUND_CSS_CLASS_NAME);
 	modalBody.classList.add(MODAL_BODY_CSS_CLASS_NAME);
 	modalCore.classList.add(MODAL_CORE_CSS_CLASS_NAME);
 
 	const clickEvent = (event) => {
 		if (event.target.classList.contains(MODAL_BODY_CSS_CLASS_NAME)) {
-			simpleToggleClass(modalBody, MODAL_TOGGLE_CSS_CLASS_NAME);
-			document.body.removeChild(modalBody);
+			simpleToggleClass(modalBackground, MODAL_TOGGLE_CSS_CLASS_NAME);
+			document.body.removeChild(modalBackground);
 		}
 	};
 
-	document.body.appendChild(modalBody);
+	document.body.appendChild(modalBackground);
+	modalBackground.appendChild(modalBody);
 	modalBody.appendChild(modalCore);
 
-	simpleToggleClass(modalBody, MODAL_TOGGLE_CSS_CLASS_NAME);
+	simpleToggleClass(modalBackground, MODAL_TOGGLE_CSS_CLASS_NAME);
+
+	modalBackground.addEventListener('click', (event) => clickEvent(event));
 	
-	modalBody.addEventListener('click', (event) => clickEvent(event));
-	
-	modal.elements = modalBody;
+	modal.elements = modalBackground;
 
 	setMessage(modal);
 
-	modalBody.removeEventListener('click', (event) => clickEvent(event));
+	modalBackground.removeEventListener('click', (event) => clickEvent(event));
 
 	return;
 };
 
 
 // submit function 받을 준비
-export const modalPopupDisallowClickOuterSpace = ( func ) => {
+export const modalPopupDisallowClickOuterSpace = ( func, buttonText ) => {
+	const modalBackground = document.createElement('div');
+	modalBackground.style.height = (document.body.clientHeight < window.innerHeight) ? `${window.innerHeight}px` : `${document.body.clientHeight}px`;
+
 	const modalBody = document.createElement('div');
 	const modalCore = document.createElement('div');
-	
+
+	const MODAL_BACKGROUND_CSS_CLASS_NAME = 'modal-background';
 	const MODAL_BODY_CSS_CLASS_NAME = 'modal-body';
 	const MODAL_CORE_CSS_CLASS_NAME = 'modal-core';
 	const MODAL_TOGGLE_CSS_CLASS_NAME = 'popped';
 
+	const MODAL_BUTTON_TEXT = buttonText || '확인';
+
+	modalBackground.classList.add(MODAL_BACKGROUND_CSS_CLASS_NAME);
 	modalBody.classList.add(MODAL_BODY_CSS_CLASS_NAME);
 	modalCore.classList.add(MODAL_CORE_CSS_CLASS_NAME);
 
-	document.body.appendChild(modalBody);
+	document.body.appendChild(modalBackground);
+	modalBackground.appendChild(modalBody);
 	modalBody.appendChild(modalCore);
 
-	simpleToggleClass(modalBody, MODAL_TOGGLE_CSS_CLASS_NAME);
+	simpleToggleClass(modalBackground, MODAL_TOGGLE_CSS_CLASS_NAME);
 
-	if (modalBody.classList.contains(MODAL_TOGGLE_CSS_CLASS_NAME)) {
-		createModalExitButton(modalBody, MODAL_TOGGLE_CSS_CLASS_NAME, '응답하라');
+	if (modalBackground.classList.contains(MODAL_TOGGLE_CSS_CLASS_NAME)) {
+		createModalExitButton(modalBackground, MODAL_TOGGLE_CSS_CLASS_NAME, MODAL_BUTTON_TEXT);
 	}
 	
-	modal.elements = modalBody;
+	modal.elements = modalBackground;
 
 	setMessage(modal);
 
