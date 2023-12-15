@@ -17,7 +17,7 @@ export const postToDatabase = async (url, dat) => {
 		}
 		
 		if (response.ok) {
-			alert('방명록이 등록되었습니다. 신나요!');
+			alert('방명록이 등록되었습니다. 신나요! 비밀번호를 반드시 기억해주세요 :)');
 		}
 
 	} catch (error) {
@@ -76,14 +76,12 @@ export const deleteInDatabase = async (url, dat) => {
 	`;
 
 	const handleSubmit = async ( event ) => {
-		console.log('서브밋!!!!!!');
 		const inputElement = document.getElementById('deleteToDatabase');
 
 		if (inputElement.value==='') {
 			alert('비밀번호를 입력해주세요.');
 		} else {
 			const password = inputElement.value;
-			console.log('huh?', password);
 
 			// try {
 			// 	const response = await fetch(`${url}/:${id}`, {
@@ -110,7 +108,6 @@ export const deleteInDatabase = async (url, dat) => {
 					},
 					body: JSON.stringify({ password }),
 				})
-				console.log('adshf;lawnelfknawelkfj', response, !(response.ok), response.status);
 				
 				if (!(response.ok) && response.status === 401) {
 					alert('비밀번호가 다릅니다.');

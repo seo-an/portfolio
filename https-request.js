@@ -13,7 +13,7 @@ const externalRequestTo = (externalOptions, data) => {
 			});
 	
 			externalRes.on('end', () => {
-				console.log('Papago API Response:', resData);
+				// console.log('Papago API Response:', resData);
 				resolve(resData);
 			});
 		});

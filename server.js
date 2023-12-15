@@ -22,7 +22,7 @@ const dbConnection = mysqlConn.pool(envSetting.mysqlServerConf);
 // Define API route (internal API)
 // post to database
 app.post('/api/guestbook/data', (req, res) => {
-  console.log('Node.js server post to (/api/guestbook/data) : ', JSON.stringify(req.body[0]));
+  // console.log('Node.js server post to (/api/guestbook/data) : ', JSON.stringify(req.body[0]));
   const data = {...req.body[0]};
 
   const name = (data.name === undefined) ? null : ((data.name === '') ? null : data.name);
@@ -74,7 +74,7 @@ app.get('/api/guestbook/data', (req, res) => {
 app.delete('/api/guestbook/data/:id', (req, res) => {
   const uniqueId = req.params.id;
   const password = req.body.password;
-  console.log('😤', req.params, req.body);
+  // console.log('😤', req.params, req.body);
   
   const DELETE_DATA = `DELETE FROM ${envSetting.API_INPUT_DATA_TO_THIS_TABLE} WHERE uniqueId = '${uniqueId}' AND simple_password = '${password}';`;
 

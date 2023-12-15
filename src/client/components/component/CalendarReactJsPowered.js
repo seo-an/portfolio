@@ -130,7 +130,7 @@ export const CalendarReactJsPowered = () => {
 
   const setDays = useCallback((arry) => {
     const currentDate = [...arry];
-    console.log('🥕🥕', currentDate);
+    // console.log('🥕🥕', currentDate);
     const startDay = getFirstDayOfMonth(currentDate);
     const lastDay = getLastDayOfMonth(currentDate);
     const endDate = getEndOfMonth(currentDate);
