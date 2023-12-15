@@ -1,4 +1,4 @@
-import { modalPopupDisallowClickOuterSpace, getPopupCoreMessage } from "./popup";
+import { modalPopup } from "./popup";
 
 export const postToDatabase = async (url, dat) => {
 	const data = [dat];
@@ -59,16 +59,69 @@ export const requestToDatabase = async (url, parameter) => {
 export const deleteInDatabase = async (url, dat) => {
 	// const data = [dat]; // uniqueId
 	const id = dat.uniqueId;
+	// const message = `
+	// 	<form onSubmit={handleSubmit}>
+	// 		<div style="display: flex;flex-wrap: wrap;justify-content: center;">
+	// 			<p>비밀번호를 입력해주세요</p>
+	// 			<input type="text" id="deleteToDatabase" placeholder="비밀번호"/>
+	// 		</div>
+	// 	</form>
+	// `;
 
-	getPopupCoreMessage(`
+	const message = `
 		<div style="display: flex;flex-wrap: wrap;justify-content: center;">
 			<p>비밀번호를 입력해주세요</p>
 			<input type="text" id="deleteToDatabase" placeholder="비밀번호"/>
 		</div>
-	`);
+	`;
 
-	console.log(document.querySelector('input#deleteToDatabase'));
-	modalPopupDisallowClickOuterSpace();
+	const handleSubmit = async ( event ) => {
+		console.log('서브밋!!!!!!');
+		const inputElement = document.getElementById('deleteToDatabase');
+
+		if (inputElement.value==='') {
+			alert('비밀번호를 입력해주세요.');
+		} else {
+			const password = inputElement.value;
+			console.log('huh?', password);
+
+			try {
+				const response = await fetch(`${url}/${id}`, {
+					method: 'DELETE',
+					headers: {
+						'Content-Type': 'application/json',
+					},
+					body: JSON.stringify({ password }),
+				})
+				console.log('adshf;lawnelfknawelkfj', response, !(response.ok), response.status);
+				if (!(response.ok) && response.status === 401) {
+					alert('비밀번호가 다릅니다.');
+					// throw new Error('HTTP DELETE ERROR :: status ', response.status);
+				} else if (!(response.ok) && (response.status === 400 || response.status === 500)) {
+					throw new Error('HTTP DELETE ERROR :: status ', response.status);
+				} else if (response.ok) {
+					alert('삭제되었습니다.');
+					window.location.reload();
+					// return new Date().getMilliseconds();
+				}
+
+			} catch (error) {
+				console.error('CAN NOT TRY TO FETCH :: ', error);
+			}
+			
+		}
+		
+	}
+
+	const modal = {
+		type: 'modalWithButton',
+		messageHTML: message,
+		buttonText: '삭제',
+		modalSubmitFunc: handleSubmit,
+	};
+
+	modalPopup(modal);
+
 
 	// 밑에는 삭제기능 완성된 것!
 	// try {

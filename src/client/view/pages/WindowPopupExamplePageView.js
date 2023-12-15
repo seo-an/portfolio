@@ -1,16 +1,17 @@
 // import { useState } from "react";
-import { getPopupPageInfo, windowPopup } from "../../../utils/popup";
+import { setPopup, windowPopup } from "../../../utils/popup";
 
 export const WindowPopupExamplePageView = () => {
 
 	const argument = {
+		type: 'window',
 		url: '/popup-view',
 		target: '_blank',
 		features: 'width=500px, height=500px, left=20px, top=200px',
 		location: 'center'
 	}
 
-	getPopupPageInfo( argument );
+	setPopup( argument );
 
 	return (
 		<>

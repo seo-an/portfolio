@@ -1,4 +1,4 @@
-import { getPopupElementsAndCustomCssName, getPopupCoreMessage, modalPopupAllowClickOuterSpace, modalPopupDisallowClickOuterSpace } from "../../../utils/popup";
+import { modalPopup } from "../../../utils/popup";
 
 export const ModalExamplePageView = ( props ) => {
 
@@ -10,8 +10,30 @@ export const ModalExamplePageView = ( props ) => {
 		</div>
 	`;
 
-	getPopupElementsAndCustomCssName(MODAL_CORE_MESSAGE_CSS_CLASS_NAME);
-	getPopupCoreMessage(MODAL_INNER_MESSAGE);
+	// getPopupElementsAndCustomCssName(MODAL_CORE_MESSAGE_CSS_CLASS_NAME);
+	// getPopupCoreMessage(MODAL_INNER_MESSAGE);
+
+	const action1 = () => {
+		const modalLayer = {
+			type: 'modalLayer',
+			toggleClassName: MODAL_CORE_MESSAGE_CSS_CLASS_NAME,
+			messageHTML: MODAL_INNER_MESSAGE,
+		};
+
+		modalPopup(modalLayer);
+		return;
+	}
+
+	const action2 = () => {
+		const modal = {
+			type: 'modalWithButton',
+			messageHTML: MODAL_INNER_MESSAGE,
+		};
+
+		modalPopup(modal);
+		return;
+	}
+
 
 	return (
 		<>
@@ -19,8 +41,8 @@ export const ModalExamplePageView = ( props ) => {
 				<h1>Modal 팝업</h1>
 			</div>
 
-			<button onClick={modalPopupAllowClickOuterSpace}>배경 클릭 허용 Modal</button>
-      <button onClick={modalPopupDisallowClickOuterSpace}>배경 클릭 비허용 Modal</button>
+			<button onClick={action1}>배경 클릭 허용 Modal</button>
+      <button onClick={action2}>배경 클릭 비허용 Modal</button>
 		</>
 	);
 };

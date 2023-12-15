@@ -73,12 +73,12 @@ app.get('/api/guestbook/data', (req, res) => {
 // delete in database
 app.delete('/api/guestbook/data/:id', (req, res) => {
   const uniqueId = req.params.id;
+  const password = req.body.password;
 
-  const DELETE_DATA = `DELETE FROM ${envSetting.API_INPUT_DATA_TO_THIS_TABLE} WHERE uniqueId = '${uniqueId}';`;
+  
+  const DELETE_DATA = `DELETE FROM ${envSetting.API_INPUT_DATA_TO_THIS_TABLE} WHERE uniqueId = '${uniqueId}' AND simple_password = '${password}';`;
 
-  mysqlConn.getConnect(res, dbConnection, DELETE_DATA);
-
-  res.status(200).json('DELETE DATA: SUCCESS', responses);
+  mysqlConn.deleteConnect(res, dbConnection, DELETE_DATA);
 })
 
 
