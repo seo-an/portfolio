@@ -111,7 +111,7 @@ export const deleteInDatabase = async (url, dat) => {
 				
 				if (!(response.ok) && response.status === 401) {
 					alert('비밀번호가 다릅니다.');
-					window.location.reload();
+					return;
 					// throw new Error('HTTP DELETE ERROR :: status ', response.status);
 				} else if (!(response.ok) && (response.status === 400 || response.status === 500)) {
 					throw new Error('HTTP DELETE ERROR :: status ', response.status);

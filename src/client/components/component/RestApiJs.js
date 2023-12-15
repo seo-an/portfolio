@@ -83,8 +83,8 @@ export const RestApiJs = () => {
 
 			const deleteAction = deleteInDatabase(url, nowClicked);
 			setTrigger(deleteAction);
-		}
 
+		}
 	}
 
 

@@ -217,12 +217,6 @@ export const modalPopupAllowClickOuterSpace = ( parameters ) => {
 
 
 export const modalPopupDisallowClickOuterSpace = ( parameters ) => {
-	document.addEventListener('keydown', function(event) {
-		if (event.key === 'Escape') {
-				window.location.reload();
-		}
-	});
-
 	const modalBackground = document.createElement('div');
 	modalBackground.style.height = (document.body.clientHeight < window.innerHeight) ? `${window.innerHeight}px` : `${document.body.clientHeight}px`;
 
@@ -250,9 +244,22 @@ export const modalPopupDisallowClickOuterSpace = ( parameters ) => {
 		createModalExitButton(modalBackground, MODAL_TOGGLE_CSS_CLASS_NAME, MODAL_BUTTON_TEXT, parameters.modalSubmitFunc);
 	}
 	
+	const reloadPage = (event) => {
+		console.log('huh', event.key, event.code, event.which);
+		if (event.key === 'Escape' || event.code === 'Escape' || event.which === 27 || event.keyCode === 27) {
+			// simpleToggleClass(modalBackground, MODAL_TOGGLE_CSS_CLASS_NAME);
+			event.preventDefault();
+			window.location.reload();
+		}
+	};
+
+	document.addEventListener('keydown', (e) => reloadPage(e));
+
 	modal.elements = modalBackground;
 
 	setMessage(modal);
+
+	document.removeEventListener('keydown', (e) => reloadPage(e));
 
 	return;
 };
