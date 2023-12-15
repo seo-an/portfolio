@@ -85,6 +85,23 @@ export const deleteInDatabase = async (url, dat) => {
 			const password = inputElement.value;
 			console.log('huh?', password);
 
+			// try {
+			// 	const response = await fetch(`${url}/:${id}`, {
+			// 		method: 'DELETE',
+			// 	})
+
+			// 	if (!response.ok) {
+			// 		throw new Error('HTTP DELETE ERROR :: status ', response.status);
+			// 	}
+				
+			// 	alert('삭제되었습니다.')
+
+			// 	return new Date().getMilliseconds();
+
+			// } catch (error) {
+			// 	console.error('CAN NOT TRY TO FETCH :: ', error);
+			// }
+
 			try {
 				const response = await fetch(`${url}/${id}`, {
 					method: 'DELETE',
@@ -94,8 +111,10 @@ export const deleteInDatabase = async (url, dat) => {
 					body: JSON.stringify({ password }),
 				})
 				console.log('adshf;lawnelfknawelkfj', response, !(response.ok), response.status);
+				
 				if (!(response.ok) && response.status === 401) {
 					alert('비밀번호가 다릅니다.');
+					window.location.reload();
 					// throw new Error('HTTP DELETE ERROR :: status ', response.status);
 				} else if (!(response.ok) && (response.status === 400 || response.status === 500)) {
 					throw new Error('HTTP DELETE ERROR :: status ', response.status);

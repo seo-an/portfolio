@@ -74,7 +74,7 @@ app.get('/api/guestbook/data', (req, res) => {
 app.delete('/api/guestbook/data/:id', (req, res) => {
   const uniqueId = req.params.id;
   const password = req.body.password;
-
+  console.log('😤', req.params, req.body);
   
   const DELETE_DATA = `DELETE FROM ${envSetting.API_INPUT_DATA_TO_THIS_TABLE} WHERE uniqueId = '${uniqueId}' AND simple_password = '${password}';`;
 
