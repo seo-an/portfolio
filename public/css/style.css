@@ -16,7 +16,7 @@ div.modal-background div.modal-body {
   align-content: center;
   justify-content: center;
 }
-div.modal-background div.modal-body .modal-core {
+div.modal-background div.modal-body div.modal-core {
   display: flex;
   width: 200px;
   height: 200px;
@@ -24,11 +24,11 @@ div.modal-background div.modal-body .modal-core {
   justify-content: center;
   background-color: white;
 }
-div.modal-background div.modal-body .modal-core.delete-guestbook-confirm {
+div.modal-background div.modal-body div.modal-core.delete-guestbook-confirm {
   width: 500px;
   height: 200px;
 }
-div.modal-background div.modal-body .modal-button {
+div.modal-background div.modal-body div.modal-button {
   display: flex;
   margin-top: 8px;
   justify-content: end;
