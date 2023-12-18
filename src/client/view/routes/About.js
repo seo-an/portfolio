@@ -28,6 +28,7 @@ export const Paragraph = styled.div `
   flex-wrap: wrap;
 
   & p {
+    width: 100%;
     margin: 0;
     padding: 0;
     font-size: 1.2em;

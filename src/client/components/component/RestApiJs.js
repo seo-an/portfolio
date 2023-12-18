@@ -51,7 +51,7 @@ export const RestApiJs = () => {
 		}
 
 		postToDatabase(url, send);
-		setTrigger(Math.random());
+		setTrigger(String(Math.random())+inputName);
 	};
 
 	const pageSize = 5;
