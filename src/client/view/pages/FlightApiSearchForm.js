@@ -1,8 +1,8 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
-import { GrayButtonWithSolidBorder as Button } from "../../../styles/common/Button";
-import { ReactComponent as AirplaneSVG } from "../../../assets/icon/svg/airplane.svg";
-import airlinesInfo from "../../components/data/airlines_info.json";
+import { GrayButtonWithSolidBorder as Button } from '../../../styles/common/Button.js';
+import { ReactComponent as AirplaneSVG } from '../../../assets/icon/svg/airplane.svg';
+import airlinesInfo from '../../components/data/airlines_info.json';
 
 
 export const Container = styled.div `

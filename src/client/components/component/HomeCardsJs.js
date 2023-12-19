@@ -1,4 +1,4 @@
-import { HomeCardsView } from "../../view/pages/HomeCardsView";
+import { HomeCardsView } from '../../view/pages/HomeCardsView.js';
 
 export const HomeCardsJs = () => {
 	const data = [

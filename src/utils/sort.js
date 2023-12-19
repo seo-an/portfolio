@@ -1,4 +1,4 @@
-import { isThisNumber } from "./detectDataType"
+import { isThisNumber } from './detectDataType.js';
 
 export const ascending = ( array ) => {
 	if (!(array)) return;

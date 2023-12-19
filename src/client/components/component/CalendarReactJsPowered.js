@@ -1,7 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from 'react';
 
-// import { Container, Wrapper, ButtonContainer, FlipButton as Button, Title, GridTable, TableCell, TableCellText, YearWrapper as Year, MonthWrapper as Month } from "../../view/pages/CalendarView";
-import { CalendarView } from "../../view/pages/CalendarView";
 
 export const CalendarReactJsPowered = () => {
   const [now, setNow] = useState(getDates());

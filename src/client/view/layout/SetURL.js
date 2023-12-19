@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
-import { MenuForSetUrl as Menu } from "./Nav";
+import { MenuForSetUrl as Menu } from './Nav.js';
 
 
 const SetURL = () => {

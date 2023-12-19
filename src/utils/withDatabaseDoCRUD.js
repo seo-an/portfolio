@@ -1,4 +1,4 @@
-import { modalPopup } from "./popup";
+import { modalPopup } from './popup.js';
 
 export const postToDatabase = async (url, dat) => {
 	const data = [dat];

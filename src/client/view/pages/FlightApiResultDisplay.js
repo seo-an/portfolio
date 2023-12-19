@@ -1,6 +1,6 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
-import { Pagination } from "../../../utils/pagination";
+import { Pagination } from '../../../utils/pagination.js';
 
 // import { GrayButtonWithSolidBorder as Button } from "../../../styles/common/Button";
 // import { ReactComponent as AirplaneSVG } from "../../../assets/icon/svg/airplane.svg";

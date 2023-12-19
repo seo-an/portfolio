@@ -1,4 +1,4 @@
-import { modalPopup } from "../../../utils/popup";
+import { modalPopup } from '../../../utils/popup.js';
 
 export const ModalExamplePageView = ( props ) => {
 

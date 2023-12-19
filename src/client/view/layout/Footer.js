@@ -1,9 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
-// import { Container, Wrapper, Text } from "../../view/layout/FooterView";
-import styled from "styled-components";
+import styled from 'styled-components';
 
-import { copyToClipboard } from "../../../utils/copyToClipboard";
+import { copyToClipboard } from '../../../utils/copyToClipboard.js';
 
 
 export const Container = styled.footer `

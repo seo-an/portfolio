@@ -1,14 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect } from 'react';
 
-import DATABASE_GET_RAW_TEST_DATA from "../data/database_get_raw_test_data.json";
+// import DATABASE_GET_RAW_TEST_DATA from '../data/database_get_raw_test_data.json';
 
-import { RestApiInputForm } from "../../view/pages/RestApiInputForm";
-import { RestApiResultDisplay } from "../../view/pages/RestApiResultDisplay";
+import { RestApiInputForm } from '../../view/pages/RestApiInputForm.js';
+import { RestApiResultDisplay } from '../../view/pages/RestApiResultDisplay.js';
 
-import { getValue } from "../../action/actionsForRestApi";
-import { requestToDatabase, postToDatabase, deleteInDatabase } from "../../../utils/withDatabaseDoCRUD";
-import { descending } from "../../../utils/sort";
-import { addClassRemoveClass } from "../../../utils/toggleClasses";
+import { getValue } from '../../action/actionsForRestApi.js';
+import { requestToDatabase, postToDatabase, deleteInDatabase } from '../../../utils/withDatabaseDoCRUD.js';
+import { descending } from '../../../utils/sort.js';
+import { addClassRemoveClass } from '../../../utils/toggleClasses.js';
 
 
 export const RestApiJs = () => {

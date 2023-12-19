@@ -1,8 +1,8 @@
-import { Link } from "react-router-dom";
+import { Link } from 'react-router-dom';
 
-import styled from "styled-components";
+import styled from 'styled-components';
 
-import { handleClickDiv } from "../../action/actionsForLinkCard";
+import { handleClickDiv } from '../../action/actionsForLinkCard.js';
 
 
 export const CardContainer = styled.div `

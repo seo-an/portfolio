@@ -1,9 +1,9 @@
-const https = require('https');
-const querystring = require('querystring');
+import https from 'https';
+import { stringify } from 'querystring';
 
 const externalRequestTo = (externalOptions, data) => {
-	const reqData = querystring.stringify(data);
-	
+	const reqData = stringify(data);
+
 	return new Promise((resolve, reject) => {
 		const externalReq = https.request(externalOptions, (externalRes) => {
 			let resData = '';
@@ -29,8 +29,6 @@ const externalRequestTo = (externalOptions, data) => {
 		// 요청 마무리
 		externalReq.end();
 	});
-}
-
-module.exports = {
-	externalRequestTo
 };
+
+export default externalRequestTo;

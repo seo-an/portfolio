@@ -1,6 +1,6 @@
-import { isThisString } from "./detectDataType";
-import { findAfterWordByRegEx } from "./withRegExDoFindWord";
-import { simpleToggleClass } from "./toggleClasses";
+import { isThisString } from './detectDataType.js';
+import { findAfterWordByRegEx } from './withRegExDoFindWord.js';
+import { simpleToggleClass } from './toggleClasses.js';
 
 // const 팝업세팅 = {
 //   type: '', // window || modalLayer || modalWithButton
@@ -245,7 +245,7 @@ export const modalPopupDisallowClickOuterSpace = ( parameters ) => {
 	}
 	
 	const reloadPage = (event) => {
-		console.log('huh', event.key, event.code, event.which);
+		// console.log('huh', event.key, event.code, event.which);
 		if (event.key === 'Escape' || event.code === 'Escape' || event.which === 27 || event.keyCode === 27) {
 			// simpleToggleClass(modalBackground, MODAL_TOGGLE_CSS_CLASS_NAME);
 			event.preventDefault();

@@ -2,9 +2,9 @@ import { useState } from "react";
 
 import styled from "styled-components";
 
-import { isNotNull, isThisNumber } from "./detectDataType";
-import { arraySplitting } from './arraySplitting';
-import { addClassRemainClass } from "./toggleClasses";
+import { isNotNull, isThisNumber } from './detectDataType.js';
+import { arraySplitting } from './arraySplitting.js';
+import { addClassRemainClass } from './toggleClasses.js';
 
 
 /**

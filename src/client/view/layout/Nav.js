@@ -1,6 +1,6 @@
-import styled from "styled-components";
+import styled from 'styled-components';
 
-import SetURL from "./SetURL";
+import SetURL from './SetURL.js';
 
 export const Wrapper = styled.nav `
   display: flex;

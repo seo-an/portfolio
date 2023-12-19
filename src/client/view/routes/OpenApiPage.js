@@ -1,6 +1,4 @@
-import { PapagoTransJS } from "../../components/component/PapagoTransJs";
-// import { PapagoTransForm } from "../pages/PapagoTransForm";
-
+import { PapagoTransJS } from '../../components/component/PapagoTransJs.js';
 
 export const OpenApi = () => {
   

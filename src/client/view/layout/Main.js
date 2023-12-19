@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom';
 
-// import { MainWrapper } from '../../view/layout/MainView';
-import styled from "styled-components";
+import styled from 'styled-components';
 
 
 export const MainWrapper = styled.main `

@@ -1,4 +1,4 @@
-import { findExactWordByRegEx } from "./withRegExDoFindWord";
+import { findExactWordByRegEx } from './withRegExDoFindWord.js';
 
 export const copyToClipboard = async ( copyObj ) => {
     

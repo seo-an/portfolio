@@ -1,5 +1,5 @@
-import { useCallback, useRef, useState } from "react";
-import { SvgImgView } from "../../view/pages/SvgImgView";
+import { useCallback, useRef, useState } from 'react';
+import { SvgImgView } from '../../view/pages/SvgImgView.js';
 
 
 export const SetColorData = (arry) => {

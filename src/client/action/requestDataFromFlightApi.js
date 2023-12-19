@@ -1,4 +1,4 @@
-import getTestData from "../components/data/api_get_test_data.json"
+// import getTestData from '../components/data/api_get_test_data.json';
 
 export const requestDataFromFlightApi = async ( url, port, line ) => {
   // console.info('call api function', url, port, line);

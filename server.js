@@ -1,14 +1,19 @@
-require('dotenv').config();
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const envSetting = require('./env.js');
-const external = require('./https-request.js')
-// const { createPool } = require('mysql');
+import dotenv from 'dotenv';
+dotenv.config();
+
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import envSetting from './env.js'; // env.js를 env.ts로 변경하고 export default를 사용해야 함
+import externalRequestTo from './https-request.js'; // https-request.js를 https-request.ts로 변경하고 export default를 사용해야 함
+import { pool, getConnect, postConnect, deleteConnect } from './database.js'; 
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
-const mysqlConn = require("./database.js");
 
 // Node.js express server용 port
 const PORT = envSetting.NODE_SERVER_PORT || 1991;
@@ -16,8 +21,7 @@ const PORT = envSetting.NODE_SERVER_PORT || 1991;
 // json body parser
 app.use(express.json());
 
-const dbConnection = mysqlConn.pool(envSetting.mysqlServerConf);
-
+const dbConnection = pool(envSetting.mysqlServerConf);
 
 // Define API route (internal API)
 // post to database
@@ -55,7 +59,7 @@ app.post('/api/guestbook/data', (req, res) => {
     FROM ${envSetting.API_INPUT_DATA_TO_THIS_TABLE};
   `;
 
-  mysqlConn.getConnect(res, dbConnection, INSERT_DATA);
+  postConnect(res, dbConnection, INSERT_DATA);
 });
 
 // get from database
@@ -67,7 +71,7 @@ app.get('/api/guestbook/data', (req, res) => {
 
   const READ_DATA = (where !== '') ? `SELECT ${select} FROM ${from} WHERE ${where}` : `SELECT ${select} FROM ${from}`;
 
-  mysqlConn.getConnect(res, dbConnection, READ_DATA);
+  getConnect(res, dbConnection, READ_DATA);
 });
 
 // delete in database
@@ -78,7 +82,7 @@ app.delete('/api/guestbook/data/:id', (req, res) => {
   
   const DELETE_DATA = `DELETE FROM ${envSetting.API_INPUT_DATA_TO_THIS_TABLE} WHERE uniqueId = '${uniqueId}' AND simple_password = '${password}';`;
 
-  mysqlConn.deleteConnect(res, dbConnection, DELETE_DATA);
+  deleteConnect(res, dbConnection, DELETE_DATA);
 })
 
 
@@ -117,9 +121,13 @@ app.post('/api/papago', async (req, res) => {
     },
   };
 
-  const responses = await external.externalRequestTo(externalOptions, data);
+  const responses = await externalRequestTo(externalOptions, data);
 
   res.status(200).json({ internal: 'GET External Response: SUCCESS', responses });
+
+
+
+
 
   // const externalReq = https.request(externalOptions, (externalRes) => {
   //   let data = '';

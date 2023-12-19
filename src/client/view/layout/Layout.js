@@ -1,12 +1,11 @@
-// import { Outlet } from 'react-router-dom';
 import { useEffect, useState, useRef } from 'react';
 
-import Nav from './Nav';
-import { Footer } from './Footer';
-import Main from './Main';
+import styled from 'styled-components';
 
-// import { MainContainer as Container, MainGrid as Grid } from '../../view/layout/LayoutGridView';
-import styled from "styled-components";
+import Nav from './Nav.js';
+import { Footer } from './Footer.js';
+import Main from './Main.js';
+
 
 export const min = 780;
 export const hd = 1280; // 1280*720

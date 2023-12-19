@@ -1,10 +1,16 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
 let NODE_SERVER_PORT = null;
 let mysqlHostConf = {};
 let mysqlServerConf = {};
+
 let API_INPUT_DATA_TO_THIS_TABLE = null;
 
-if (process.env.NODE_ENV === 'local') {
+let envSetting = {};
 
+if (process.env.NODE_ENV === 'local') {
+    
 	NODE_SERVER_PORT = process.env.NODE_LOCAL_PORT;
 	mysqlServerConf = {
 		host: process.env.MYSQL_CONF_LOCAL_SERVER_HOST,
@@ -16,6 +22,13 @@ if (process.env.NODE_ENV === 'local') {
 
 	// local database table name
 	API_INPUT_DATA_TO_THIS_TABLE = process.env.DATABASE_TABLE_DEV_TEST;
+
+    envSetting = {
+        NODE_SERVER_PORT,
+        mysqlHostConf,
+        mysqlServerConf,
+        API_INPUT_DATA_TO_THIS_TABLE
+    }
 
 } else if (process.env.NODE_ENV === 'staging') {
 
@@ -31,6 +44,13 @@ if (process.env.NODE_ENV === 'local') {
 	};
 
 	API_INPUT_DATA_TO_THIS_TABLE = process.env.DATABASE_TABLE_DEV_TEST;
+
+    envSetting = {
+        NODE_SERVER_PORT,
+        mysqlHostConf,
+        mysqlServerConf,
+        API_INPUT_DATA_TO_THIS_TABLE
+    }
 
 } else if (process.env.NODE_ENV === 'production') {
 
@@ -48,12 +68,13 @@ if (process.env.NODE_ENV === 'local') {
 	// product database table name
 	API_INPUT_DATA_TO_THIS_TABLE = process.env.DATABASE_TABLE_PROD_API;
 
+    envSetting = {
+        NODE_SERVER_PORT,
+        mysqlHostConf,
+        mysqlServerConf,
+        API_INPUT_DATA_TO_THIS_TABLE
+    }
+
 }
 
-
-module.exports = {
-	NODE_SERVER_PORT,
-	mysqlHostConf,
-	mysqlServerConf,
-	API_INPUT_DATA_TO_THIS_TABLE
-};
+export default envSetting;
