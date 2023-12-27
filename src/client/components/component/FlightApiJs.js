@@ -94,7 +94,7 @@ export const FlightApiJs = () => {
 
   return (
     <>
-			<FlightApiSearchForm props={ onSubmitFromView } />
+			<FlightApiSearchForm onSubmitFromView={ onSubmitFromView } />
 			<FlightApiResultDisplay props={ { ...goPagination } }/>
     </>
   )

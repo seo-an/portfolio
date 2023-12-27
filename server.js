@@ -9,6 +9,9 @@ import envSetting from './env.js'; // env.js를 env.ts로 변경하고 export de
 import externalRequestTo from './https-request.js'; // https-request.js를 https-request.ts로 변경하고 export default를 사용해야 함
 import { pool, getConnect, postConnect, deleteConnect } from './database.js'; 
 
+import greet from './my.js';
+console.log(greet("Alice", 30)); // "Hello, my name is Alice and I am 30 years old."
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
