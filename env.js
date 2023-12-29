@@ -9,7 +9,7 @@ let API_INPUT_DATA_TO_THIS_TABLE = null;
 
 let envSetting = {};
 
-if (process.env.NODE_ENV === 'local') {
+if (process.env.NODE_ENV === 'development') {
     
 	NODE_SERVER_PORT = process.env.NODE_LOCAL_PORT;
 	mysqlServerConf = {
@@ -23,12 +23,12 @@ if (process.env.NODE_ENV === 'local') {
 	// local database table name
 	API_INPUT_DATA_TO_THIS_TABLE = process.env.DATABASE_TABLE_DEV_TEST;
 
-    envSetting = {
-        NODE_SERVER_PORT,
-        mysqlHostConf,
-        mysqlServerConf,
-        API_INPUT_DATA_TO_THIS_TABLE
-    }
+	envSetting = {
+			NODE_SERVER_PORT,
+			mysqlHostConf,
+			mysqlServerConf,
+			API_INPUT_DATA_TO_THIS_TABLE
+	}
 
 } else if (process.env.NODE_ENV === 'staging') {
 
@@ -45,12 +45,34 @@ if (process.env.NODE_ENV === 'local') {
 
 	API_INPUT_DATA_TO_THIS_TABLE = process.env.DATABASE_TABLE_DEV_TEST;
 
-    envSetting = {
-        NODE_SERVER_PORT,
-        mysqlHostConf,
-        mysqlServerConf,
-        API_INPUT_DATA_TO_THIS_TABLE
-    }
+	envSetting = {
+			NODE_SERVER_PORT,
+			mysqlHostConf,
+			mysqlServerConf,
+			API_INPUT_DATA_TO_THIS_TABLE
+	}
+
+} else if (process.env.NODE_ENV === 'before') {
+
+	NODE_SERVER_PORT = process.env.NODE_BEFORE_PORT;
+
+	// onStagingServerMysql
+	mysqlServerConf = {
+		host: process.env.MYSQL_CONF_BEFORE_SERVER_HOST,
+		user: process.env.MYSQL_CONF_BEFORE_SERVER_USER,
+		password: process.env.MYSQL_CONF_BEFORE_SERVER_PASSWORD,
+		database: process.env.MYSQL_CONF_BEFORE_SERVER_DB,
+		port: process.env.MYSQL_CONF_BEFORE_SERVER_PORT
+	};
+
+	API_INPUT_DATA_TO_THIS_TABLE = process.env.DATABASE_TABLE_DEV_TEST;
+
+	envSetting = {
+			NODE_SERVER_PORT,
+			mysqlHostConf,
+			mysqlServerConf,
+			API_INPUT_DATA_TO_THIS_TABLE
+	}
 
 } else if (process.env.NODE_ENV === 'production') {
 
@@ -68,12 +90,12 @@ if (process.env.NODE_ENV === 'local') {
 	// product database table name
 	API_INPUT_DATA_TO_THIS_TABLE = process.env.DATABASE_TABLE_PROD_API;
 
-    envSetting = {
-        NODE_SERVER_PORT,
-        mysqlHostConf,
-        mysqlServerConf,
-        API_INPUT_DATA_TO_THIS_TABLE
-    }
+	envSetting = {
+			NODE_SERVER_PORT,
+			mysqlHostConf,
+			mysqlServerConf,
+			API_INPUT_DATA_TO_THIS_TABLE
+	}
 
 }
 
