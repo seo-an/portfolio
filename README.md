@@ -55,3 +55,16 @@ checks prerequisites; it neither invokes `uv` nor changes the Hermes environment
 
 The CLI, input contracts, per-record error isolation, and collision-safe versioned outputs
 will be implemented and tested separately. See [Bhandara RUNBOOK](bhandara/RUNBOOK.md).
+
+## Golden regression comparison (implemented)
+
+A read-only JSON semantic comparator is now available before calculator migration:
+
+```sh
+python run.py compare-golden --profile payroll-workflow \
+  --expected /private/golden/output --actual /private/candidate/output
+```
+
+See [Golden comparison contract](bhandara/GOLDEN-COMPARISON.md). It compares
+nine workflow JSON artifacts, not XLSX cells, and does **not** perform any
+actual payroll or PTO calculation. Keep every Golden JSON file outside Git.

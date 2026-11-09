@@ -15,6 +15,16 @@ def build_parser() -> argparse.ArgumentParser:
         "bhandara", help="Bhandara HR calculators (not released in this bootstrap)"
     )
     bhandara.add_argument("module_id", help="Requested module identifier")
+    compare = commands.add_parser(
+        "compare-golden", help="Compare two private Golden JSON artifacts or Payroll output folders"
+    )
+    compare.add_argument("--profile", required=True, choices=(
+        "strict-json", "workflow-run", "pto-golden", "normalized-input",
+        "worktime-result", "payroll-calculation", "payroll-review",
+        "policy-resolution", "provisional-register", "payroll-workflow",
+    ))
+    compare.add_argument("--expected", required=True, help="Existing Golden file/output directory")
+    compare.add_argument("--actual", required=True, help="New candidate file/output directory")
     return parser
 
 
@@ -27,6 +37,22 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 2
+    if args.collection == "compare-golden":
+        from pathlib import Path
+        from bhandara.common.validation.golden_compare import GoldenCompareError, compare
+
+        try:
+            differences = compare(Path(args.expected), Path(args.actual), args.profile)
+        except (GoldenCompareError, OSError) as exc:
+            print(f"GOLDEN_INVALID: {exc}", file=sys.stderr)
+            return 2
+        if differences:
+            print(f"GOLDEN_DIFF: {len(differences)} difference(s) (maximum 50 reported)")
+            for item in differences:
+                print(f"  {item.pointer}: {item.reason}")
+            return 1
+        print(f"GOLDEN_PASS: {args.profile}")
+        return 0
     return 2
 
 
