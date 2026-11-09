@@ -1,6 +1,7 @@
 """Synthetic PTO integration gates (no Hermes, private fixtures or credentials)."""
 from __future__ import annotations
 
+import ast
 import importlib
 import json
 import subprocess
@@ -150,9 +151,21 @@ class PTOStandaloneTests(unittest.TestCase):
         source = ROOT / "bhandara" / "pto-calculator" / "src"
         self.assertTrue((source / "engine.py").is_file())
         for path in source.glob("*.py"):
-            content = path.read_text(encoding="utf-8")
-            self.assertNotIn("from gearbox.", content)
-            self.assertNotIn("import gearbox.", content)
+            # Inspect imports, not raw text: comments/documentation may cite
+            # the original Gearbox path without creating a dependency.
+            syntax = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+            for node in ast.walk(syntax):
+                if isinstance(node, ast.Import):
+                    modules = [alias.name for alias in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    modules = [node.module or ""]
+                else:
+                    continue
+                for module in modules:
+                    self.assertFalse(
+                        module == "gearbox" or module.startswith("gearbox."),
+                        f"private Gearbox import in {path.name}: {module}",
+                    )
 
 
 if __name__ == "__main__":
