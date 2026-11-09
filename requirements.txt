@@ -1,3 +1,3 @@
-# Bhandara Phase 1 bootstrap needs no third-party packages.
-# Add only module-required packages already approved in agent-config's
-# Hermes uv-managed runtime. Do not copy the entire Hermes environment.
+# Approved subset of agent-config/Hermes uv-managed Python environment (2026-11-09).
+# The public Base reads XLSX/XLSM; no cloud/agent credentials are required.
+openpyxl==3.1.5

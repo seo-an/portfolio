@@ -1,24 +1,39 @@
 #!/usr/bin/env python3
-"""Non-destructive Phase 1 bootstrap environment check (not an installer yet)."""
+"""Read-only Base prerequisites check; installation remains an explicit uv action."""
 from __future__ import annotations
 
 import argparse
 import sys
+from importlib.metadata import PackageNotFoundError, version
 
 MIN_PYTHON = (3, 12)
+REQUIRED_PACKAGES = {"openpyxl": "3.1.5"}
 
 
 def check_python(version: tuple[int, ...] | None = None) -> tuple[bool, str]:
-    """Check a minimum syntax floor without claiming a runtime compatibility test."""
     detected = tuple(sys.version_info[:3] if version is None else version)
     supported = detected >= MIN_PYTHON
     details = ".".join(map(str, detected))
     return supported, details
 
 
+def check_packages(expected: dict[str, str] | None = None) -> list[str]:
+    """Return problems; use importlib metadata without running pip or uv."""
+    problems = []
+    for name, required in (expected or REQUIRED_PACKAGES).items():
+        try:
+            installed = version(name)
+        except PackageNotFoundError:
+            problems.append(f"{name}: NOT INSTALLED (expected {required})")
+        else:
+            if installed != required:
+                problems.append(f"{name}: {installed} (expected {required})")
+    return problems
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Check Bhandara bootstrap prerequisites (no changes made)."
+        description="Check Bhandara Base prerequisites without changing the environment."
     )
     parser.add_argument(
         "--check", action="store_true", help="Check prerequisites without installing anything"
@@ -27,10 +42,16 @@ def main(argv: list[str] | None = None) -> int:
 
     supported, detected = check_python()
     if not supported:
-        print(f"INCOMPATIBLE: Python {detected}; bootstrap requires Python 3.12+", file=sys.stderr)
+        print(f"INCOMPATIBLE: Python {detected}; Base requires Python 3.12+", file=sys.stderr)
         return 2
-    print(f"BOOTSTRAP_CHECK_OK: Python {detected}")
-    print("Phase 1 bootstrap has no external package dependencies.")
+    problems = check_packages()
+    if problems:
+        for problem in problems:
+            print(f"DEPENDENCY_MISMATCH: {problem}", file=sys.stderr)
+        return 2
+    print(f"BASE_CHECK_OK: Python {detected}")
+    for name, required in REQUIRED_PACKAGES.items():
+        print(f"DEPENDENCY_CHECK_OK: {name}=={required}")
     print("No packages were installed or changed. Calculator modules are not yet released.")
     return 0
 
