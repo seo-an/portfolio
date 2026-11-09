@@ -7,7 +7,7 @@ import sys
 from importlib.metadata import PackageNotFoundError, version
 
 MIN_PYTHON = (3, 12)
-REQUIRED_PACKAGES = {"openpyxl": "3.1.5"}
+REQUIRED_PACKAGES = {"openpyxl": "3.1.5", "korean-lunar-calendar": "0.4.0"}
 
 
 def check_python(version: tuple[int, ...] | None = None) -> tuple[bool, str]:
@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"BASE_CHECK_OK: Python {detected}")
     for name, required in REQUIRED_PACKAGES.items():
         print(f"DEPENDENCY_CHECK_OK: {name}=={required}")
-    print("No packages were installed or changed. Calculator modules are not yet released.")
+    print("No packages were installed or changed. PTO module available; Worktime and Payroll not yet released.")
     return 0
 
 

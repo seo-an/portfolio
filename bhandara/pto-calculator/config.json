@@ -1,0 +1,20 @@
+{
+  "schema_version": "1.0",
+  "period": {
+    "from": "2026-07-01",
+    "to": "2026-07-31"
+  },
+  "files": {
+    "employees": "employee.xlsx",
+    "schedule": "work-schedule.xlsx",
+    "assignments": "work-schedule-assignment.xlsx",
+    "monthly_schedule": [
+      "work-records/2026/2026-07-schedule.xlsx"
+    ],
+    "attendance": [
+      "work-records/2026/2026-07-attendance.xlsx"
+    ],
+    "events": null
+  },
+  "employee_allowlist": []
+}

@@ -26,7 +26,7 @@ class BootstrapTests(unittest.TestCase):
         self.assertIn("bhandara", result.stdout)
 
     def test_unknown_calculator_fails_closed(self):
-        result = invoke("run.py", "bhandara", "pto-calculator")
+        result = invoke("run.py", "bhandara", "worktime-calculator")
         self.assertEqual(result.returncode, 2)
         self.assertIn("UNAVAILABLE", result.stderr)
         self.assertIn("No calculations were performed", result.stderr)
@@ -55,7 +55,7 @@ class BootstrapTests(unittest.TestCase):
     def test_base_dependency_pin_matches_hermes(self):
         lines = (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
         packages = [line.strip() for line in lines if line.strip() and not line.lstrip().startswith("#")]
-        self.assertEqual(packages, ["openpyxl==3.1.5"])
+        self.assertEqual(packages, ["openpyxl==3.1.5", "korean-lunar-calendar==0.4.0"])
 
     def test_local_runtime_data_is_ignored(self):
         ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")
