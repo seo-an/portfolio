@@ -84,3 +84,20 @@ uv pip install --python .venv/bin/python -r requirements.txt
 원본: \`seo-an/agent-config\` commit \`296f909dd84bbdb6196be84568bd0e60775c7dbd\`의 \`gearbox/gear/pto-calculator/run.py\` 및 \`functions/*.py\`. 계산식·정책 파일 내용은 그대로 옮기고 import만 공개 모듈 경계로 변경했다. 원본의 \`gearbox.core\`와 진단 계약도 동일 동작의 공개 공통 함수로 대체한다. 새 Excel 입력·검토·출력 경계는 원본 Tooth와 의미가 같다고 **가정해서는 안 되며**, 비공개 합성 Golden 비교로 확인해야 한다.
 
 **주의:** 현재 \`agent-config\`의 원본 Gearbox는 여전히 기존 경로에서 운영된다. 양쪽의 전환·중복 제거는 별도 승인과 테스트 후 진행한다.
+
+## PR 검증 — 기존 비공개 PTO Golden 대조
+
+서버의 **원본 합성 fixture와 비공개 Golden**은 Git에 복사하지 않는다.
+수치/검토 결과는 다음 게이트에서 대조하며, 출력에는 값이 아닌 차이 경로만 보인다.
+
+\`\`\`sh
+/opt/hermes/.venv/bin/python \
+  /opt/agent-config/.external/portfolio/bhandara/pto-calculator/examples/verify_private_golden.py \
+  --fixture-root /opt/agent-config/gearbox/_tests/gear/pto-calculator/fixtures/common \
+  --baseline /tmp/bhandara-pto-phase0-n_fy3m6k/pto-golden.json
+\`\`\`
+
+\`PTO_GOLDEN_PASS\`가 나와야 숫자·결과 구조가 해당 합성 Golden과 동등하다고 볼 수 있다.
+기존 실행의 \`source_hashes\`가 다른 파일을 가리키거나 Golden 형식이 확인되지
+않으면 \`PTO_GOLDEN_INVALID\`로 중단한다. 비공개 Golden이 컨테이너에서 지워졌다면
+호스트 보존본을 검증한 뒤 먼저 다시 복사한다.
