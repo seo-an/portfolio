@@ -1,63 +1,39 @@
 # Bhandara — Development / Operations RUNBOOK
 
-**Status:** Phase 1 directory bootstrap; no calculators or complete Base yet.
-**Authority:** Approved Bhandara architecture handoff v2.0 (2026-11-06). This
-RUNBOOK is a public summary, not evidence that future interfaces exist.
+**Status:** PR #3 implements the public Base contract and tests, while calculators and Hermes Adapter are not released. The broader architecture follows the Bhandara handoff v2.0 (2026-11-06).
 
 ## Ownership and compatibility
 
-1. `seo-an/portfolio` owns reusable, deterministic calculation/normalization tools.
-   It must not require Hermes, Slack, Google Drive, cloud APIs, or credentials.
-2. `seo-an/agent-config` is the Python/dependency runtime Source of Truth. Use its
-   `uv`-managed Hermes Python for runtime compatibility tests; never treat the Ubuntu
-   host Python as a substitute. `requirements.txt` here is the approved dependency subset.
-3. Gearbox owns authentication, source acquisition, approval, scheduling, orchestration,
-   safe CLI delegation, and result transport. The future Hermes Adapter must execute
-   the same Bhandara CLI as an ordinary user, from a local, ignored Portfolio clone.
-4. Runtime employee and payroll data belong in restricted folders **outside both Git
-   repositories** in Hermes. Local users may use the ignored `bhandara/data/` directory.
+1. `seo-an/portfolio` owns publicly reusable and deterministic calculator/normalizer functions and the shared Base. No Hermes, Slack, Google Drive, authentication, or cloud dependency in public calculations.
+2. `seo-an/agent-config` owns the Python/dependency runtime Source of Truth. The reference runtime is the `uv`-managed Hermes image `1.2.0` with Python `3.14.9` and `openpyxl==3.1.5`. Never use the host Ubuntu Python as proof of Hermes compatibility.
+3. Gearbox owns authentication, data acquisition, approval, scheduling, orchestration, and future CLI delegation. No private credentials in public module files.
+4. Employee and payroll data must remain in private runtime directories **outside both Git repositories** on Hermes; local users may use the Git-ignored `bhandara/data/` directory.
 
-## Public module boundaries
+## Public Base
 
-- Each business module owns its own policy/calculation semantics; it must not import
-  another business module. Shared code goes only in `bhandara/common/` when the
-  responsibility and meaning are genuinely identical.
-- `module.json` is a versioned public input/output contract. `config.json` is
-  user-supplied execution configuration. Cross-module exchange is a versioned JSON
-  result, not an imported Python function. Exact schemas are **not yet finalized**.
-- Inputs select required headers; extra Excel columns should be ignored. Preserve
-  original source files and row references. Do not silently infer missing approvals.
-- Isolate errors at the smallest defensible scope (cell, row, person/day, person/period,
-  or run). Preserve unaffected results; do not turn unknown wages into zero.
-- Output files are not overwritten. If names collide, all files from a single run
-  share the next `(1)`, `(2)`, ... suffix. Atomic reservations and failure recovery
-  are **future Base implementation tasks**, not capabilities of this bootstrap.
-- A calculation is not approval, payroll payment, tax settlement, or ledger commit.
+See [Base contract](BASE-CONTRACT.md) for fully specified function APIs, exceptions, sample usage, private output handling, error status classification, and important limitations.
 
-## Development order and verification
+- `common/validation/headers.py`: only required Excel columns are validated; extra columns, blank extra headers, and duplicate extra names are ignored. Missing/duplicate **required** headers stop the sheet.
+- `common/io/xlsx.py`: safe XLSX read with source SHA, original Excel row numbers, per-row errors and unaffected accepted rows; no formula evaluation or silent missing-value filling.
+- `common/contracts/findings.py`: generic `Finding` and `PASS` / `REVIEW_REQUIRED` / `ERROR`, **not approval**.
+- `common/runtime/artifacts.py`: identical `(1)`, `(2)` suffix across one run's files; exclusive reservations; per-file atomic publication and rollback on normal exceptions. Not an all-files-at-once filesystem transaction; sudden process termination recovery is not yet implemented.
+- `common/runtime/receipt.py` and `common/utils/hashing.py`: source/output SHA-256 and review-only provenance.
 
-- **Phase 0 baseline:** Existing Gearbox Golden input/output sets for PTO and
-  Worktime/Payroll are stored privately on the server, not in this public repo.
-  The 2026-11-09 baseline uses agent-config commit
-  `296f909dd84bbdb6196be84568bd0e60775c7dbd`, Hermes image 1.2.0, Python 3.14.9.
-  Baseline existence and hashes alone do not prove numerical equivalence.
-- **Phase 1:** Preserve existing calculation behavior; bootstrap structure, then
-  migrate approved paths behind compatibility boundaries. Do not silently adjust
-  formulas, attendance interpretation, or review/approval status.
-- **Phase 2:** Implement Base contracts, common CLI, input/output validation, and PTO
-  as the first candidate. Then test via the existing Hermes Adapter boundary.
-- **Later:** Worktime, Payroll, and potentially raw attendance normalizer, with separate
-  behavior-change PRs where required.
+## Calculation boundaries
 
-Use Python `unittest`, never pytest. Portfolio bootstrap checks:
+- The actual PTO/Worktime/Payroll calculation functions **remain in Gearbox**. Moving them is a later, independently tested PR.
+- No module may directly import another business calculator. Common functions may be imported only after their semantics match.
+- `module.json`/`config.json`, public CLI calculator dispatch, and versioned JSON interchange contracts will be implemented in later module PRs.
+- Unclear inputs, missing approvals, calculation errors, employee-level review, and settlement ledger decisions are **not automatically corrected or approved**. A calculation must never itself authorize payment, tax filing, or ledger posting.
+- The private Golden baselines created 2026-11-09 use `agent-config` commit `296f909dd84bbdb6196be84568bd0e60775c7dbd`; hash preservation and semantic comparison are separate evidence. See [Golden comparison contract](GOLDEN-COMPARISON.md).
+
+## Verification
 
 ```sh
-python3 -m unittest discover -s bhandara/tests -p 'test_*.py' -v
-python3 install.py --check
-python3 run.py --help
+# From the portfolio root; use its local env or Hermes uv-managed interpreter
+python -m unittest discover -s bhandara/tests -p 'test_*.py' -v
+python install.py --check
+python run.py --help
 ```
 
-On the server, test each actual PR branch directly, not a worktree or Draft PR.
-For changes involving the private Gearbox, also run its approved functionality and
-core/infrastructure suite and compare Golden semantic results before recommending Merge.
-No Git SSH pushes from the runtime server; no unapproved merge or deployment.
+For a PR, test its actual branch directly on the server. Do not use worktrees/Draft PR testing. Use `unittest`, never pytest. No SSH Git Push from the server. Compare future migrated calculators with the privately stored Golden baselines before Merge; do not claim legality, calculation equivalence, or actual payroll-program reconciliation merely from code tests.

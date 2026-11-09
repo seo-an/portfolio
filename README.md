@@ -1,70 +1,38 @@
 # Portfolio · Bhandara
 
-Public, independently runnable HR calculation tools are being prepared under `bhandara/`.
-The goal is for an HR practitioner to provide local Excel files, invoke a single Python
-command, and review versioned JSON/XLSX results without creating accounts or connecting an AI agent.
+Public, independently runnable HR calculation tools are being developed under `bhandara/`. The goal is to provide local Excel inputs and review JSON/XLSX results without a cloud account, AI agent, or external login.
 
-> **Development status — Phase 1 bootstrap only.** This repository currently provides
-> the directory layout and a non-destructive environment check. **No PTO, Worktime,
-> or Payroll calculator is released here yet.** `run.py` intentionally refuses to
-> calculate instead of returning misleading success.
+> **Current status — public Base and Golden comparison utilities are available.** No PTO, Worktime, or Payroll calculator has yet been published in this repository. `run.py bhandara <module-id>` deliberately refuses to execute nonexistent calculators.
 
 ## Architecture
 
-- **Public calculation code:** this repository, `bhandara/<module-id>/`.
-- **Shared bootstrap:** the repository-root `requirements.txt`, `install.py`, and `run.py`,
-  with common utilities under `bhandara/common/`. Modules must not import each other's code.
-- **Private orchestration:** Hermes / Gearbox from `seo-an/agent-config` acquire external
-  files, manage permissions, and call the **same local CLI** through an Adapter. Hermes is
-  never required for ordinary Bhandara usage.
-- **Runtime data:** inputs and generated results must stay out of Git, including this
-  repository and `agent-config`. The future local default is
-  `bhandara/data/<module-id>/input/` and `output/` (ignored by Git). Never commit
-  real employee, attendance, or payroll records.
+- **Public, deterministic calculations:** future modules under `bhandara/<module-id>/`, using shared `bhandara/common/` functions only.
+- **Current Base:** Excel input/header validation, row/cell error reporting, source SHA-256, coordinated collision-safe artifact naming, and non-finalizing run receipts. [Base contract](bhandara/BASE-CONTRACT.md).
+- **Current regression comparator:** `run.py compare-golden` compares existing and candidate private JSON results; it cannot calculate wages or PTO. [Golden comparison contract](bhandara/GOLDEN-COMPARISON.md).
+- **Private orchestration:** Hermes/Gearbox from `seo-an/agent-config` acquire external files, handle authentication and approval, and will call future public tools through a local adapter.
+- **Local data:** inputs, outputs, Golden results, and real employee records must stay out of both Git repositories. The ignored `bhandara/data/` path may be used locally; the Hermes server should use a restricted data directory outside the code clones.
 
-## Environment and initial checks
+## Python and dependencies
 
-The implementation's reference runtime is the `uv`-managed Hermes image
-`multi-agents-hermes:1.2.0` with Python `3.14.9` (observed 2026-11-09).
-Its package inventory, not this repository, is the **dependency Source of Truth**.
-The Phase 1 bootstrap syntax requires Python 3.12 or newer; supported versions for each
-calculator will be established by real runtime tests when that calculator is released.
+The deployment reference is uv-managed Hermes `multi-agents-hermes:1.2.0` with Python `3.14.9` (2026-11-09). The environment's approved dependency inventory is the Source of Truth; the public root `requirements.txt` currently pins only `openpyxl==3.1.5` required by Base.
 
-For local use, install [`uv`](https://docs.astral.sh/uv/) using its official instructions.
-Create a separate environment; **do not install into the operating system's Python**.
-For example, from the repository root on macOS or Linux:
+Do not install packages into the Ubuntu system Python. A local separate environment can be created with [`uv`](https://docs.astral.sh/uv/):
 
 ```sh
 uv venv --python 3.14 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python install.py --check
 .venv/bin/python run.py --help
+.venv/bin/python -m unittest discover -s bhandara/tests -p 'test_*.py' -v
 ```
 
-On Windows, use `.venv\Scripts\python.exe` in place of `.venv/bin/python`.
-The bootstrap's `requirements.txt` does not yet install anything. `install.py` only
-checks prerequisites; it neither invokes `uv` nor changes the Hermes environment.
+On Windows, use `.venv\Scripts\python.exe`. `install.py --check` only verifies installed prerequisites: it **does not** invoke uv, install packages, or modify Hermes.
 
-## Planned operator workflow (not implemented)
-
-1. Read the module's README for exact Excel filename, worksheet name, and required headers.
-2. Place files in the module input folder. Additional unrelated Excel columns are allowed.
-3. Run `python run.py bhandara <module-id>` using the environment's Python.
-4. Inspect JSON, XLSX, and review reports in the output folder. Uncertain calculations
-   remain review-only and never imply payroll authorization or accounting close.
-
-The CLI, input contracts, per-record error isolation, and collision-safe versioned outputs
-will be implemented and tested separately. See [Bhandara RUNBOOK](bhandara/RUNBOOK.md).
-
-## Golden regression comparison (implemented)
-
-A read-only JSON semantic comparator is now available before calculator migration:
+## Golden regression comparison
 
 ```sh
 python run.py compare-golden --profile payroll-workflow \
   --expected /private/golden/output --actual /private/candidate/output
 ```
 
-See [Golden comparison contract](bhandara/GOLDEN-COMPARISON.md). It compares
-nine workflow JSON artifacts, not XLSX cells, and does **not** perform any
-actual payroll or PTO calculation. Keep every Golden JSON file outside Git.
+This compares nine workflow JSON artifacts (not XLSX cell contents), and never modifies Golden results. For module API contracts and safety boundaries, see [Bhandara RUNBOOK](bhandara/RUNBOOK.md).
