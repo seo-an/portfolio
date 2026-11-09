@@ -1,3 +1,5 @@
 # Approved subset of agent-config/Hermes uv-managed Python environment (2026-11-09).
 # The public Base reads XLSX/XLSM; no cloud/agent credentials are required.
 openpyxl==3.1.5
+# PTO calendar adapter uses the same Hermes-approved lunar calendar package.
+korean-lunar-calendar==0.4.0

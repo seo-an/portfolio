@@ -1,0 +1,162 @@
+{
+  "schema_version": "1.0",
+  "module_id": "pto-calculator",
+  "module_version": "0.1.0",
+  "status": "review_only",
+  "requires_base": "0.1",
+  "python": ">=3.12",
+  "dependencies": {
+    "openpyxl": "3.1.5",
+    "korean-lunar-calendar": "0.4.0"
+  },
+  "execution": {
+    "command": "python run.py bhandara pto-calculator --config <config.json> --input-dir <input_dir> --output-dir <output_dir>",
+    "cross_business_module_imports": false,
+    "network_access": false,
+    "requires_authentication": false
+  },
+  "inputs": [
+    {
+      "key": "employees",
+      "filename": "employee.xlsx",
+      "required": true,
+      "sheet": "active",
+      "headers": [
+        "employee_id",
+        "hire_date",
+        "termination_date",
+        "work_system"
+      ],
+      "required_values": [
+        "employee_id",
+        "hire_date"
+      ]
+    },
+    {
+      "key": "schedule",
+      "filename": "work-schedule.xlsx",
+      "required": true,
+      "sheet": "active",
+      "headers": [
+        "schedule_id",
+        "work_system",
+        "sequence",
+        "day_type",
+        "shift_code",
+        "start_time",
+        "end_time",
+        "break_min",
+        "scheduled_work_hours",
+        "note"
+      ],
+      "required_values": [
+        "schedule_id",
+        "sequence",
+        "day_type"
+      ]
+    },
+    {
+      "key": "assignments",
+      "filename": "work-schedule-assignment.xlsx",
+      "required": true,
+      "sheet": "active",
+      "headers": [
+        "employee_id",
+        "schedule_id",
+        "effective_from",
+        "effective_to",
+        "cycle_anchor_date",
+        "start_sequence",
+        "note"
+      ],
+      "required_values": [
+        "employee_id",
+        "schedule_id",
+        "effective_from",
+        "cycle_anchor_date",
+        "start_sequence"
+      ]
+    },
+    {
+      "key": "monthly_schedule",
+      "filename": "work-records/{year}/{yyyy-mm}-schedule.xlsx",
+      "required": false,
+      "repeatable": true,
+      "sheet": "active",
+      "headers": [
+        "employee_id",
+        "work_date",
+        "schedule_id",
+        "shift_code",
+        "scheduled_start",
+        "scheduled_end",
+        "break_min",
+        "scheduled_work_hours",
+        "day_type",
+        "note"
+      ],
+      "required_values": [
+        "employee_id",
+        "work_date",
+        "day_type"
+      ]
+    },
+    {
+      "key": "attendance",
+      "filename": "work-records/{year}/{yyyy-mm}-attendance.xlsx",
+      "required": false,
+      "repeatable": true,
+      "sheet": "active",
+      "headers": [
+        "employee_id",
+        "work_date",
+        "clock_in",
+        "clock_out",
+        "break_min",
+        "source",
+        "note"
+      ],
+      "required_values": [
+        "employee_id",
+        "work_date"
+      ]
+    },
+    {
+      "key": "events",
+      "filename": "employee-events.xlsx",
+      "required": false,
+      "sheet": "active",
+      "headers": [
+        "request_id",
+        "employee_id",
+        "event_type",
+        "event_date",
+        "unit",
+        "status",
+        "note"
+      ],
+      "required_values": [
+        "employee_id",
+        "event_date",
+        "event_type"
+      ]
+    }
+  ],
+  "output_files": [
+    "pto-result.json",
+    "pto-review.json",
+    "pto-result.xlsx",
+    "pto-run.json"
+  ],
+  "result_schema_version": "1.0",
+  "non_finalization_guards": {
+    "approved": false,
+    "finalizable": false
+  },
+  "limitations": [
+    "Anniversary-basis accrual only",
+    "Unresolved attendance eligibility requires human review",
+    "No automatic close, payout or payroll approval",
+    "Current input error isolation can block a whole run for unassignable global source rows"
+  ]
+}

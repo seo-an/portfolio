@@ -37,3 +37,11 @@ python run.py --help
 ```
 
 For a PR, test its actual branch directly on the server. Do not use worktrees/Draft PR testing. Use `unittest`, never pytest. No SSH Git Push from the server. Compare future migrated calculators with the privately stored Golden baselines before Merge; do not claim legality, calculation equivalence, or actual payroll-program reconciliation merely from code tests.
+
+## PTO first public module — migration gate
+
+- Source: agent-config `296f909dd84bbdb6196be84568bd0e60775c7dbd`, PTO `run.py` and 22 `functions` modules. Source content matches current agent-config main as checked on 2026-11-09. Import ownership changed without editing formulas.
+- Public engine: `bhandara/pto-calculator/src/`; unchanged legacy diagnostics and date primitives are in `bhandara/common/`.
+- Public CLI: `python run.py bhandara pto-calculator --config ... --input-dir ... --output-dir ...`; inputs and outputs must remain outside Git. See [PTO README](pto-calculator/README.md).
+- Before merge: Hermes Python 3.14.9, `openpyxl 3.1.5`, `korean-lunar-calendar 0.4.0`; full `unittest`, synthetic CLI demo and **private PTO Golden result parity** on the 2026-07 E001/E005/E020 dataset.
+- This public PR does not change Gearbox Registry/Toolset, the original PTO Gear, or the live Hermes service. After the public migration has independent numeric verification, a separate protected `agent-config` PR with explicit authorization is needed to change ownership and adapter routing.

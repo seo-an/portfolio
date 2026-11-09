@@ -2,7 +2,7 @@
 
 Public, independently runnable HR calculation tools are being developed under `bhandara/`. The goal is to provide local Excel inputs and review JSON/XLSX results without a cloud account, AI agent, or external login.
 
-> **Current status — public Base and Golden comparison utilities are available.** No PTO, Worktime, or Payroll calculator has yet been published in this repository. `run.py bhandara <module-id>` deliberately refuses to execute nonexistent calculators.
+> **Current status — PTO module PR #4 candidate.** Common Base, Golden comparison, and a standalone PTO module are present on this development branch. Worktime and Payroll calculators remain unavailable. PTO is not yet a verified operational replacement for Gearbox.
 
 ## Architecture
 
@@ -36,3 +36,14 @@ python run.py compare-golden --profile payroll-workflow \
 ```
 
 This compares nine workflow JSON artifacts (not XLSX cell contents), and never modifies Golden results. For module API contracts and safety boundaries, see [Bhandara RUNBOOK](bhandara/RUNBOOK.md).
+
+## PTO Calculator — first standalone module (PR #4 candidate)
+
+Read [PTO Calculator README](bhandara/pto-calculator/README.md). To generate entirely synthetic Excel inputs and run locally:
+
+```sh
+python bhandara/pto-calculator/examples/generate_demo.py --output-dir /tmp/pto-demo
+python run.py bhandara pto-calculator --config /tmp/pto-demo/config.json --input-dir /tmp/pto-demo/input --output-dir /tmp/pto-demo/output
+```
+
+Exit 0=PASS, 1=REVIEW_REQUIRED, 2=ERROR. Never interpret any status as payroll or leave approval. Exact engine numeric equivalence with the private PTO Golden remains a pre-merge gate.
