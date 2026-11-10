@@ -105,14 +105,14 @@ GitHub ZIP을 사용한다면 최상위 `run.py`, `install.py`, `requirements.tx
 
 ## 검증 기록 — 기존 비공개 PTO Golden 대조 (2026-11-09 PASS)
 
-서버의 **원본 합성 fixture와 비공개 Golden**은 Git에 복사하지 않는다.
+서버의 **원본 합성 fixture와 비공개 Golden**은 Git에 복사하지 않는다. 다음 명령은 **기존 Hermes 내부 검증을 다시 수행할 운영자 전용 예시**이며, `--baseline`은 실제 보존된 비공개 파일 경로로 교체해야 한다. 독립 PTO 사용자는 이 Golden 비교가 필요하지 않다.
 수치/검토 결과는 다음 게이트에서 대조하며, 출력에는 값이 아닌 차이 경로만 보인다.
 
 ```sh
 /opt/hermes/.venv/bin/python \
   /opt/agent-config/.external/portfolio/bhandara/pto-calculator/examples/verify_private_golden.py \
   --fixture-root /opt/agent-config/gearbox/_tests/gear/pto-calculator/fixtures/common \
-  --baseline /tmp/bhandara-pto-phase0-n_fy3m6k/pto-golden.json
+  --baseline /private/bhandara/baselines/pto-golden.json
 ```
 
 2026-11-09 Hermes 서버에서 실제 **`PTO_GOLDEN_PASS: synthetic E001/E005/E020 July 2026 parity`**를 확인했다. 재검증할 때도 `PTO_GOLDEN_PASS`가 나와야 해당 합성 Golden과 입력 해시·기간·직원별 결과가 동등하다.
