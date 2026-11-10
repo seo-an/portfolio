@@ -1,5 +1,14 @@
 # Portfolio · Bhandara(반다라)
 
+> **처음 사용하는 인사·총무·급여 담당자라면:** 먼저 [쉬운 사용 안내서](bhandara/RUNBOOK.md)를 읽으세요. **Excel 파일 위치·확장자·활성 시트·1행 열 제목·JSON 설정 수정 위치**를 계산기별로 설명합니다.
+>
+> - [연차 Excel·설정 준비](bhandara/pto-calculator/RUNBOOK.md)
+> - [근무시간 JSON·설정 준비](bhandara/worktime-calculator/RUNBOOK.md)
+> - [급여 Excel·정책·설정 준비](bhandara/payroll-calculator/RUNBOOK.md)
+>
+> 이 README부터는 **개발자·설치 담당자용** 소스 구성, Python 환경, CLI·코드 계약·검증 내용입니다.
+
+
 **PTO(연차), Worktime(근무시간), Payroll(급여) 계산기를 필요한 것만 내려받아 로컬에서 실행할 수 있는 공개 Python 모듈 모음**입니다. 개인 서버, Hermes 에이전트, Slack, Google Drive, API 키, 별도 데이터베이스가 없어도 실행할 수 있습니다.
 
 > **2026-11-10 기준: 1차 이전·독립 실행·상호배타 검증 완료.** PTO·Worktime·Payroll 이전과 기존 Gearbox 회귀 테스트를 마쳤고, 서로 다른 계산기 없이 **공통 Base + 계산기 하나만** 설치한 격리 환경에서 각각 실행하는 테스트 7개와 **Worktime JSON → Payroll 인계**도 통과했습니다. 기능 개선, 새로운 계산 정책, 법적 적합성 검토는 이후 별도 프로젝트에서 진행합니다. 기존 Gearbox 운영 Pipeline은 변경하지 않았습니다.
