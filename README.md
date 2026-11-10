@@ -129,6 +129,8 @@ Payroll의 `payroll-config.json`은 지급·공제 입력, 근태 결과, 급여
 
 ```sh
 # 저장소 전체를 받은 경우: 공개 모듈 전체 회귀 테스트
+.venv/bin/python -m unittest discover -s bhandara/tests -p 'test_documentation_examples.py' -v
+
 .venv/bin/python -m unittest discover -s bhandara/tests -p 'test_*.py' -v
 
 # 모듈 하나만 받은 경우: 설치·의존성 확인 및 위 합성/샘플 CLI 실행
