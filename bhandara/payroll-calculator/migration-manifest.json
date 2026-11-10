@@ -453,6 +453,11 @@
       "source": "gearbox/policy/payroll/2026.json",
       "destination": "bhandara/payroll-calculator/resources/policy/2026.json",
       "source_git_blob_sha": "c1b1c4a2b5c58187721e3a37be7b17b8e47b806b"
+    },
+    {
+      "source": "gearbox/gear/worktime-calculator/functions/worktime_close.py",
+      "destination": "bhandara/common/contracts/worktime_close.py",
+      "source_git_blob_sha": "734388f88992aa461bad42e44929e027a00e4adc"
     }
   ],
   "adaptations": {
@@ -531,7 +536,19 @@
         "/opt/agents/config/agent-config/gearbox/gear/payroll-calculator/operating-config.json",
         "/path/to/portfolio/bhandara/payroll-calculator/operating-config.json"
       ]
+    ],
+    "functions/payroll_standalone_input.py": [
+      [
+        "    path = (Path(__file__).resolve().parents[2]\n            / \"worktime-calculator\" / \"functions\" / \"worktime_close.py\")",
+        "    path = (Path(__file__).resolve().parents[2]\n            / \"common\" / \"contracts\" / \"worktime_close.py\")"
+      ]
+    ],
+    "functions/payroll_register.py": [
+      [
+        "_worktime = _load(_HERE.parents[2] / \"worktime-calculator\" / \"functions\" / \"worktime_close.py\",",
+        "_worktime = _load(_HERE.parents[2] / \"common\" / \"contracts\" / \"worktime_close.py\","
+      ]
     ]
   },
-  "note": "85 original Payroll files preserved; exactly 8 path-only adaptations, reversible to source blob SHAs. No calculation, policy, exception or approval logic changed."
+  "note": "85 original Payroll files preserved. 10 import/path-only adaptations are reversible to original Git blob SHAs. A byte-identical Worktime close verifier is available in shared Base so Payroll does not require Worktime installation. No calculation, policy, exception or approval logic changed."
 }
