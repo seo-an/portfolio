@@ -1,0 +1,41 @@
+{
+  "schema_version": "0.1",
+  "payroll_period": "2026-10",
+  "roster": {"source": "employees", "key": "employee_id", "worker_id_field": "worker_id"},
+  "sources": {
+    "employees": {
+      "path": "employees.csv",
+      "fields": {
+        "employee_id": {"source": "사번", "required": true},
+        "worker_id": {"source": "급여ID", "required": true},
+        "employment_from": {"source": "입사일", "type": "date", "required": true}
+      },
+      "unique_by": ["employee_id", "worker_id"]
+    },
+    "schedule": {
+      "path": "schedule.csv",
+      "fields": {
+        "employee_id": {"source": "직원코드", "required": true},
+        "work_date": {"source": "근무일", "type": "date", "required": true},
+        "day_type": {"source": "구분", "value_map": {"근무": "WORK", "휴무": "OFF", "휴일": "HOLIDAY"}, "required": true},
+        "scheduled_start": {"source": "시작", "type": "time", "required": true},
+        "scheduled_end": {"source": "종료", "type": "time", "required": true},
+        "break_min": {"source": "휴게분", "type": "int", "required": true}
+      },
+      "unique_by": ["employee_id", "work_date"],
+      "link_to_roster": {"source_field": "employee_id"}
+    },
+    "attendance": {
+      "path": "attendance.csv",
+      "fields": {
+        "employee_id": {"source": "ID", "required": true},
+        "work_date": {"source": "날짜", "type": "date", "required": true},
+        "clock_in": {"source": "출근", "type": "time", "required": true},
+        "clock_out": {"source": "퇴근", "type": "time", "required": true},
+        "break_min": {"source": "휴게분", "type": "int", "required": true}
+      },
+      "unique_by": ["employee_id", "work_date"],
+      "link_to_roster": {"source_field": "employee_id"}
+    }
+  }
+}
