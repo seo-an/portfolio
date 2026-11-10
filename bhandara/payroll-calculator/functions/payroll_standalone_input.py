@@ -69,7 +69,7 @@ def _sha256(path: Path) -> str:
 
 def _load_worktime_closer():
     path = (Path(__file__).resolve().parents[2]
-            / "worktime-calculator" / "functions" / "worktime_close.py")
+            / "common" / "contracts" / "worktime_close.py")
     spec = importlib.util.spec_from_file_location("standalone_worktime_close", path)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None

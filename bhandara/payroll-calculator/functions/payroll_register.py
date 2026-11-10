@@ -25,7 +25,7 @@ def _load(path: Path, name: str):
 
 
 _HERE = Path(__file__).resolve()
-_worktime = _load(_HERE.parents[2] / "worktime-calculator" / "functions" / "worktime_close.py",
+_worktime = _load(_HERE.parents[2] / "common" / "contracts" / "worktime_close.py",
                   "payroll_worktime_close")
 _operating = _load(_HERE.with_name("operating_period_resolver.py"), "payroll_operating_period")
 _entrypoint = _load(_HERE.with_name("payroll_operational_entrypoint.py"), "payroll_entrypoint")
