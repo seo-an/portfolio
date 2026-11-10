@@ -1,0 +1,109 @@
+{
+  "schema_version": "0.1",
+  "id": "worktime-result",
+  "grain": "worker_id + work_date",
+  "description": "Payroll에 금액이 아닌 근로시간의 사실·법적 분류·검증 근거를 전달한다.",
+  "fields": [
+    {
+      "name": "worker_id",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "work_date",
+      "type": "date",
+      "required": true
+    },
+    {
+      "name": "worktime_system",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "rule_ref",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "scheduled_hours",
+      "type": "decimal_hours",
+      "required": true
+    },
+    {
+      "name": "worked_hours",
+      "type": "decimal_hours",
+      "required": true
+    },
+    {
+      "name": "ordinary_hours",
+      "type": "decimal_hours",
+      "required": true
+    },
+    {
+      "name": "overtime_hours",
+      "type": "decimal_hours",
+      "required": true
+    },
+    {
+      "name": "night_hours",
+      "type": "decimal_hours",
+      "required": true
+    },
+    {
+      "name": "holiday_work_hours_within_8",
+      "type": "decimal_hours",
+      "required": true
+    },
+    {
+      "name": "holiday_work_hours_over_8",
+      "type": "decimal_hours",
+      "required": true
+    },
+    {
+      "name": "absence_hours",
+      "type": "decimal_hours",
+      "required": true
+    },
+    {
+      "name": "late_minutes",
+      "type": "integer",
+      "required": true
+    },
+    {
+      "name": "early_leave_minutes",
+      "type": "integer",
+      "required": true
+    },
+    {
+      "name": "validation_flags",
+      "type": "array",
+      "required": true
+    }
+  ],
+  "weekly_summary": {
+    "grain": "worker_id + week",
+    "fields": [
+      "worker_id",
+      "week_start",
+      "week_end",
+      "worktime_system",
+      "rule_ref",
+      "weekly_worked_hours",
+      "weekly_remaining_hours",
+      "validation_flags"
+    ],
+    "weekly_remaining_hours": "적용 근로시간제와 유효한 한시적 예외를 평가한 뒤 산출한다. 고정 52시간 차감값으로 계산하지 않는다."
+  },
+  "overlap_semantics": [
+    "night_hours는 overtime_hours 또는 holiday_work_hours와 중첩될 수 있다.",
+    "holiday_work_hours_within_8와 holiday_work_hours_over_8은 서로 중첩되지 않는다.",
+    "Payroll Calculator는 이 중첩을 보존한 채 해당 연도 임금 가산 rule을 적용한다."
+  ],
+  "exclusions": [
+    "금액",
+    "통상임금 금액",
+    "가산수당 금액",
+    "세금",
+    "사회보험료"
+  ]
+}
