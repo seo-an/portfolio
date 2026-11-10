@@ -1,0 +1,52 @@
+{
+  "schema_version": "1.0",
+  "module_id": "worktime-calculator",
+  "module_version": "0.1.0",
+  "status": "review_only",
+  "requires_base": "0.1",
+  "python": ">=3.12",
+  "dependencies": {
+    "openpyxl": "3.1.5"
+  },
+  "execution": {
+    "command": "python run.py bhandara worktime-calculator --normalized <normalized-input.json> --config <worktime-config.json> --output-dir <new-output-dir>",
+    "network_access": false,
+    "requires_authentication": false,
+    "source_contract": "canonical normalized-input.json from external source-mapping 0.1"
+  },
+  "inputs": [
+    {
+      "key": "normalized",
+      "required": true,
+      "type": "json",
+      "schema_version": "0.1",
+      "note": "Canonical normalized-input.json (employees/schedule/attendance + lineage). No raw Excel parsing by this module."
+    },
+    {
+      "key": "config",
+      "required": true,
+      "type": "json",
+      "schema_version": "0.1"
+    }
+  ],
+  "output_files": [
+    "worktime-result.json",
+    "worktime-review.json",
+    "worktime-review.xlsx"
+  ],
+  "exit_codes": {
+    "0": "CALCULATED_UNCLOSED",
+    "2": "REVIEW_REQUIRED/BLOCKED/invalid input"
+  },
+  "non_finalization_guards": {
+    "finalizable": false,
+    "coverage_verified": false,
+    "close_receipt": null
+  },
+  "migration_manifest": "migration-manifest.json",
+  "limitations": [
+    "No source-normalizer migration or new Excel input handling",
+    "No approval, period close, or payroll finalization",
+    "Original functions and standalone CLI are copied without logic edits"
+  ]
+}

@@ -52,7 +52,7 @@ def main(argv: list[str] | None = None) -> int:
     print(f"BASE_CHECK_OK: Python {detected}")
     for name, required in REQUIRED_PACKAGES.items():
         print(f"DEPENDENCY_CHECK_OK: {name}=={required}")
-    print("No packages were installed or changed. PTO module available; Worktime and Payroll not yet released.")
+    print("No packages were installed or changed. PTO and Worktime modules available; Payroll not yet released.")
     return 0
 
 

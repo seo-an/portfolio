@@ -1,0 +1,21 @@
+{
+  "schema_version": "0.1",
+  "period_from": "2026-09-15",
+  "period_to": "2026-09-15",
+  "source_names": {
+    "employees": "employees",
+    "schedule": "schedule",
+    "attendance": "attendance"
+  },
+  "worktime_assignments": {
+    "EMP-01": {
+      "worktime_system": "standard",
+      "rule_ref": "labor_standard_50_53"
+    },
+    "EMP-02": {
+      "worktime_system": "standard",
+      "rule_ref": "labor_standard_50_53"
+    }
+  },
+  "approvals": []
+}

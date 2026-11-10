@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Portfolio CLI placeholder: deliberately blocks unavailable calculators."""
+"""Portfolio CLI for published Bhandara modules and Golden comparisons."""
 from __future__ import annotations
 
 import argparse
@@ -8,7 +8,7 @@ import sys
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Public Portfolio CLI: PTO and Golden comparisons."
+        description="Public Portfolio CLI: PTO, Worktime and Golden comparisons."
     )
     commands = parser.add_subparsers(dest="collection", required=True)
     bhandara = commands.add_parser(
@@ -17,6 +17,7 @@ def build_parser() -> argparse.ArgumentParser:
     bhandara.add_argument("module_id", help="Requested module identifier")
     bhandara.add_argument("--config", help="Path to module config JSON")
     bhandara.add_argument("--input-dir", help="Local Excel input directory")
+    bhandara.add_argument("--normalized", help="Worktime canonical normalized-input.json")
     bhandara.add_argument("--output-dir", help="Local output directory")
     compare = commands.add_parser(
         "compare-golden", help="Compare two private Golden JSON artifacts or Payroll output folders"
@@ -57,8 +58,23 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"PTO_ARTIFACT: {name} -> {path}")
             return {RunStatus.PASS: 0, RunStatus.REVIEW_REQUIRED: 1,
                     RunStatus.ERROR: 2}[status]
+        if args.module_id == "worktime-calculator":
+            if not all((args.normalized, args.config, args.output_dir)):
+                print(
+                    "WORKTIME_INVALID: --normalized, --config and --output-dir required",
+                    file=sys.stderr,
+                )
+                return 2
+            from importlib import import_module
+            worktime = import_module("bhandara.worktime-calculator.run")
+            return worktime.main([
+                "calculate",
+                "--normalized", args.normalized,
+                "--config", args.config,
+                "--output-dir", args.output_dir,
+            ])
         print(
-            f"UNAVAILABLE: {args.module_id!r} is not installed in this Phase 1 bootstrap. "
+            f"UNAVAILABLE: {args.module_id!r} is not installed in this portfolio. "
             "No calculations were performed.",
             file=sys.stderr,
         )

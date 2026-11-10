@@ -1,6 +1,6 @@
 # Bhandara Base — 공개 공통 계약 v0.1
 
-**구현 상태:** Excel 필수 컬럼 추출, 진단 결과, 원본 SHA-256, 안전한 산출물 생성과 실행 기록은 구현됨. **PTO/Worktime/Payroll 계산기, 사용자용 계산 CLI, 모듈 스키마 자동 검색은 미구현.**
+**구현 상태 (2026-11-10):** 공통 Base의 Excel 필수 컬럼 추출·진단·SHA-256·산출물·실행 기록 구현. PTO Calculator는 공개된 별도 모듈이며 Worktime Calculator는 이번 **무수정 이전 PR에서 구현·서버 검증 대기**다. Payroll 계산기와 모듈 스키마 **자동 검색**은 미구현이다. PTO/Worktime 실행은 최상위 CLI의 명시적 분기로 연결하며 Base 계산 API와 구분한다.
 
 ## 1. 소유권과 환경
 
