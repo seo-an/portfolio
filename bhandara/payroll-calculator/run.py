@@ -11,9 +11,9 @@ import sys
 from pathlib import Path
 
 # Running this file directly sets sys.path[0] to payroll-calculator, not the
-# repository root. The existing operational engine imports gearbox.core.xlsx.
-# Make both the Gear and the repository package available from *any* cwd.
-REPO_ROOT = Path(__file__).resolve().parents[3]
+# repository root. The migrated engine uses Bhandara's public common modules.
+# Keep both the portfolio package and local function imports available.
+REPO_ROOT = Path(__file__).resolve().parents[2]
 FUNCTIONS = Path(__file__).resolve().parent / "functions"
 for module_root in (REPO_ROOT, FUNCTIONS):
     if str(module_root) not in sys.path:

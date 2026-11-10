@@ -36,7 +36,7 @@ def build_synthetic_payroll(output_dir: str | Path, worktime_result: str | Path)
         raise FileNotFoundError(f"Worktime result does not exist: {source}")
     # Do not silently reuse a real-work input directory or overwrite artifacts.
     output.mkdir(mode=0o700, parents=True, exist_ok=False)
-    repo_gearbox = Path(__file__).resolve().parents[4]
+    module_root = Path(__file__).resolve().parents[2]
     _xlsx(
         output / "compensation.xlsx",
         ["worker_id", "effective_from", "effective_to", "base_salary"],
@@ -74,10 +74,10 @@ def build_synthetic_payroll(output_dir: str | Path, worktime_result: str | Path)
         "compensation_path": "compensation.xlsx",
         "payroll_input_path": "payroll-input.xlsx",
         "worktime_result_path": str(source),
-        "registry_path": str(repo_gearbox / "registry" / "pay-item-registry.json"),
-        "operating_config_path": str(repo_gearbox / "gear" / "payroll-calculator" / "operating-config.json"),
+        "registry_path": str(module_root / "resources" / "pay-item-registry.json"),
+        "operating_config_path": str(module_root / "operating-config.json"),
         "company_policy_path": "company-policy.json",
-        "legal_policy_path": str(repo_gearbox / "policy" / "payroll" / "2026.json"),
+        "legal_policy_path": str(module_root / "resources" / "policy" / "2026.json"),
         "employment_facts_path": "employment-facts.json",
         "recurring_pay_item_codes": ["base_salary"],
     })
