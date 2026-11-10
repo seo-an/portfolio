@@ -74,7 +74,7 @@ def main(argv: list[str] | None = None) -> int:
                 "--output-dir", args.output_dir,
             ])
         print(
-            f"UNAVAILABLE: {args.module_id!r} is not installed in this Phase 1 bootstrap. "
+            f"UNAVAILABLE: {args.module_id!r} is not installed in this portfolio. "
             "No calculations were performed.",
             file=sys.stderr,
         )
