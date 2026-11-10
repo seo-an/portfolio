@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from gearbox.core.xlsx import read_xlsx_rows_raw
+from bhandara.common.io.payroll_legacy_xlsx import read_xlsx_rows_raw
 
 try:
     from .input_contracts import (

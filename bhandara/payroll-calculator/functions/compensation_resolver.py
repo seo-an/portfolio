@@ -6,7 +6,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable
 
-from gearbox.core.date_interval import is_date_within_interval
+from bhandara.common.utils.date_interval import is_date_within_interval
 
 
 IDENTITY_FIELDS = {"worker_id", "effective_from", "effective_to"}

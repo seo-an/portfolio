@@ -6,8 +6,8 @@ from copy import deepcopy
 from datetime import date
 from typing import Any, Iterable
 
-from gearbox.core.date_interval import is_date_within_interval
-from gearbox.diagnostics.contract import REVIEW_REQUIRED, WARNING, build_diagnostic
+from bhandara.common.utils.date_interval import is_date_within_interval
+from bhandara.common.contracts.pto_diagnostics import REVIEW_REQUIRED, WARNING, build_diagnostic
 
 
 class PayrollPolicyError(RuntimeError):

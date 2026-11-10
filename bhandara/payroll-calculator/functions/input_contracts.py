@@ -7,8 +7,8 @@ from typing import Any
 
 from openpyxl import load_workbook
 
-from gearbox.diagnostics.catalog import get_common_diagnostic
-from gearbox.diagnostics.contract import ACTION_REQUIRED, BLOCKED, ERROR, build_diagnostic
+from bhandara.common.contracts.payroll_diagnostic_catalog import get_common_diagnostic
+from bhandara.common.contracts.pto_diagnostics import ACTION_REQUIRED, BLOCKED, ERROR, build_diagnostic
 
 
 COMPENSATION_IDENTITY_COLUMNS = ("worker_id", "effective_from", "effective_to")

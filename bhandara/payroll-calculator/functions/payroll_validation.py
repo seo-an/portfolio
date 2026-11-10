@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from gearbox.diagnostics.contract import (
+from bhandara.common.contracts.pto_diagnostics import (
     ACTION_REQUIRED,
     ERROR,
     INFO,
