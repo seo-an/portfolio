@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import sys
 from importlib.metadata import PackageNotFoundError, version
+from pathlib import Path
 
 MIN_PYTHON = (3, 12)
 REQUIRED_PACKAGES = {"openpyxl": "3.1.5", "korean-lunar-calendar": "0.4.0"}
@@ -52,7 +53,12 @@ def main(argv: list[str] | None = None) -> int:
     print(f"BASE_CHECK_OK: Python {detected}")
     for name, required in REQUIRED_PACKAGES.items():
         print(f"DEPENDENCY_CHECK_OK: {name}=={required}")
-    print("No packages were installed or changed. PTO, Worktime and Payroll modules available; Payroll migration server verification pending.")
+    available = [
+        module_id for module_id in ("pto-calculator", "worktime-calculator", "payroll-calculator")
+        if (Path(__file__).resolve().parent / "bhandara" / module_id / "module.json").is_file()
+    ]
+    print("No packages were installed or changed. Available modules: "
+          + (", ".join(available) if available else "none") + ".")
     return 0
 
 
