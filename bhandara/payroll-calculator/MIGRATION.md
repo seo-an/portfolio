@@ -107,10 +107,6 @@ sudo docker exec -w /opt/agent-config/.external/portfolio hermes \
   /opt/hermes/.venv/bin/python install.py --check
 
 sudo docker exec -w /opt/agent-config hermes \
-  /opt/hermes/.venv/bin/python -m unittest discover \
-  -s gearbox/_tests/gear/payroll-calculator -p 'test_*.py' -v
-
-sudo docker exec -w /opt/agent-config hermes \
   /opt/hermes/.venv/bin/python gearbox/_tests/core_run.py
 
 sudo docker exec -w /opt/agent-config hermes \
@@ -118,3 +114,17 @@ sudo docker exec -w /opt/agent-config hermes \
 ```
 
 **서버 검증을 통과한 후에만 Merge.** 기존 `agent-config` 실행 경로, Hermes Plugin, n8n/Slack, 실제 직원자료는 변경하지 않는다.
+
+### 기존 Gearbox 테스트 실행 경로 주의 (2026-11-10)
+
+기존 Payroll 테스트를 다음처럼 직접 실행하면 일부 테스트가 ImportError로 종료할 수 있다.
+
+```sh
+# 비권장: 공식 실행기의 함수 모듈 경로 설정을 생략한다.
+python -m unittest discover \
+  -s gearbox/_tests/gear/payroll-calculator -p 'test_*.py' -v
+```
+
+`test_absence_deduction_calculation_adapter.py`가 `importlib.util.spec_from_file_location`으로 원본 모듈을 단독 로드하는데, `effective_absence_deduction.py`가 fallback으로 참조하는 `absence_deduction`이 검색 경로에 없으면 `ModuleNotFoundError`가 난다. 이는 독립 모듈로 이전한 Payroll의 회귀가 아니라 **기존 테스트 실행 경로 차이**이다.
+
+원본 공식 실행기 `gearbox/_tests/run.py`의 `gear/payroll-calculator` Suite는 `gearbox/gear/payroll-calculator/functions`를 `PYTHONPATH`에 자동 주입한다. 따라서 **기존 회귀 검증 정본 명령은 위의 `gearbox/_tests/run.py`**이며, 원본 계산·테스트 코드를 바꾸거나 새 기능을 추가하지 않는다.
