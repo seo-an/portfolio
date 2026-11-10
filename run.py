@@ -39,6 +39,18 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.collection == "bhandara":
+        # In Base + single-calculator installations, never pretend an absent
+        # calculator exists or leak a Python traceback from import_module().
+        if args.module_id in ("pto-calculator", "worktime-calculator", "payroll-calculator"):
+            from pathlib import Path
+            installed = Path(__file__).resolve().parent / "bhandara" / args.module_id
+            if not (installed / "module.json").is_file():
+                print(
+                    f"UNAVAILABLE: {args.module_id!r} is not installed in this portfolio. "
+                    "No calculations were performed.",
+                    file=sys.stderr,
+                )
+                return 2
         if args.module_id == "pto-calculator":
             from importlib import import_module
             from pathlib import Path
