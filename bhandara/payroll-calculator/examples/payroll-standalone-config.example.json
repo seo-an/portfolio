@@ -1,0 +1,19 @@
+{
+  "_note": "Configuration contract only. Paths are placeholders, must point to real approved local data. Use examples/payroll-standalone-demo/generate.py for a reproducible synthetic CLI run. All outputs are review-only.",
+  "payroll_period": "2026-10",
+  "compensation_path": "/private/payroll/2026-10/compensation.xlsx",
+  "payroll_input_path": "/private/payroll/2026-10/payroll-input.xlsx",
+  "registry_path": "/path/to/portfolio/bhandara/payroll-calculator/resources/pay-item-registry.json",
+  "operating_config_path": "/path/to/portfolio/bhandara/payroll-calculator/operating-config.json",
+  "company_policy_path": "/private/payroll/policy/company-payroll-policy.json",
+  "legal_policy_path": "/private/payroll/policy/verified-labor-2026.json",
+  "employment_facts_path": "/private/payroll/2026-10/employment-facts.json",
+  "recurring_pay_item_codes": [
+    "base_salary"
+  ],
+  "expected_worker_ids": [
+    "EP0001",
+    "EP0002"
+  ],
+  "worktime_result_path": "/private/payroll/2026-10/approved-worktime-rows.json"
+}

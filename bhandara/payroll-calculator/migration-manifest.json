@@ -1,0 +1,537 @@
+{
+  "schema_version": "1.0",
+  "migration_type": "copy_with_path_only_adaptations",
+  "source_repository": "seo-an/agent-config",
+  "source_commit": "d9325b9656da16d66475187f2a101f7e8061205d",
+  "destination_repository": "seo-an/portfolio",
+  "source_root": "gearbox/gear/payroll-calculator/",
+  "destination_root": "bhandara/payroll-calculator/",
+  "files": [
+    {
+      "source": "gearbox/gear/payroll-calculator/BATCH-WORKFLOW.md",
+      "destination": "bhandara/payroll-calculator/BATCH-WORKFLOW.md",
+      "source_git_blob_sha": "6e3440a73b3b9d60eaf7c52e0865ce32a7703a8a"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/POLICY-SCENARIOS.md",
+      "destination": "bhandara/payroll-calculator/POLICY-SCENARIOS.md",
+      "source_git_blob_sha": "89c2f633ef7824fbec9b9b9834dbf863ca057f32"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/README.md",
+      "destination": "bhandara/payroll-calculator/README.md",
+      "source_git_blob_sha": "7870398b6fd58eb3587907d8b74f8f49e723d30b"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/RUNBOOK.md",
+      "destination": "bhandara/payroll-calculator/RUNBOOK.md",
+      "source_git_blob_sha": "9a77fe5b7b9cd9e801b6120a2a24b8caa480a948"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/STANDALONE-CLI.md",
+      "destination": "bhandara/payroll-calculator/STANDALONE-CLI.md",
+      "source_git_blob_sha": "b2250aa77415d9681be0193d42ce2f540451b8d7"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/contracts/pay-item-eligibility-schema.json",
+      "destination": "bhandara/payroll-calculator/contracts/pay-item-eligibility-schema.json",
+      "source_git_blob_sha": "316d70862e2d4807d6d1690312e5ba6d96b56653"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/examples/2026-10-payroll-e2e.json",
+      "destination": "bhandara/payroll-calculator/examples/2026-10-payroll-e2e.json",
+      "source_git_blob_sha": "00742a3e8d355962b215ff9ccd37310511079e6c"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/examples/payroll-standalone-config.example.json",
+      "destination": "bhandara/payroll-calculator/examples/payroll-standalone-config.example.json",
+      "source_git_blob_sha": "200c3e427288f5045c4c247e2f0da7b2d2450a64"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/examples/payroll-standalone-demo/generate.py",
+      "destination": "bhandara/payroll-calculator/examples/payroll-standalone-demo/generate.py",
+      "source_git_blob_sha": "c7d7eb48ef8dbfe7a86b569c2bc844fbeae3eb61"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/examples/source-mapping-demo/attendance.csv",
+      "destination": "bhandara/payroll-calculator/examples/source-mapping-demo/attendance.csv",
+      "source_git_blob_sha": "80ddfa24cbd52900ed632ad14b83076605e9daf3"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/examples/source-mapping-demo/employees.csv",
+      "destination": "bhandara/payroll-calculator/examples/source-mapping-demo/employees.csv",
+      "source_git_blob_sha": "10afa6e193aa6527bc28859ef7ee63fea2bed6fc"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/examples/source-mapping-demo/manifest.json",
+      "destination": "bhandara/payroll-calculator/examples/source-mapping-demo/manifest.json",
+      "source_git_blob_sha": "95d284a54ac30d1b27ea1493641a4eb30adb2dc2"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/examples/source-mapping-demo/schedule.csv",
+      "destination": "bhandara/payroll-calculator/examples/source-mapping-demo/schedule.csv",
+      "source_git_blob_sha": "926769765a08316530d9cc40fa4c0c34f8a9b0d4"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/examples/source-mapping-manifest.example.json",
+      "destination": "bhandara/payroll-calculator/examples/source-mapping-manifest.example.json",
+      "source_git_blob_sha": "e863109a9e1674465ee1cc2f6b63874ae1dac6b9"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/absence_deduction.py",
+      "destination": "bhandara/payroll-calculator/functions/absence_deduction.py",
+      "source_git_blob_sha": "0f1e68a843f3d379d12e18690493d3d2a2947de4"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/absence_deduction_calculation_adapter.py",
+      "destination": "bhandara/payroll-calculator/functions/absence_deduction_calculation_adapter.py",
+      "source_git_blob_sha": "a1171809e8c1aba7cfd0f41005f03aebd22b613b"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/absence_deduction_input.py",
+      "destination": "bhandara/payroll-calculator/functions/absence_deduction_input.py",
+      "source_git_blob_sha": "79b894b71481f92307e54936789b8029fd541839"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/absence_deduction_lines.py",
+      "destination": "bhandara/payroll-calculator/functions/absence_deduction_lines.py",
+      "source_git_blob_sha": "35858c9c8bd83128c0f7061122377e3f5f24a085"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/absence_events.py",
+      "destination": "bhandara/payroll-calculator/functions/absence_events.py",
+      "source_git_blob_sha": "d769701e53119fa64188e75e4ac3e472a68e1427"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/amount_processing.py",
+      "destination": "bhandara/payroll-calculator/functions/amount_processing.py",
+      "source_git_blob_sha": "a7adc791ba4ac7f6b2fc10c69427d2e971979fa7"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/batch_reporting.py",
+      "destination": "bhandara/payroll-calculator/functions/batch_reporting.py",
+      "source_git_blob_sha": "4acf836e0c30e53c6f2272e5952e21109949f8ab"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/calculated_result_adapter.py",
+      "destination": "bhandara/payroll-calculator/functions/calculated_result_adapter.py",
+      "source_git_blob_sha": "49b76efb32b922f17678767db04bd465addecc09"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/calculation_base.py",
+      "destination": "bhandara/payroll-calculator/functions/calculation_base.py",
+      "source_git_blob_sha": "726482db552ff888d067e448913339b34071070c"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/calculation_primitive.py",
+      "destination": "bhandara/payroll-calculator/functions/calculation_primitive.py",
+      "source_git_blob_sha": "fd07446c522ba24c07fe095593173ffdeb83f75c"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/compensation_calculation_adapter.py",
+      "destination": "bhandara/payroll-calculator/functions/compensation_calculation_adapter.py",
+      "source_git_blob_sha": "0abf76b1ca484dfbab8b690546e17382cffa5a3b"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/compensation_resolver.py",
+      "destination": "bhandara/payroll-calculator/functions/compensation_resolver.py",
+      "source_git_blob_sha": "4c67e2ce0924311e59e5914cec57419e142bfefc"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/component_calculator.py",
+      "destination": "bhandara/payroll-calculator/functions/component_calculator.py",
+      "source_git_blob_sha": "5af9244b43a00adb6fa32add13460d4135cea17e"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/dependency_resolver.py",
+      "destination": "bhandara/payroll-calculator/functions/dependency_resolver.py",
+      "source_git_blob_sha": "87927402d79b3e4feee8dde6a2236583702135c6"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/derived_value.py",
+      "destination": "bhandara/payroll-calculator/functions/derived_value.py",
+      "source_git_blob_sha": "c7d592a09f0f82d2a20cc34009d25a1bb04a81a6"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/effective_absence_deduction.py",
+      "destination": "bhandara/payroll-calculator/functions/effective_absence_deduction.py",
+      "source_git_blob_sha": "b39f693d5646f5b4ffa5ed80179bb00c09533d0f"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/eligibility_resolver.py",
+      "destination": "bhandara/payroll-calculator/functions/eligibility_resolver.py",
+      "source_git_blob_sha": "7b73db52acbc5520a008f45548893ab9b6eec960"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/final_payroll.py",
+      "destination": "bhandara/payroll-calculator/functions/final_payroll.py",
+      "source_git_blob_sha": "666131f4afa664005fcdeaebfa803b98e0f5c176"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/historical_rerun_orchestrator.py",
+      "destination": "bhandara/payroll-calculator/functions/historical_rerun_orchestrator.py",
+      "source_git_blob_sha": "62366f4bda428424aa7c7d0d2e9cb33a5f00fd3a"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/historical_result_comparison.py",
+      "destination": "bhandara/payroll-calculator/functions/historical_result_comparison.py",
+      "source_git_blob_sha": "e42dd6fea73dc6f0ea3e9e87c702db31cdab226f"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/input_contracts.py",
+      "destination": "bhandara/payroll-calculator/functions/input_contracts.py",
+      "source_git_blob_sha": "b3bc8ede39f981ffcbd35260c857e809f05e903d"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/operating_input_preparation.py",
+      "destination": "bhandara/payroll-calculator/functions/operating_input_preparation.py",
+      "source_git_blob_sha": "7e8dbee60c3ae879b6dd290046ebaa1e3507fa3f"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/operating_period_resolver.py",
+      "destination": "bhandara/payroll-calculator/functions/operating_period_resolver.py",
+      "source_git_blob_sha": "a10e5afd74153550332a4530812d1f86f7451464"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/operating_trace.py",
+      "destination": "bhandara/payroll-calculator/functions/operating_trace.py",
+      "source_git_blob_sha": "14564012e4a97320f26061d8a68ee1214e875ab1"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/ordinary_wage_resolver.py",
+      "destination": "bhandara/payroll-calculator/functions/ordinary_wage_resolver.py",
+      "source_git_blob_sha": "6fa56e9d76f882840572701b2dd3107c2200e4de"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_aggregator.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_aggregator.py",
+      "source_git_blob_sha": "b01809f3d9d1b05a51b2baef8c8004d0fb8de244"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_calculation_stage.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_calculation_stage.py",
+      "source_git_blob_sha": "3e8448e6887a6647f6616c436fef0058ea13f2db"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_fact_contracts.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_fact_contracts.py",
+      "source_git_blob_sha": "f560d1f554e0dc4cac0ddcfeb5842165acf9f51e"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_input_calculation_adapter.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_input_calculation_adapter.py",
+      "source_git_blob_sha": "850cdeec9d1e00cc9de908878e84bef353e9b726"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_operational_composition.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_operational_composition.py",
+      "source_git_blob_sha": "bd8125d1cee04eaf7dc2463d7042be65e76b560a"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_operational_entrypoint.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_operational_entrypoint.py",
+      "source_git_blob_sha": "dd60e90b8a37ae2ffba09f1289b4da59ad5a5290"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_operational_file_io.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_operational_file_io.py",
+      "source_git_blob_sha": "3f7838d7ab8b6b993f71742c683a9c9267681c27"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_orchestrator.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_orchestrator.py",
+      "source_git_blob_sha": "c2c155db955ceb73d34f9c5eac1e07692f8f925e"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_output_xlsx.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_output_xlsx.py",
+      "source_git_blob_sha": "e19d5d32e7b0acf3ab18aa171203eea21eefd7c4"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_policy_catalog.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_policy_catalog.py",
+      "source_git_blob_sha": "52552eea36ffae6b767f2a9a9710806186728382"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_policy_resolver.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_policy_resolver.py",
+      "source_git_blob_sha": "3086e284d55f31a91d526fcca62a5820bfb0a75a"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_register.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_register.py",
+      "source_git_blob_sha": "c3e4df9a01665f87922561cc2cf2f986362df0e7"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_result.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_result.py",
+      "source_git_blob_sha": "878209dbc1687a3e9a05125afefb1412c99c4ea1"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_result_adapter.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_result_adapter.py",
+      "source_git_blob_sha": "09392a32ea8d91f9dad8b0cdc80b263af6e5a0fa"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_run.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_run.py",
+      "source_git_blob_sha": "dfad72ae4330b91f5ed6324752d85b97472c9284"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_run_input.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_run_input.py",
+      "source_git_blob_sha": "35826d0a75746020a0423f1dd0098971eba236dc"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_standalone_input.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_standalone_input.py",
+      "source_git_blob_sha": "ada07c60f4a4c9e25d1408dbe4924788cb3fb0e8"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_standalone_report.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_standalone_report.py",
+      "source_git_blob_sha": "51e13ebc65ad2d2af9c68a7fce22ff23965cde59"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_standalone_runner.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_standalone_runner.py",
+      "source_git_blob_sha": "97f65eee223261b2e7f1156a4b4bc5f214c194c8"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_totals.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_totals.py",
+      "source_git_blob_sha": "621ca49cdffba6b7e405e751df70f3944c1d84ef"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/payroll_validation.py",
+      "destination": "bhandara/payroll-calculator/functions/payroll_validation.py",
+      "source_git_blob_sha": "3ffe348c26eff1e652f5c75cb406886f76f8dae1"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/premium_calculator.py",
+      "destination": "bhandara/payroll-calculator/functions/premium_calculator.py",
+      "source_git_blob_sha": "fb952296c1971ab6b8510fe81b5735a2f6ab1062"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/proration.py",
+      "destination": "bhandara/payroll-calculator/functions/proration.py",
+      "source_git_blob_sha": "a0b682f3304ef19da8292b4ef44b9dc5bcd68b5b"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/reference_resolver.py",
+      "destination": "bhandara/payroll-calculator/functions/reference_resolver.py",
+      "source_git_blob_sha": "81e64585fff8fa46c4b37d3234ec0d5242d9822d"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/retroactive_result.py",
+      "destination": "bhandara/payroll-calculator/functions/retroactive_result.py",
+      "source_git_blob_sha": "d45cb1cfd4856df59b58eecbb07f6892d371e4d4"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/retroactive_settlement.py",
+      "destination": "bhandara/payroll-calculator/functions/retroactive_settlement.py",
+      "source_git_blob_sha": "b4653036f8adb676f0b96faa83fd8611ccaa2993"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/rounding_settlement.py",
+      "destination": "bhandara/payroll-calculator/functions/rounding_settlement.py",
+      "source_git_blob_sha": "00257773b2fff2c0343ac90ad642182405880bf6"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/settlement_ledger.py",
+      "destination": "bhandara/payroll-calculator/functions/settlement_ledger.py",
+      "source_git_blob_sha": "79ca5eb722bdacadb441cd707080133f87932927"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/settlement_ledger_lifecycle.py",
+      "destination": "bhandara/payroll-calculator/functions/settlement_ledger_lifecycle.py",
+      "source_git_blob_sha": "54ab69f212d5c4219929480089959d40ea83b252"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/settlement_ledger_xlsx.py",
+      "destination": "bhandara/payroll-calculator/functions/settlement_ledger_xlsx.py",
+      "source_git_blob_sha": "eb412ae966e08cb122fdf0c044f322ad849511a2"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/source_mapping.py",
+      "destination": "bhandara/payroll-calculator/functions/source_mapping.py",
+      "source_git_blob_sha": "62ed9c22f9887322c4faac61d11735507ea25f5e"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/source_pipeline.py",
+      "destination": "bhandara/payroll-calculator/functions/source_pipeline.py",
+      "source_git_blob_sha": "528b246a5af95eac2ab0c02b6541cf557611b24c"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/weekly_holiday_calculation_adapter.py",
+      "destination": "bhandara/payroll-calculator/functions/weekly_holiday_calculation_adapter.py",
+      "source_git_blob_sha": "0f1c766c487f7b11b8b2e953a213c007eaa446f8"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/weekly_holiday_eligibility.py",
+      "destination": "bhandara/payroll-calculator/functions/weekly_holiday_eligibility.py",
+      "source_git_blob_sha": "a953541b68713077b0461c647c381ac345cd99a1"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/weekly_holiday_hours.py",
+      "destination": "bhandara/payroll-calculator/functions/weekly_holiday_hours.py",
+      "source_git_blob_sha": "7a4ec0df1d8a3ce0f932324a8982148ae141a4e2"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/weekly_holiday_pay.py",
+      "destination": "bhandara/payroll-calculator/functions/weekly_holiday_pay.py",
+      "source_git_blob_sha": "c2fffd28c4a57409b30907c6a0fe5d3eb6e2d424"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/weekly_holiday_pay_treatment.py",
+      "destination": "bhandara/payroll-calculator/functions/weekly_holiday_pay_treatment.py",
+      "source_git_blob_sha": "1ae060a966a183a7001406f5297a2e00fa26cb25"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/weekly_holiday_resolver.py",
+      "destination": "bhandara/payroll-calculator/functions/weekly_holiday_resolver.py",
+      "source_git_blob_sha": "266181d22553afea32c3a301a5af76fd87dce102"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/worktime_calculation_adapter.py",
+      "destination": "bhandara/payroll-calculator/functions/worktime_calculation_adapter.py",
+      "source_git_blob_sha": "94fd821b11f900c91415c1fe360dd281c82da997"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/worktime_handoff.py",
+      "destination": "bhandara/payroll-calculator/functions/worktime_handoff.py",
+      "source_git_blob_sha": "129c5cb6b23729b23694c7f3f970bf8b54cbb85a"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/worktime_pay_calculator.py",
+      "destination": "bhandara/payroll-calculator/functions/worktime_pay_calculator.py",
+      "source_git_blob_sha": "174fcb9246199bdd536b8885da101578064a64a7"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/worktime_pay_item_mapper.py",
+      "destination": "bhandara/payroll-calculator/functions/worktime_pay_item_mapper.py",
+      "source_git_blob_sha": "cb739a6bae796ac20167a000ee23aee325e85062"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/worktime_pay_policy.py",
+      "destination": "bhandara/payroll-calculator/functions/worktime_pay_policy.py",
+      "source_git_blob_sha": "92aa927b04da7b112ce105d414867a64c42779ad"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/functions/xlsx_loader.py",
+      "destination": "bhandara/payroll-calculator/functions/xlsx_loader.py",
+      "source_git_blob_sha": "c69eae32ffbd25d13961cacc92944899998cd31d"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/operating-config.json",
+      "destination": "bhandara/payroll-calculator/operating-config.json",
+      "source_git_blob_sha": "4074c00ac86ab114cd276ff09b521338d61cdc53"
+    },
+    {
+      "source": "gearbox/gear/payroll-calculator/run.py",
+      "destination": "bhandara/payroll-calculator/run.py",
+      "source_git_blob_sha": "62f58da5fccebdf9c88e0e3813fdeb2a937007df"
+    }
+  ],
+  "resources": [
+    {
+      "source": "gearbox/core/xlsx.py",
+      "destination": "bhandara/common/io/payroll_legacy_xlsx.py",
+      "source_git_blob_sha": "d111f55208cd280b07486f4d5fe3e4f69f9f7b77"
+    },
+    {
+      "source": "gearbox/diagnostics/catalog.py",
+      "destination": "bhandara/common/contracts/payroll_diagnostic_catalog.py",
+      "source_git_blob_sha": "d519eccefe988a7fa4117a8fde98a780c49af155"
+    },
+    {
+      "source": "gearbox/registry/pay-item-registry.json",
+      "destination": "bhandara/payroll-calculator/resources/pay-item-registry.json",
+      "source_git_blob_sha": "4f2c1137f47895af80aed06bd2e5dfa441e97a0f"
+    },
+    {
+      "source": "gearbox/policy/payroll/2026.json",
+      "destination": "bhandara/payroll-calculator/resources/policy/2026.json",
+      "source_git_blob_sha": "c1b1c4a2b5c58187721e3a37be7b17b8e47b806b"
+    }
+  ],
+  "adaptations": {
+    "functions/compensation_resolver.py": [
+      [
+        "from gearbox.core.date_interval import is_date_within_interval",
+        "from bhandara.common.utils.date_interval import is_date_within_interval"
+      ]
+    ],
+    "functions/input_contracts.py": [
+      [
+        "from gearbox.diagnostics.catalog import get_common_diagnostic",
+        "from bhandara.common.contracts.payroll_diagnostic_catalog import get_common_diagnostic"
+      ],
+      [
+        "from gearbox.diagnostics.contract import ACTION_REQUIRED, BLOCKED, ERROR, build_diagnostic",
+        "from bhandara.common.contracts.pto_diagnostics import ACTION_REQUIRED, BLOCKED, ERROR, build_diagnostic"
+      ]
+    ],
+    "functions/payroll_policy_resolver.py": [
+      [
+        "from gearbox.core.date_interval import is_date_within_interval",
+        "from bhandara.common.utils.date_interval import is_date_within_interval"
+      ],
+      [
+        "from gearbox.diagnostics.contract import REVIEW_REQUIRED, WARNING, build_diagnostic",
+        "from bhandara.common.contracts.pto_diagnostics import REVIEW_REQUIRED, WARNING, build_diagnostic"
+      ]
+    ],
+    "functions/payroll_validation.py": [
+      [
+        "from gearbox.diagnostics.contract import (",
+        "from bhandara.common.contracts.pto_diagnostics import ("
+      ]
+    ],
+    "functions/xlsx_loader.py": [
+      [
+        "from gearbox.core.xlsx import read_xlsx_rows_raw",
+        "from bhandara.common.io.payroll_legacy_xlsx import read_xlsx_rows_raw"
+      ]
+    ],
+    "run.py": [
+      [
+        "# repository root. The existing operational engine imports gearbox.core.xlsx.\n# Make both the Gear and the repository package available from *any* cwd.",
+        "# repository root. The migrated engine uses Bhandara's public common modules.\n# Keep both the portfolio package and local function imports available."
+      ],
+      [
+        "REPO_ROOT = Path(__file__).resolve().parents[3]",
+        "REPO_ROOT = Path(__file__).resolve().parents[2]"
+      ]
+    ],
+    "examples/payroll-standalone-demo/generate.py": [
+      [
+        "repo_gearbox = Path(__file__).resolve().parents[4]",
+        "module_root = Path(__file__).resolve().parents[2]"
+      ],
+      [
+        "str(repo_gearbox / \"registry\" / \"pay-item-registry.json\")",
+        "str(module_root / \"resources\" / \"pay-item-registry.json\")"
+      ],
+      [
+        "str(repo_gearbox / \"gear\" / \"payroll-calculator\" / \"operating-config.json\")",
+        "str(module_root / \"operating-config.json\")"
+      ],
+      [
+        "str(repo_gearbox / \"policy\" / \"payroll\" / \"2026.json\")",
+        "str(module_root / \"resources\" / \"policy\" / \"2026.json\")"
+      ]
+    ],
+    "examples/payroll-standalone-config.example.json": [
+      [
+        "/opt/agents/config/agent-config/gearbox/registry/pay-item-registry.json",
+        "/path/to/portfolio/bhandara/payroll-calculator/resources/pay-item-registry.json"
+      ],
+      [
+        "/opt/agents/config/agent-config/gearbox/gear/payroll-calculator/operating-config.json",
+        "/path/to/portfolio/bhandara/payroll-calculator/operating-config.json"
+      ]
+    ]
+  },
+  "note": "85 original Payroll files preserved; exactly 8 path-only adaptations, reversible to source blob SHAs. No calculation, policy, exception or approval logic changed."
+}

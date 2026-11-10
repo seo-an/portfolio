@@ -1,0 +1,55 @@
+{
+  "schema_version": "0.1",
+  "payroll_period": "2026-10",
+  "roster": {
+    "source": "employees",
+    "key": "employee_id",
+    "worker_id_field": "worker_id"
+  },
+  "sources": {
+    "employees": {
+      "path": "employees.csv",
+      "encoding": "utf-8-sig",
+      "fields": {
+        "employee_id": {"source": ["직원번호", "사번"], "type": "str", "required": true},
+        "worker_id": {"source": "급여관리ID", "type": "str", "required": true},
+        "employment_from": {"source": "입사일", "type": "date", "required": true},
+        "employment_to": {"source": "퇴사일", "type": "date"}
+      },
+      "unique_by": ["employee_id", "worker_id"]
+    },
+    "schedule": {
+      "path": "schedule.xlsx",
+      "sheet": "월간근무표",
+      "header_row": 1,
+      "fields": {
+        "employee_id": {"source": "사원코드", "required": true},
+        "work_date": {"source": "기준일", "type": "date", "required": true},
+        "scheduled_start": {"source": "시작", "type": "time"},
+        "scheduled_end": {"source": "종료", "type": "time"},
+        "break_min": {"source": "휴게분", "type": "int", "default": 0},
+        "day_type": {
+          "source": "일정상태",
+          "value_map": {"출근": "WORK", "휴무": "OFF", "휴일": "HOLIDAY"},
+          "required": true
+        }
+      },
+      "unique_by": ["employee_id", "work_date"],
+      "link_to_roster": {"source_field": "employee_id"}
+    },
+    "attendance": {
+      "path": "attendance.json",
+      "records_path": "data.records",
+      "fields": {
+        "employee_id": {"source": "employee.code", "required": true},
+        "work_date": {"source": "date", "type": "date", "required": true},
+        "clock_in": {"source": "start", "type": "time", "required": true},
+        "clock_out": {"source": "end", "type": "time", "required": true},
+        "break_min": {"source": "break_minutes", "type": "int", "default": 0}
+      },
+      "unique_by": ["employee_id", "work_date"],
+      "link_to_roster": {"source_field": "employee_id"},
+      "allow_empty": true
+    }
+  }
+}

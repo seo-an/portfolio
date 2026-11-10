@@ -2,7 +2,7 @@
 
 Public, independently runnable HR calculation tools are being developed under `bhandara/`. The goal is to provide local Excel inputs and review JSON/XLSX results without a cloud account, AI agent, or external login.
 
-> **Status (2026-11-10):** Base and PTO v0.1.0 are published. Gearbox's synthetic-only PTO Preview Tool was registered and exercised from Slack, and synthetic full-year PTO parity passed; **the existing PTO Pipeline remains unchanged**. This branch introduces a **byte-identical Worktime Calculator migration**, pending Hermes server tests and PR merge. Payroll and attendance-normalizer are not yet published Bhandara modules. New calculation features, error-handling changes and policy improvements are out of scope for this migration.
+> **Status (2026-11-10):** Base/PTO and Worktime v0.1.0 have been merged and verified on Hermes. Synthetic-only PTO Hermes/Slack and full-year parity passed; the existing operational Gearbox pipelines remain unchanged. This branch migrates **Payroll Calculator** unchanged apart from reversible import/path references; **Payroll server parity tests and Merge are still pending**. No new HR policy, error handling, or payroll approval features are introduced.
 
 ## Architecture
 
@@ -48,7 +48,7 @@ python run.py bhandara pto-calculator --config /tmp/pto-demo/config.json --input
 
 Exit 0=PASS, 1=REVIEW_REQUIRED, 2=ERROR. Never interpret any status as payroll or leave approval. The 2026-07 three-employee (E001/E005/E020) **synthetic Golden parity gate passed before PR #4 was merged**. That confirms parity for this fixed dataset, not every legal case or employer policy. See [PTO README](bhandara/pto-calculator/README.md). The legacy Gearbox PTO remains the active pipeline; a separate synthetic-only Hermes Tool/Slack path has been tested.
 
-## Worktime Calculator v0.1.0 — unchanged migration (server verification pending)
+## Worktime Calculator v0.1.0 — migration verified and merged
 
 See [Worktime Calculator README](bhandara/worktime-calculator/README.md). The original seven function files, CLI, output contract and demo configuration are **copied without calculation/validation/error-policy changes**. Worktime receives an externally prepared `normalized-input.json` instead of raw Excel; its existing source normalization is not being moved in this PR.
 
@@ -59,4 +59,20 @@ python run.py bhandara worktime-calculator \
   --output-dir /private/worktime-result-01
 ```
 
-The migration tests verify exact source Git blob identity and identical CLI JSON/XLSX output for the same synthetic input. **The source-to-public real server parity checks are still pending**. No operational Worktime/Payroll routing changes are part of this PR.
+The migration tests verify exact source Git blob identity and identical CLI JSON/XLSX output for the same synthetic input. The Worktime migration tests passed on Hermes before portfolio PR #6 was merged. The existing operational Worktime/Payroll Gearbox routing was not changed.
+
+## Payroll Calculator v0.1.0 — unchanged code migration (server tests pending)
+
+The original Payroll Calculator **85 tracked files** have been copied to [Payroll migration instructions](bhandara/payroll-calculator/MIGRATION.md), with **77 byte-identical Git blobs**, 8 reversible path/import-only edits, and four byte-identical supporting common/policy/registry resources. This branch does not change payroll formulas, validation/exception policy, Worktime closure, Ledger commits or any existing Gearbox production route.
+
+```sh
+python run.py bhandara payroll-calculator \
+  --config /private/payroll-config.json \
+  --output-dir /private/payroll-output
+
+python run.py bhandara payroll-calculator --operation normalize \
+  --input-dir /private/source-input \
+  --output-dir /private/normalized-output
+```
+
+The calculate command retains the **review-only, non-finalizing** Payroll CLI contract and normally returns **exit 2** even for successfully calculated review outputs. The server's migration-only SHA and synthetic CLI parity tests must pass **before merging** this branch.

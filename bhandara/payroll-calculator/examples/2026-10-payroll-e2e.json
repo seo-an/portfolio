@@ -1,0 +1,208 @@
+{
+  "schema_version": "0.1",
+  "payroll_period": "2026-10",
+  "description": "Payroll Calculator 전체 흐름 점검용 8인 예제. 금액은 계산 결과를 테스트에서 검증한다.",
+  "cases": [
+    {
+      "id": "monthly-normal",
+      "worker_id": "E001",
+      "description": "일반 월급제 정상 근무",
+      "compensation": [
+        {
+          "effective_from": "2026-01-01",
+          "effective_to": null,
+          "base_salary": "3100000"
+        }
+      ],
+      "employment_from": null,
+      "absence_events": [],
+      "weekly": {
+        "week_start": "2026-10-05",
+        "week_end": "2026-10-11",
+        "weekly_scheduled_hours": "40",
+        "labor_status": "employee",
+        "pay_basis": "monthly"
+      },
+      "expected": {
+        "weekly_eligible": true,
+        "weekly_treatment": "included_in_monthly_pay",
+        "weekly_extra_amount": "0"
+      }
+    },
+    {
+      "id": "midmonth-hire",
+      "worker_id": "E002",
+      "description": "10월 16일 입사 월급제",
+      "compensation": [
+        {
+          "effective_from": "2026-01-01",
+          "effective_to": null,
+          "base_salary": "3100000"
+        }
+      ],
+      "employment_from": "2026-10-16",
+      "absence_events": [],
+      "expected": {
+        "base_salary_amount": "1600000"
+      }
+    },
+    {
+      "id": "midmonth-raise",
+      "worker_id": "E003",
+      "description": "10월 16일 기본급 변경",
+      "compensation": [
+        {
+          "effective_from": "2026-01-01",
+          "effective_to": "2026-10-15",
+          "base_salary": "3100000"
+        },
+        {
+          "effective_from": "2026-10-16",
+          "effective_to": null,
+          "base_salary": "3720000"
+        }
+      ],
+      "employment_from": null,
+      "absence_events": [],
+      "expected": {
+        "base_salary_amount": "3420000"
+      }
+    },
+    {
+      "id": "monthly-absence",
+      "worker_id": "E004",
+      "description": "월급제 1일 결근: 직접 공제와 해당 주 주휴 미발생",
+      "compensation": [
+        {
+          "effective_from": "2026-01-01",
+          "effective_to": null,
+          "base_salary": "3100000"
+        }
+      ],
+      "employment_from": null,
+      "absence_events": [
+        {
+          "work_date": "2026-10-07",
+          "event_type": "absence",
+          "unpaid_hours": "8",
+          "attendance_treatment": "absence"
+        }
+      ],
+      "weekly": {
+        "week_start": "2026-10-05",
+        "week_end": "2026-10-11",
+        "weekly_scheduled_hours": "40",
+        "labor_status": "employee",
+        "pay_basis": "monthly"
+      },
+      "expected": {
+        "deduction_item": "absence_deduction",
+        "deduction_amount": "100000",
+        "weekly_eligible": false
+      }
+    },
+    {
+      "id": "monthly-unpaid-leave",
+      "worker_id": "E005",
+      "description": "승인 무급휴가: 직접 공제하되 attendance_treatment=leave",
+      "compensation": [
+        {
+          "effective_from": "2026-01-01",
+          "effective_to": null,
+          "base_salary": "3100000"
+        }
+      ],
+      "employment_from": null,
+      "absence_events": [
+        {
+          "work_date": "2026-10-07",
+          "event_type": "unpaid_leave",
+          "unpaid_hours": "8",
+          "attendance_treatment": "leave"
+        }
+      ],
+      "weekly": {
+        "week_start": "2026-10-05",
+        "week_end": "2026-10-11",
+        "weekly_scheduled_hours": "40",
+        "labor_status": "employee",
+        "pay_basis": "monthly"
+      },
+      "expected": {
+        "deduction_item": "unpaid_leave_deduction",
+        "deduction_amount": "100000",
+        "weekly_eligible": true
+      }
+    },
+    {
+      "id": "hourly-weekly-holiday",
+      "worker_id": "E006",
+      "description": "시급제 정상 주: 주휴 별도 지급",
+      "compensation": [],
+      "employment_from": null,
+      "absence_events": [],
+      "weekly": {
+        "week_start": "2026-10-05",
+        "week_end": "2026-10-11",
+        "weekly_scheduled_hours": "40",
+        "labor_status": "employee",
+        "pay_basis": "hourly",
+        "hourly_rate": "12000"
+      },
+      "expected": {
+        "weekly_eligible": true,
+        "weekly_hours": "8",
+        "weekly_extra_amount": "96000"
+      }
+    },
+    {
+      "id": "under-15-hours",
+      "worker_id": "E007",
+      "description": "주 15시간 미만: 주휴 미발생",
+      "compensation": [],
+      "employment_from": null,
+      "absence_events": [],
+      "weekly": {
+        "week_start": "2026-10-05",
+        "week_end": "2026-10-11",
+        "weekly_scheduled_hours": "12",
+        "labor_status": "employee",
+        "pay_basis": "hourly",
+        "hourly_rate": "12000"
+      },
+      "expected": {
+        "weekly_eligible": false,
+        "weekly_extra_amount": "0"
+      }
+    },
+    {
+      "id": "monthly-special-agreement",
+      "worker_id": "E008",
+      "description": "월급제 특별약정: 주휴 별도 산정",
+      "compensation": [
+        {
+          "effective_from": "2026-01-01",
+          "effective_to": null,
+          "base_salary": "3100000"
+        }
+      ],
+      "employment_from": null,
+      "absence_events": [],
+      "weekly": {
+        "week_start": "2026-10-05",
+        "week_end": "2026-10-11",
+        "weekly_scheduled_hours": "40",
+        "labor_status": "employee",
+        "pay_basis": "monthly",
+        "hourly_rate": "12000",
+        "special_agreement": {
+          "weekly_holiday_pay_treatment": "separately_calculated"
+        }
+      },
+      "expected": {
+        "weekly_treatment": "separately_calculated",
+        "weekly_extra_amount": "96000"
+      }
+    }
+  ]
+}

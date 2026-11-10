@@ -1,0 +1,730 @@
+{
+  "schema_version": "0.1",
+  "id": "pay-item-registry",
+  "description": "Shared payroll item classification registry. Legal rates, thresholds, tax limits, and insurance rates are versioned in dedicated policy modules, not here.",
+  "enums": {
+    "type": [
+      "지급",
+      "공제",
+      "정산"
+    ],
+    "obligation": [
+      "법정의무",
+      "계약의무",
+      "회사정책"
+    ],
+    "variability": [
+      "고정",
+      "변동",
+      "회사정책"
+    ],
+    "proration": [
+      "적용",
+      "미적용",
+      "회사정책",
+      "원항목추적"
+    ],
+    "ordinary_wage": [
+      "산입",
+      "미산입",
+      "회사정책",
+      "별도판정",
+      "원항목추적"
+    ],
+    "social_insurance": [
+      "정책판정",
+      "원항목추적",
+      "해당없음"
+    ],
+    "withholding_tax": [
+      "정책판정",
+      "원항목추적",
+      "해당없음"
+    ]
+  },
+  "items": [
+    {
+      "code": "base_salary",
+      "label": "기본급",
+      "type": "지급",
+      "category": "기본급",
+      "obligation": "계약의무",
+      "legal_lock": false,
+      "variability": "고정",
+      "proration": "적용",
+      "ordinary_wage": "산입",
+      "allowed_sources": [
+        "compensation"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "position_allowance",
+      "label": "직책수당",
+      "type": "지급",
+      "category": "고정수당",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "고정",
+      "proration": "회사정책",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "compensation",
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "job_allowance",
+      "label": "직무수당",
+      "type": "지급",
+      "category": "고정수당",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "고정",
+      "proration": "회사정책",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "compensation",
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "qualification_allowance",
+      "label": "자격수당",
+      "type": "지급",
+      "category": "고정수당",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "회사정책",
+      "proration": "회사정책",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "compensation",
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "duty_allowance",
+      "label": "업무수당",
+      "type": "지급",
+      "category": "고정수당",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "회사정책",
+      "proration": "회사정책",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "compensation",
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "meal_allowance",
+      "label": "식대",
+      "type": "지급",
+      "category": "복리성수당",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "회사정책",
+      "proration": "회사정책",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "compensation",
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "transport_allowance",
+      "label": "교통비",
+      "type": "지급",
+      "category": "복리성수당",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "회사정책",
+      "proration": "회사정책",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "compensation",
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "vehicle_allowance",
+      "label": "차량유지비",
+      "type": "지급",
+      "category": "복리성수당",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "회사정책",
+      "proration": "회사정책",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "compensation",
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "childcare_allowance",
+      "label": "보육수당",
+      "type": "지급",
+      "category": "복리성수당",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "회사정책",
+      "proration": "회사정책",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "compensation",
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "fixed_overtime_pay",
+      "label": "고정연장수당",
+      "type": "지급",
+      "category": "고정법정수당",
+      "obligation": "계약의무",
+      "legal_lock": false,
+      "variability": "고정",
+      "proration": "회사정책",
+      "ordinary_wage": "별도판정",
+      "allowed_sources": [
+        "compensation"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "fixed_night_pay",
+      "label": "고정야간수당",
+      "type": "지급",
+      "category": "고정법정수당",
+      "obligation": "계약의무",
+      "legal_lock": false,
+      "variability": "고정",
+      "proration": "회사정책",
+      "ordinary_wage": "별도판정",
+      "allowed_sources": [
+        "compensation"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "fixed_holiday_pay",
+      "label": "고정휴일수당",
+      "type": "지급",
+      "category": "고정법정수당",
+      "obligation": "계약의무",
+      "legal_lock": false,
+      "variability": "고정",
+      "proration": "회사정책",
+      "ordinary_wage": "별도판정",
+      "allowed_sources": [
+        "compensation"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "weekly_holiday_pay",
+      "label": "주휴 관련 임금",
+      "type": "지급",
+      "category": "법정수당",
+      "obligation": "법정의무",
+      "legal_lock": true,
+      "legal_rule": "weekly_holiday_pay",
+      "variability": "변동",
+      "proration": "미적용",
+      "ordinary_wage": "별도판정",
+      "allowed_sources": [
+        "payroll_calculator"
+      ],
+      "worktime_linked": true,
+      "worktime_source": "weekly_holiday_eligibility",
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "overtime_pay",
+      "label": "연장근로수당",
+      "type": "지급",
+      "category": "법정수당",
+      "obligation": "법정의무",
+      "legal_lock": true,
+      "legal_rule": "overtime_pay",
+      "variability": "변동",
+      "proration": "미적용",
+      "ordinary_wage": "미산입",
+      "allowed_sources": [
+        "payroll_calculator"
+      ],
+      "worktime_linked": true,
+      "worktime_source": "overtime_hours",
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "night_pay",
+      "label": "야간근로수당",
+      "type": "지급",
+      "category": "법정수당",
+      "obligation": "법정의무",
+      "legal_lock": true,
+      "legal_rule": "night_pay",
+      "variability": "변동",
+      "proration": "미적용",
+      "ordinary_wage": "미산입",
+      "allowed_sources": [
+        "payroll_calculator"
+      ],
+      "worktime_linked": true,
+      "worktime_source": "night_hours",
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "holiday_work_pay",
+      "label": "휴일근로수당",
+      "type": "지급",
+      "category": "법정수당",
+      "obligation": "법정의무",
+      "legal_lock": true,
+      "legal_rule": "holiday_work_pay",
+      "variability": "변동",
+      "proration": "미적용",
+      "ordinary_wage": "미산입",
+      "allowed_sources": [
+        "payroll_calculator"
+      ],
+      "worktime_linked": true,
+      "worktime_source": [
+        "holiday_work_hours_within_8",
+        "holiday_work_hours_over_8"
+      ],
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "shutdown_allowance",
+      "label": "휴업수당",
+      "type": "지급",
+      "category": "법정수당",
+      "obligation": "법정의무",
+      "legal_lock": true,
+      "legal_rule": "shutdown_allowance",
+      "variability": "변동",
+      "proration": "미적용",
+      "ordinary_wage": "미산입",
+      "allowed_sources": [
+        "payroll_calculator",
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "bonus",
+      "label": "상여금",
+      "type": "지급",
+      "category": "상여",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "회사정책",
+      "proration": "회사정책",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "compensation",
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "performance_bonus",
+      "label": "성과급",
+      "type": "지급",
+      "category": "성과보상",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "변동",
+      "proration": "미적용",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "incentive",
+      "label": "인센티브",
+      "type": "지급",
+      "category": "성과보상",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "변동",
+      "proration": "미적용",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "commission",
+      "label": "영업수수료",
+      "type": "지급",
+      "category": "성과보상",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "변동",
+      "proration": "미적용",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "other_allowance",
+      "label": "기타수당",
+      "type": "지급",
+      "category": "기타",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "variability": "회사정책",
+      "proration": "회사정책",
+      "ordinary_wage": "회사정책",
+      "allowed_sources": [
+        "compensation",
+        "payroll_input"
+      ],
+      "worktime_linked": false,
+      "worktime_source": null,
+      "social_insurance": "정책판정",
+      "withholding_tax": "정책판정",
+      "trace_origin": false
+    },
+    {
+      "code": "national_pension",
+      "label": "국민연금",
+      "type": "공제",
+      "category": "사회보험",
+      "obligation": "법정의무",
+      "legal_lock": true,
+      "legal_rule": "national_pension",
+      "allowed_sources": [
+        "social_insurance_calculator"
+      ],
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "health_insurance",
+      "label": "건강보험",
+      "type": "공제",
+      "category": "사회보험",
+      "obligation": "법정의무",
+      "legal_lock": true,
+      "legal_rule": "health_insurance",
+      "allowed_sources": [
+        "social_insurance_calculator"
+      ],
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "long_term_care_insurance",
+      "label": "장기요양보험",
+      "type": "공제",
+      "category": "사회보험",
+      "obligation": "법정의무",
+      "legal_lock": true,
+      "legal_rule": "long_term_care_insurance",
+      "allowed_sources": [
+        "social_insurance_calculator"
+      ],
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "employment_insurance",
+      "label": "고용보험",
+      "type": "공제",
+      "category": "사회보험",
+      "obligation": "법정의무",
+      "legal_lock": true,
+      "legal_rule": "employment_insurance",
+      "allowed_sources": [
+        "social_insurance_calculator"
+      ],
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "income_tax",
+      "label": "근로소득세",
+      "type": "공제",
+      "category": "원천세",
+      "obligation": "법정의무",
+      "legal_lock": true,
+      "legal_rule": "income_tax",
+      "allowed_sources": [
+        "withholding_tax_calculator"
+      ],
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "local_income_tax",
+      "label": "지방소득세",
+      "type": "공제",
+      "category": "원천세",
+      "obligation": "법정의무",
+      "legal_lock": true,
+      "legal_rule": "local_income_tax",
+      "allowed_sources": [
+        "withholding_tax_calculator"
+      ],
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "absence_deduction",
+      "label": "결근공제",
+      "type": "공제",
+      "category": "근태공제",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "allowed_sources": [
+        "payroll_calculator"
+      ],
+      "worktime_linked": true,
+      "worktime_source": "absence_hours",
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "unpaid_leave_deduction",
+      "label": "무급휴가공제",
+      "type": "공제",
+      "category": "근태공제",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "allowed_sources": [
+        "payroll_calculator"
+      ],
+      "worktime_linked": true,
+      "worktime_source": "unpaid_leave_hours",
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "late_early_leave_deduction",
+      "label": "지각·조퇴공제",
+      "type": "공제",
+      "category": "근태공제",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "allowed_sources": [
+        "payroll_calculator"
+      ],
+      "worktime_linked": true,
+      "worktime_source": "late_early_leave_minutes",
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "advance_payment_deduction",
+      "label": "선지급금공제",
+      "type": "공제",
+      "category": "기타공제",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "allowed_sources": [
+        "payroll_input"
+      ],
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "company_loan_deduction",
+      "label": "사내대여금공제",
+      "type": "공제",
+      "category": "기타공제",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "allowed_sources": [
+        "payroll_input"
+      ],
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "other_deduction",
+      "label": "기타공제",
+      "type": "공제",
+      "category": "기타공제",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "allowed_sources": [
+        "payroll_input"
+      ],
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    },
+    {
+      "code": "retroactive_pay",
+      "label": "소급지급",
+      "type": "정산",
+      "category": "소급정산",
+      "obligation": "계약의무",
+      "legal_lock": false,
+      "allowed_sources": [
+        "payroll_input",
+        "payroll_calculator"
+      ],
+      "proration": "원항목추적",
+      "ordinary_wage": "원항목추적",
+      "social_insurance": "원항목추적",
+      "withholding_tax": "원항목추적",
+      "trace_origin": true
+    },
+    {
+      "code": "retroactive_deduction",
+      "label": "소급공제",
+      "type": "정산",
+      "category": "소급정산",
+      "obligation": "계약의무",
+      "legal_lock": false,
+      "allowed_sources": [
+        "payroll_input",
+        "payroll_calculator"
+      ],
+      "proration": "원항목추적",
+      "ordinary_wage": "원항목추적",
+      "social_insurance": "원항목추적",
+      "withholding_tax": "원항목추적",
+      "trace_origin": true
+    },
+    {
+      "code": "prior_period_adjustment",
+      "label": "전기 급여조정",
+      "type": "정산",
+      "category": "급여조정",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "allowed_sources": [
+        "payroll_input"
+      ],
+      "proration": "원항목추적",
+      "ordinary_wage": "원항목추적",
+      "social_insurance": "원항목추적",
+      "withholding_tax": "원항목추적",
+      "trace_origin": true
+    },
+    {
+      "code": "rounding_settlement",
+      "label": "금액처리 잔액정산",
+      "type": "정산",
+      "category": "금액정산",
+      "obligation": "회사정책",
+      "legal_lock": false,
+      "allowed_sources": [
+        "payroll_calculator"
+      ],
+      "proration": "미적용",
+      "ordinary_wage": "미산입",
+      "social_insurance": "해당없음",
+      "withholding_tax": "해당없음",
+      "trace_origin": false
+    }
+  ]
+}

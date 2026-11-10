@@ -1,0 +1,86 @@
+{
+  "schema_version": "0.1",
+  "id": "payroll-operating-config",
+  "description": "급여 지급월을 기준으로 입력의 기본 귀속기간을 결정하는 운영계약이다.",
+  "resolution_priority": [
+    "explicit_origin",
+    "explicit_payment_basis",
+    "pay_item_rule",
+    "source_rule"
+  ],
+  "origin_override": {
+    "priority": "highest",
+    "required_fields": [
+      "origin_from",
+      "origin_to"
+    ],
+    "rule": "두 필드가 함께 있으면 급여항목 규칙과 출처 기본규칙보다 우선한다."
+  },
+  "payment_basis": {
+    "current": {
+      "label": "당월",
+      "period_rule": {
+        "type": "calendar_month",
+        "offset_months": 0
+      }
+    },
+    "carryover": {
+      "label": "이월",
+      "period_rule": {
+        "type": "calendar_month",
+        "offset_months": -1
+      }
+    }
+  },
+  "pay_item_rules": {
+    "base_salary": null,
+    "position_allowance": null,
+    "job_allowance": null,
+    "qualification_allowance": null,
+    "duty_allowance": null,
+    "meal_allowance": null,
+    "transport_allowance": null,
+    "vehicle_allowance": null,
+    "childcare_allowance": null,
+    "fixed_overtime_pay": null,
+    "fixed_night_pay": null,
+    "fixed_holiday_pay": null,
+    "weekly_holiday_pay": null,
+    "overtime_pay": null,
+    "night_pay": null,
+    "holiday_work_pay": null,
+    "shutdown_allowance": null,
+    "bonus": null,
+    "performance_bonus": null,
+    "incentive": null,
+    "commission": null,
+    "other_allowance": null,
+    "national_pension": null,
+    "health_insurance": null,
+    "long_term_care_insurance": null,
+    "employment_insurance": null,
+    "income_tax": null,
+    "local_income_tax": null,
+    "absence_deduction": null,
+    "unpaid_leave_deduction": null,
+    "late_early_leave_deduction": null,
+    "advance_payment_deduction": null,
+    "company_loan_deduction": null,
+    "other_deduction": null,
+    "retroactive_pay": null,
+    "retroactive_deduction": null,
+    "prior_period_adjustment": null,
+    "rounding_settlement": null
+  },
+  "source_rules": {
+    "compensation": {
+      "payment_basis": "current"
+    },
+    "worktime": {
+      "payment_basis": "carryover"
+    },
+    "payroll_input": {
+      "payment_basis": "current"
+    }
+  }
+}

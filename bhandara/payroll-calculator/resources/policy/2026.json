@@ -1,0 +1,141 @@
+{
+  "schema_version": "0.1",
+  "policy_year": 2026,
+  "jurisdiction": "KR",
+  "legal_verification": [
+    {
+      "verified_date": "2026-10-06",
+      "law_name": "근로기준법",
+      "law_effective_date": "2026-10-02",
+      "article": "제56조",
+      "paragraph": [
+        "제1항",
+        "제2항",
+        "제3항"
+      ]
+    },
+    {
+      "verified_date": "2026-10-06",
+      "law_name": "근로기준법 시행령",
+      "law_effective_date": "2025-10-23",
+      "article": "제6조",
+      "paragraph": [
+        "제1항",
+        "제2항"
+      ]
+    },
+    {
+      "verified_date": "2026-10-07",
+      "law_name": "근로기준법",
+      "article": "제55조",
+      "paragraph": [
+        "제1항"
+      ]
+    },
+    {
+      "verified_date": "2026-10-07",
+      "law_name": "근로기준법 시행령",
+      "article": "제30조",
+      "paragraph": [
+        "제1항"
+      ]
+    }
+  ],
+  "premium_rules": {
+    "overtime_pay": {
+      "worktime_source": "overtime_hours",
+      "ordinary_hourly_wage_multiplier": "0.5",
+      "component": "가산분",
+      "legal_basis": {
+        "article": "제56조",
+        "paragraph": "제1항"
+      },
+      "base_component": {
+        "default": "company_policy_required"
+      }
+    },
+    "night_pay": {
+      "worktime_source": "night_hours",
+      "ordinary_hourly_wage_multiplier": "0.5",
+      "component": "가산분",
+      "legal_basis": {
+        "article": "제56조",
+        "paragraph": "제3항"
+      },
+      "base_component": {
+        "default": "company_policy_required"
+      }
+    },
+    "holiday_work_pay": {
+      "worktime_source": {
+        "holiday_work_hours_within_8": "0.5",
+        "holiday_work_hours_over_8": "1.0"
+      },
+      "component": "가산분",
+      "legal_basis": {
+        "article": "제56조",
+        "paragraph": "제2항"
+      },
+      "base_component": {
+        "default": "company_policy_required"
+      }
+    }
+  },
+  "ordinary_hourly_wage": {
+    "legal_basis": {
+      "law_name": "근로기준법 시행령",
+      "article": "제6조",
+      "paragraph": "제2항"
+    },
+    "monthly_formula": "ordinary_monthly_wage / monthly_ordinary_wage_basis_hours",
+    "monthly_ordinary_wage_basis_hours": "company_policy_required"
+  },
+  "payment_components": {
+    "semantics": {
+      "별도지급": "ordinary_hourly_wage × quantity × 1.0을 기본분으로 추가 지급",
+      "기지급": "기본 1.0이 다른 임금항목에 이미 포함되어 별도 추가하지 않음",
+      "중첩": "동일 시간의 기본분을 다른 worktime pay item에서 처리하므로 별도 추가하지 않음"
+    },
+    "company_policy_required": true
+  },
+  "absence_deduction": {
+    "statutory_fallback": {
+      "methods": {
+        "type_a": {
+          "code": "calendar_days",
+          "formula": "monthly_amount / payroll_period_calendar_days * deduction_days"
+        },
+        "type_b": {
+          "code": "paid_day_basis",
+          "formula": "monthly_amount / (scheduled_workdays + paid_treatment_days) * deduction_days"
+        }
+      },
+      "selection": "employee_favorable",
+      "selection_rule": "두 방식의 공제액을 모두 계산하고 근로자에게 유리한 더 작은 공제액을 선택한다."
+    },
+    "company_policy": {
+      "override_supported": true,
+      "status": "not_configured"
+    }
+  },
+  "weekly_holiday": {
+    "eligibility": {
+      "legal_basis": [
+        {
+          "law_name": "근로기준법",
+          "article": "제55조",
+          "paragraph": "제1항"
+        },
+        {
+          "law_name": "근로기준법 시행령",
+          "article": "제30조",
+          "paragraph": "제1항"
+        }
+      ],
+      "attendance_treatment_required": true
+    },
+    "amount_effect": {
+      "separate_from_direct_absence_deduction": true
+    }
+  }
+}
