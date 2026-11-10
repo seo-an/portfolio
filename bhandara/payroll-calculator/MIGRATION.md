@@ -9,7 +9,7 @@
 - 원본: `seo-an/agent-config/gearbox/gear/payroll-calculator/`
 - 공개: `seo-an/portfolio/bhandara/payroll-calculator/`
 - 원본 커밋: [`migration-manifest.json`](migration-manifest.json)의 `source_commit`에 고정.
-- **원본 추적 파일 85개 전체** 이전(기존 `run.py`, `functions/`의 67개 계산·입력·검토 모듈, 정책·계약·예제·기존 RUNBOOK 및 문서 포함).
+- **원본 추적 파일 85개 전체** 이전(기존 `run.py`, `functions/`의 69개 계산·입력·검토 모듈, 정책·계약·예제·기존 RUNBOOK 및 문서 포함).
 - **77개는 원본 Git blob SHA와 동일.** 나머지 8개는 `migration-manifest.json`에 선언한 경로/임포트 문자열 변경만 허용한다. 테스트는 해당 문자열만 역변환해 원본 Git blob SHA가 일치하는지 확인한다.
 - 다른 경로에서 **4개 원본 자원도 바이트 단위로 그대로 복사**: `gearbox/core/xlsx.py`, `gearbox/diagnostics/catalog.py`, 급여항목 레지스트리 JSON, 2026년 급여 정책 JSON.
 - Gearbox 진단 규약 및 날짜 구간 함수는 이전 PTO에서 이미 옮긴 **동일한 내용의 공개 Base** `bhandara/common/contracts/pto_diagnostics.py`와 `bhandara/common/utils/date_interval.py`를 재사용한다. Excel row reader 및 진단 catalog는 이름만 분리한 원본 사본을 공개 Base에 보유한다.
