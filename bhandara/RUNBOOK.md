@@ -191,6 +191,10 @@ Base는 개별 파일의 원자적 게시와 충돌 시 번호 부여를 지원�
   -s bhandara/tests -p 'test_module_isolation.py' -v
 
 .venv/bin/python -m unittest discover \
+  -s bhandara/tests -p 'test_documentation_examples.py' -v
+
+
+.venv/bin/python -m unittest discover \
   -s bhandara/tests -p 'test_*.py' -v
 
 .venv/bin/python install.py --check
