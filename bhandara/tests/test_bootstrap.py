@@ -26,7 +26,7 @@ class BootstrapTests(unittest.TestCase):
         self.assertIn("bhandara", result.stdout)
 
     def test_unknown_calculator_fails_closed(self):
-        result = invoke("run.py", "bhandara", "worktime-calculator")
+        result = invoke("run.py", "bhandara", "unpublished-calculator")
         self.assertEqual(result.returncode, 2)
         self.assertIn("UNAVAILABLE", result.stderr)
         self.assertIn("No calculations were performed", result.stderr)
