@@ -1,0 +1,27 @@
+{
+  "schema_version": "0.1",
+  "period_from": "2026-09-15",
+  "period_to": "2026-09-15",
+  "worktime_assignments": {
+    "E01": {
+      "worktime_system": "standard",
+      "rule_ref": "labor_standard_50_53"
+    },
+    "E02": {
+      "worktime_system": "standard",
+      "rule_ref": "labor_standard_50_53"
+    }
+  },
+  "approvals": [
+    {
+      "employee_id": "E01",
+      "work_date": "2026-09-15",
+      "attendance_approval_ref": "APPROVAL-E01"
+    },
+    {
+      "employee_id": "E02",
+      "work_date": "2026-09-15",
+      "attendance_approval_ref": "APPROVAL-E02"
+    }
+  ]
+}

@@ -1,0 +1,100 @@
+{
+  "schema_version": "0.1",
+  "status": "READY_FOR_CALCULATION",
+  "batch_id": "synthetic-worktime-migration",
+  "sources": {
+    "employees": {
+      "rows": [
+        {
+          "employee_id": "E01",
+          "worker_id": "EP0001"
+        },
+        {
+          "employee_id": "E02",
+          "worker_id": "EP0002"
+        }
+      ],
+      "source_sha256": "synthetic-employees",
+      "lineage": [
+        {
+          "status": "ACCEPTED",
+          "row_number": 2,
+          "issue_codes": []
+        },
+        {
+          "status": "ACCEPTED",
+          "row_number": 3,
+          "issue_codes": []
+        }
+      ]
+    },
+    "schedule": {
+      "rows": [
+        {
+          "employee_id": "E01",
+          "worker_id": "EP0001",
+          "work_date": "2026-09-15",
+          "day_type": "WORK",
+          "scheduled_start": "09:00",
+          "scheduled_end": "18:00",
+          "break_min": 60
+        },
+        {
+          "employee_id": "E02",
+          "worker_id": "EP0002",
+          "work_date": "2026-09-15",
+          "day_type": "WORK",
+          "scheduled_start": "10:00",
+          "scheduled_end": "19:00",
+          "break_min": 60
+        }
+      ],
+      "source_sha256": "synthetic-schedule",
+      "lineage": [
+        {
+          "status": "ACCEPTED",
+          "row_number": 2,
+          "issue_codes": []
+        },
+        {
+          "status": "ACCEPTED",
+          "row_number": 3,
+          "issue_codes": []
+        }
+      ]
+    },
+    "attendance": {
+      "rows": [
+        {
+          "employee_id": "E01",
+          "worker_id": "EP0001",
+          "work_date": "2026-09-15",
+          "clock_in": "09:00",
+          "clock_out": "18:00",
+          "break_min": 60
+        },
+        {
+          "employee_id": "E02",
+          "worker_id": "EP0002",
+          "work_date": "2026-09-15",
+          "clock_in": "10:00",
+          "clock_out": "19:00",
+          "break_min": 60
+        }
+      ],
+      "source_sha256": "synthetic-attendance",
+      "lineage": [
+        {
+          "status": "ACCEPTED",
+          "row_number": 2,
+          "issue_codes": []
+        },
+        {
+          "status": "ACCEPTED",
+          "row_number": 3,
+          "issue_codes": []
+        }
+      ]
+    }
+  }
+}
