@@ -8,7 +8,7 @@ import sys
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="Public Portfolio CLI: PTO, Worktime and Golden comparisons."
+        description="Public Portfolio CLI: PTO, Worktime, Payroll and Golden comparisons."
     )
     commands = parser.add_subparsers(dest="collection", required=True)
     bhandara = commands.add_parser(
@@ -19,6 +19,10 @@ def build_parser() -> argparse.ArgumentParser:
     bhandara.add_argument("--input-dir", help="Local Excel input directory")
     bhandara.add_argument("--normalized", help="Worktime canonical normalized-input.json")
     bhandara.add_argument("--output-dir", help="Local output directory")
+    bhandara.add_argument("--operation", choices=("calculate", "normalize"),
+                          help="Payroll only; defaults to review-only calculate")
+    bhandara.add_argument("--manifest", help="Payroll normalize manifest")
+    bhandara.add_argument("--scenario-id", help="Payroll policy scenario override")
     compare = commands.add_parser(
         "compare-golden", help="Compare two private Golden JSON artifacts or Payroll output folders"
     )
@@ -73,6 +77,32 @@ def main(argv: list[str] | None = None) -> int:
                 "--config", args.config,
                 "--output-dir", args.output_dir,
             ])
+        if args.module_id == "payroll-calculator":
+            from importlib import import_module
+            payroll = import_module("bhandara.payroll-calculator.run")
+            if args.operation == "normalize":
+                if not all((args.input_dir, args.output_dir)):
+                    print(
+                        "PAYROLL_INVALID: normalize requires --input-dir and --output-dir",
+                        file=sys.stderr,
+                    )
+                    return 2
+                cli = ["normalize", "--input-dir", args.input_dir,
+                       "--output-dir", args.output_dir]
+                if args.manifest:
+                    cli.extend(["--manifest", args.manifest])
+                return payroll.main(cli)
+            if not all((args.config, args.output_dir)):
+                print(
+                    "PAYROLL_INVALID: calculate requires --config and --output-dir",
+                    file=sys.stderr,
+                )
+                return 2
+            cli = ["calculate", "--config", args.config,
+                   "--output-dir", args.output_dir]
+            if args.scenario_id:
+                cli.extend(["--scenario-id", args.scenario_id])
+            return payroll.main(cli)
         print(
             f"UNAVAILABLE: {args.module_id!r} is not installed in this portfolio. "
             "No calculations were performed.",
