@@ -1,6 +1,6 @@
 # Bhandara 상호배타·독립 실행 검증
 
-> **상태 (2026-11-10):** 상호배타 테스트 및 모듈 간 의존 경로 정리 PR 작성. **Hermes 서버에서 실행·검증하기 전**, PASS라고 주장하지 않는다.
+> **검증 완료 (2026-11-10):** [Portfolio PR #8](https://github.com/seo-an/portfolio/pull/8) 병합 완료. Hermes 서버에서 **상호배타 테스트 7개, Portfolio 전체 테스트 및 기존 Gearbox 공식 코어·기능 회귀 테스트 전부 PASS**를 확인했다. 원본 계산식·급여 정책·예외 판단은 변경하지 않았다.
 
 ## 검증 목적과 범위
 
@@ -37,11 +37,11 @@ Payroll 이전 후 다음 두 경로가 여전히 Worktime 패키지의 `worktim
 
 **테스트 하네스만 수정:** 계산기 3종의 **실제 CLI 독립 실행은 기존 `_run()` 격리를 그대로 유지**한다. 오직 설치된 배포판 버전을 확인하는 읽기 전용 `install.py --check`만 정상 Hermes 프로세스 환경을 상속해 호출하고, 출력에 실제 설치된 **선택된 모듈 하나**만 표시되는지도 검사한다. `install.py` 및 계산 모듈 본문은 수정하지 않는다. 정상 환경에서 `install.py --check`는 앞선 서버 검사에서 의존성 둘 다 발견한 이력이 있다.
 
-수정 후 서버 **재검증 전**이며, 성공 여부는 아래 재실행 결과에 따라 판정한다.
+**수정 후 재검증 완료:** Hermes 서버에서 7개 상호배타 테스트와 전체 공개·기존 Gearbox 회귀 테스트가 모두 PASS했다. 처음 발생한 3건은 계산 오류가 아니라 테스트 하네스의 패키지 메타데이터 검색 환경 차이였고, 이후 재발하지 않았다.
 
 ## 실행
 
-PR 브랜치를 직접 서버에 가져온 다음 Portfolio 저장소에서 다음 테스트를 실행한다.
+전체 Portfolio 체크아웃의 프로젝트 루트에서 다음 테스트를 실행한다. 모듈 하나만 내려받은 sparse-checkout에는 `bhandara/tests/`가 없을 수 있으므로, 그런 환경에서는 `install.py --check`와 각 계산기의 합성 CLI 예제로 기본 동작을 확인한다.
 
 ```sh
 sudo docker exec -w /opt/agent-config/.external/portfolio hermes \
@@ -68,8 +68,12 @@ sudo docker exec -w /opt/agent-config hermes \
 
 ## 판정 조건
 
-- **PASS:** 7개 상호배타 테스트, Portfolio 전체 unittest, Base 의존성 점검, Gearbox 공식 기능·인프라 회귀 테스트가 통과한다.
+- **실제 PASS:** 7개 상호배타 테스트, Portfolio 전체 unittest, Base 의존성 점검, Gearbox 공식 기능·인프라 회귀 테스트를 2026-11-10 Hermes 서버에서 통과했다.
 - **FAIL:** Base + 모듈 하나만 있는 환경에서 모듈이 다른 계산기 코드나 Gearbox를 찾으려 하거나, 기존 입력·결과 계약을 보존하지 못한다. 원인을 해당 import/경로에 한정해 보완한다.
 - **비범위:** 실제 직원자료, 승인/마감 실행, 세금·보험, 기능 정합성·법령 준수, 정책/예외 처리 개선, Hermes 운영 Pipeline 자동 전환.
 
 생성된 임시 설치·합성 실행 파일은 `TemporaryDirectory`가 테스트 종료 시 삭제한다. 외부 저장소·운영 자료·기존 Gearbox 계산기 내용은 수정하지 않는다.
+
+## 외부 사용자의 단독 설치 방법
+
+**공통 Base + 계산기 한 개**만 있으면 독립 실행할 수 있다. Git 사용자는 `git clone --depth 1 --sparse https://github.com/seo-an/portfolio.git`로 받고, `git sparse-checkout set bhandara/common bhandara/pto-calculator`처럼 원하는 모듈 하나만 지정한다. 자세한 파일 구성과 계산기별 샘플 실행 명령은 [한국어 시작 안내](../README.md)와 [운영 실행서](RUNBOOK.md)를 참고한다. 미설치 모듈은 `UNAVAILABLE`로 차단되며, 실제 결재·급여 확정을 수행하지 않는다.

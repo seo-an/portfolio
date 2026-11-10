@@ -1,11 +1,11 @@
 # Bhandara Base — 공개 공통 계약 v0.1
 
-**구현 상태 (2026-11-10):** Base의 입력·진단·SHA-256·산출물·실행 기록과 PTO·Worktime·Payroll 3개 계산기 공개 이전·검증을 마쳤다. 이번 PR에서는 **Base + 계산기 하나만** 있는 임시 실행 환경에서 독립성을 검증하며, Payroll이 Worktime 패키지 코드를 직접 참조하던 두 경로를 바이트 동일한 공통 Base 검증기로 변경한다. 최상위 CLI는 모듈별 명시적 분기를 사용하며 자동 검색·설치는 구현하지 않는다.
+**구현 상태 (2026-11-10):** Base의 입력·진단·SHA-256·산출물·실행 기록, PTO·Worktime·Payroll 세 계산기 공개 이전 및 **Base+계산기 하나만 남긴 상호배타 검증**까지 완료했다. Payroll이 Worktime 패키지를 직접 참조하던 두 경로는 바이트 동일한 Base 공통 검증기로 연결했다. 최상위 CLI는 명시적 분기를 사용하며 모듈의 자동 검색·설치는 하지 않는다. [단독 설치 안내](../README.md)와 [운영 실행서](RUNBOOK.md)를 참고한다.
 
 ## 1. 소유권과 환경
 
 - 모든 실행·출력 파일은 사용자 관리의 **비공개 로컬 디렉터리**에 둔다. Git(이 저장소 또는 `agent-config`)에 실제 직원/급여/근태자료를 넣지 않는다.
-- 기본 런타임 기준: Hermes `multi-agents-hermes:1.2.0`, uv 관리 Python **3.14.9**; 외부 종속성은 승인된 `openpyxl==3.1.5` 한 가지. 본 저장소 최상위 `requirements.txt`가 유일한 설치 목록이다.
+- 기본 런타임 기준: Hermes `multi-agents-hermes:1.2.0`, uv 관리 Python **3.14.9**; 외부 종속성은 최상위 `requirements.txt`에 고정된 `openpyxl==3.1.5`와 `korean-lunar-calendar==0.4.0`이다. 본 저장소 최상위 `requirements.txt`가 유일한 설치 목록이다.
 - `install.py --check`는 Python 및 설치 버전을 **읽기 전용으로 확인**한다. 패키지 설치/운영환경 변경은 하지 않는다.
 - 공개 Base는 Python 함수 API다. Hermes, Drive, Slack, 인증, 급여 지급·승인은 연결하지 않는다.
 
@@ -74,3 +74,9 @@ python install.py --check
 ```
 
 `unittest` 전용 합성 Fixture만 이용한다. 실제 기업 데이터나 비공개 Golden JSON을 공개 Git에 올리지 않는다. 기존 Gearbox 계산 엔진과의 Golden 비교는 `run.py compare-golden`의 별도 기능으로 수행한다.
+
+## 6. Base와 계산기 하나만 설치하는 경우
+
+Base는 계산기에서 필요한 공통 Python 함수 모음으로, 별도 서버나 DB가 아니다. 최소 설치 구성은 최상위 `run.py`, `install.py`, `requirements.txt`, `bhandara/__init__.py`, `bhandara/common/`과 원하는 `bhandara/<모듈>/` 하나다. PTO·Worktime·Payroll 상호 간의 코드 설치 의존성이 없다는 사실은 `test_module_isolation.py` 7개 테스트로 검증했다. 전체 구조·sparse-checkout 명령은 [저장소 README](../README.md)를 따른다.
+
+Payroll이 사용하는 근무시간 마감 Receipt 검증기는 `common/contracts/worktime_close.py`에 포함돼 있다. 해당 파일은 Worktime 원본 검증 함수와 바이트 단위로 동일하며, **Payroll 계산기 하나를 실행하기 위해 Worktime 계산기 폴더를 설치하지 않아도 된다.** 단, 근무시간 사실값이 필요한 계산에는 별도의 JSON 입력 파일을 제공해야 한다.
