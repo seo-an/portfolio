@@ -182,8 +182,9 @@ class ModuleIsolationTests(unittest.TestCase):
             _install_one(root, "payroll-calculator")
             self.assertFalse((root / "bhandara/worktime-calculator").exists())
             script = (
-                "import importlib.util, pathlib; "
+                "import importlib.util, pathlib, sys; "
                 "path = pathlib.Path('bhandara/payroll-calculator/functions/payroll_register.py'); "
+                "sys.path.insert(0, str(path.parent.resolve())); "
                 "spec = importlib.util.spec_from_file_location('isolation_payroll_register', path); "
                 "module = importlib.util.module_from_spec(spec); "
                 "spec.loader.exec_module(module); "
