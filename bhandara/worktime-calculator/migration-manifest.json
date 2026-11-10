@@ -1,0 +1,60 @@
+{
+  "schema_version": "1.0",
+  "migration_type": "unchanged_copy",
+  "source_repository": "seo-an/agent-config",
+  "source_root": "gearbox/gear/worktime-calculator",
+  "destination_root": "bhandara/worktime-calculator",
+  "files": [
+    {
+      "source": "gearbox/gear/worktime-calculator/functions/worktime_batch.py",
+      "destination": "bhandara/worktime-calculator/functions/worktime_batch.py",
+      "source_git_blob_sha": "12a397dc0f1db81ca89626ede203a8d7e78c8279"
+    },
+    {
+      "source": "gearbox/gear/worktime-calculator/functions/worktime_close.py",
+      "destination": "bhandara/worktime-calculator/functions/worktime_close.py",
+      "source_git_blob_sha": "734388f88992aa461bad42e44929e027a00e4adc"
+    },
+    {
+      "source": "gearbox/gear/worktime-calculator/functions/worktime_daily.py",
+      "destination": "bhandara/worktime-calculator/functions/worktime_daily.py",
+      "source_git_blob_sha": "dbe1dd6fe8ea20ff9089aa8993d4fda31197f5d9"
+    },
+    {
+      "source": "gearbox/gear/worktime-calculator/functions/worktime_report.py",
+      "destination": "bhandara/worktime-calculator/functions/worktime_report.py",
+      "source_git_blob_sha": "f62af23a3d62481455dddc8bb975f2c8ed65a3f4"
+    },
+    {
+      "source": "gearbox/gear/worktime-calculator/functions/worktime_source_adapter.py",
+      "destination": "bhandara/worktime-calculator/functions/worktime_source_adapter.py",
+      "source_git_blob_sha": "ed10abc1050cdc6befd4a6d9f4a52fbe42d5cd37"
+    },
+    {
+      "source": "gearbox/gear/worktime-calculator/functions/worktime_system.py",
+      "destination": "bhandara/worktime-calculator/functions/worktime_system.py",
+      "source_git_blob_sha": "96098b91dff60fc12b6a389941744b39247926f1"
+    },
+    {
+      "source": "gearbox/gear/worktime-calculator/functions/worktime_validation.py",
+      "destination": "bhandara/worktime-calculator/functions/worktime_validation.py",
+      "source_git_blob_sha": "c9de7d096e8a8df73390e399a06d47253f98ecf0"
+    },
+    {
+      "source": "gearbox/gear/worktime-calculator/run.py",
+      "destination": "bhandara/worktime-calculator/run.py",
+      "source_git_blob_sha": "982e9255e911649727654359b43c415e28fa6121"
+    },
+    {
+      "source": "gearbox/gear/worktime-calculator/contracts/worktime-result.json",
+      "destination": "bhandara/worktime-calculator/contracts/worktime-result.json",
+      "source_git_blob_sha": "d7b772f6a147509e44ec6d56ad03d255325db5bd"
+    },
+    {
+      "source": "gearbox/gear/worktime-calculator/examples/standalone-config.demo.json",
+      "destination": "bhandara/worktime-calculator/examples/standalone-config.demo.json",
+      "source_git_blob_sha": "ce2101f15b72d93cb5ef3327d183cc2390555347"
+    }
+  ],
+  "note": "Exactly copied existing Worktime files. No calculation, policy, validation or exception-handling changes."
+}
