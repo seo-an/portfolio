@@ -1,0 +1,58 @@
+{
+  "schema_version": "0.1",
+  "status": "REVIEW_REQUIRED",
+  "period_from": "2026-09-15",
+  "period_to": "2026-09-15",
+  "coverage_verified": false,
+  "close_receipt": null,
+  "rows": [
+    {
+      "worker_id": "EP0001",
+      "work_date": "2026-09-15",
+      "worktime_system": "standard",
+      "rule_ref": "labor_standard_50_53",
+      "scheduled_hours": "8",
+      "worked_hours": "8",
+      "ordinary_hours": "8",
+      "overtime_hours": "0",
+      "night_hours": "0",
+      "holiday_work_hours_within_8": "0",
+      "holiday_work_hours_over_8": "0",
+      "absence_hours": "0",
+      "late_minutes": 0,
+      "early_leave_minutes": 0,
+      "approval_ref": "",
+      "validation_flags": [
+        {
+          "code": "TIMESHEET_APPROVAL_MISSING",
+          "severity": "REVIEW",
+          "message": "synthetic approval missing"
+        }
+      ]
+    },
+    {
+      "worker_id": "EP0002",
+      "work_date": "2026-09-15",
+      "worktime_system": "standard",
+      "rule_ref": "labor_standard_50_53",
+      "scheduled_hours": "8",
+      "worked_hours": "8",
+      "ordinary_hours": "8",
+      "overtime_hours": "0",
+      "night_hours": "0",
+      "holiday_work_hours_within_8": "0",
+      "holiday_work_hours_over_8": "0",
+      "absence_hours": "0",
+      "late_minutes": 0,
+      "early_leave_minutes": 0,
+      "approval_ref": "",
+      "validation_flags": [
+        {
+          "code": "TIMESHEET_APPROVAL_MISSING",
+          "severity": "REVIEW",
+          "message": "synthetic approval missing"
+        }
+      ]
+    }
+  ]
+}
