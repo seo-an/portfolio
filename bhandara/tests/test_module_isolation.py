@@ -66,6 +66,22 @@ def _run(root: Path, *args: str) -> subprocess.CompletedProcess[str]:
     )
 
 
+def _check_installed_dependencies(root: Path) -> subprocess.CompletedProcess[str]:
+    """Read-only metadata check under the real Hermes Python environment.
+
+    Calculator execution uses _run(), which removes inherited import paths.
+    The dependency inventory check must instead keep the active uv runtime's
+    distribution discovery paths: stripping HOME/PYTHONPATH and using -E can
+    hide an installed distribution and produce a false DEPENDENCY_MISMATCH.
+    This check does NOT execute or import any calculator.
+    """
+    return subprocess.run(
+        [sys.executable, str(root / "install.py"), "--check"],
+        cwd=root, env=os.environ.copy(),
+        text=True, capture_output=True, check=False, timeout=30,
+    )
+
+
 def _write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, ensure_ascii=False) + "\n",
                     encoding="utf-8")
@@ -106,9 +122,10 @@ class ModuleIsolationTests(unittest.TestCase):
                             (root / "bhandara" / other).exists(),
                             selected == other,
                         )
-                    result = _run(root, "install.py", "--check")
+                    result = _check_installed_dependencies(root)
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertIn("BASE_CHECK_OK", result.stdout)
+                    self.assertIn(f"Available modules: {selected}.", result.stdout)
 
     def test_pto_runs_with_only_base_and_pto(self):
         with tempfile.TemporaryDirectory(prefix="bhandara-pto-only-") as tmp:
