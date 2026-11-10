@@ -1,0 +1,47 @@
+{
+  "schema_version": "0.1",
+  "id": "pay-item-eligibility",
+  "description": "급여항목별 지급자격 사실과 지급개시 정책을 Compensation 금액 유효기간과 분리한다.",
+  "fields": [
+    {
+      "name": "worker_id",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "pay_item_code",
+      "type": "string",
+      "required": true
+    },
+    {
+      "name": "eligibility_from",
+      "type": "date",
+      "required": true,
+      "format": "YYYY-MM-DD"
+    },
+    {
+      "name": "eligibility_to",
+      "type": "date",
+      "required": false,
+      "nullable": true,
+      "format": "YYYY-MM-DD"
+    },
+    {
+      "name": "payable_rule",
+      "type": "string",
+      "required": true,
+      "enum": [
+        "from_eligibility_date",
+        "next_month",
+        "eligibility_month_full"
+      ]
+    }
+  ],
+  "rules": {
+    "interval": "eligibility_from과 eligibility_to는 자격 사실 기간이며 양끝을 포함한다.",
+    "payable_rule": "자격 취득 사실과 실제 지급개시 규칙을 분리한다.",
+    "registry": "pay_item_code는 Pay Item Registry에 존재해야 한다.",
+    "separation": "Compensation effective_from/effective_to에서 eligibility를 추론하지 않는다.",
+    "history": "v0.1은 worker+pay_item별 단일 eligibility interval만 지원한다. 중단·재취득은 v0.2 다중 interval 확장 대상이다."
+  }
+}
