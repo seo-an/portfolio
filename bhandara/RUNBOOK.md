@@ -1,6 +1,6 @@
 # Bhandara — Development / Operations RUNBOOK
 
-**상태 (2026-11-10):** 공개 Base·PTO 및 Worktime v0.1.0 이전/서버 검증/병합을 완료했다. 기존 Gearbox 운영 Pipeline은 그대로 유지하며 합성 전용 PTO Hermes/Slack은 별도 검증을 마쳤다. 현재 Payroll Calculator 85개 원본 파일의 **독립 모듈 이전 PR**을 진행 중이며 서버 검증·병합 전이다. 이번 프로젝트는 원본 소스 이전과 이전 결과 동등성만 확인한다. 기능·예외처리·법령 정책 개선은 별도 프로젝트로 분리한다.
+**상태 (2026-11-10):** 공개 Base·PTO·Worktime·Payroll 독립 모듈 이전과 Hermes 서버 회귀검증·PR 병합을 마쳤다. 기존 Gearbox 운영 Pipeline은 그대로다. 현재 **모듈별 Base+1 격리 실행과 Worktime JSON → Payroll 데이터 계약 인계**를 검증하는 별도 PR 진행 중이며 서버 테스트 전이다. 계산식·정책·예외처리 개선은 후속 별도 프로젝트에서 실시한다.
 
 ## Ownership and compatibility
 
@@ -21,9 +21,9 @@ See [Base contract](BASE-CONTRACT.md) for fully specified function APIs, excepti
 
 ## Calculation boundaries
 
-- The **PTO v0.1.0 calculation engine** is now published in `bhandara/pto-calculator/src/`, migrated from the legacy Gearbox snapshot without editing the calculation function bodies. The legacy PTO Gear **also remains in Gearbox** as the active operating Pipeline. Worktime은 portfolio PR #6으로 기존 파일 그대로 이전하고 서버 검증·병합했다. Payroll은 이번 PR에서 소스를 이전 중이다.
+- The **PTO v0.1.0 calculation engine** is now published in `bhandara/pto-calculator/src/`, migrated from the legacy Gearbox snapshot without editing the calculation function bodies. The legacy PTO Gear **also remains in Gearbox** as the active operating Pipeline. Worktime은 portfolio PR #6으로 기존 파일 그대로 이전하고 서버 검증·병합했다. Payroll은 portfolio PR #7으로 기존 계산 함수 이전과 회귀 검증 후 병합했다.
 - No module may directly import another business calculator. Common functions may be imported only after their semantics match.
-- `bhandara/pto-calculator/module.json` and `config.json` are now implemented with a PTO-specific public CLI dispatch (`run.py bhandara pto-calculator`). General automatic module discovery and cross-module JSON interchange are **not implemented**; Worktime is a direct CLI dispatch using the unchanged normalized-input.json contract. Payroll is an opt-in CLI dispatch in this branch, retaining the original normalize/calculate contracts.
+- `bhandara/pto-calculator/module.json` and `config.json` are now implemented with a PTO-specific public CLI dispatch (`run.py bhandara pto-calculator`). General automatic module discovery and cross-module JSON interchange are **not implemented**; Worktime is a direct CLI dispatch using the unchanged normalized-input.json contract. Payroll is a published opt-in CLI dispatch retaining the original normalize/calculate contracts.
 - Unclear inputs, missing approvals, calculation errors, employee-level review, and settlement ledger decisions are **not automatically corrected or approved**. A calculation must never itself authorize payment, tax filing, or ledger posting.
 - The private Golden baselines created 2026-11-09 use `agent-config` commit `296f909dd84bbdb6196be84568bd0e60775c7dbd`; hash preservation and semantic comparison are separate evidence. See [Golden comparison contract](GOLDEN-COMPARISON.md).
 
@@ -67,3 +67,10 @@ For a PR, test its actual branch directly on the server. Do not use worktrees/Dr
 - 기존 `gearbox.core.date_interval`·`gearbox.diagnostics.contract`은 이미 공개된 동일 Base 함수에 연결한다. `gearbox.core.xlsx`와 diagnostics catalog 사본을 공개 Base로 이전하고 2026 정책/급여항목 registry 원본 JSON도 독립 모듈의 `resources/`에 보존한다.
 - `run.py bhandara payroll-calculator`는 원본 `calculate`·`normalize` CLI를 새 포트폴리오 최상위 진입점에서 전달한다. 기존 Worktime close 계약, payroll 검토용 산출물 및 종료코드는 유지한다.
 - [Payroll 이전 실행서](payroll-calculator/MIGRATION.md)의 테스트만 수행한다. 계산 로직·정책 개선, 사용자 데이터 연결, 운영 정본 전환, Payroll Workflow 수정은 포함하지 않는다.
+
+## 세 계산기 독립 설치 상호배타 검증 (서버 검증 대기)
+
+- 개별 설치에 Base와 해당 계산기 하나만 남기고 **서로 다른 임시 루트에서 합성 CLI를 실행**한다. PTO, Worktime, Payroll의 독립성은 정상 계산 기능을 다시 검토하는 작업과 구분한다.
+- Payroll의 `worktime_close.py` 직접 참조 두 곳은 바이트가 동일한 **공통 Base의 검증 함수**로 경로만 연결한다. 원본 Worktime 코드는 유지하고 Payroll 원본 SHA 역변환 테스트도 계속 수행한다.
+- Worktime과 Payroll을 함께 설치하지 않고도 **버전이 명시된 Worktime 결과 JSON 파일을 Payroll로 인계**할 수 있는지 테스트한다. 실제 근태 마감·급여 지급 승인을 수행하지 않는다.
+- 자세한 명령과 판정 조건: [상호배타 검증 문서](MODULE-ISOLATION.md).

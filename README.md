@@ -2,7 +2,7 @@
 
 Public, independently runnable HR calculation tools are being developed under `bhandara/`. The goal is to provide local Excel inputs and review JSON/XLSX results without a cloud account, AI agent, or external login.
 
-> **Status (2026-11-10):** Base/PTO and Worktime v0.1.0 have been merged and verified on Hermes. Synthetic-only PTO Hermes/Slack and full-year parity passed; the existing operational Gearbox pipelines remain unchanged. This branch migrates **Payroll Calculator** unchanged apart from reversible import/path references; **Payroll server parity tests and Merge are still pending**. No new HR policy, error handling, or payroll approval features are introduced.
+> **Status (2026-11-10):** Base, PTO, Worktime and Payroll migration PRs have all been merged and tested on Hermes. The existing Gearbox operational pipelines remain unchanged. This branch adds **Base + one-calculator mutual-isolation gates**, plus a file-only Worktime-to-Payroll handoff test, without calculation or approval changes. Server verification of this branch is pending.
 
 ## Architecture
 
@@ -61,9 +61,9 @@ python run.py bhandara worktime-calculator \
 
 The migration tests verify exact source Git blob identity and identical CLI JSON/XLSX output for the same synthetic input. The Worktime migration tests passed on Hermes before portfolio PR #6 was merged. The existing operational Worktime/Payroll Gearbox routing was not changed.
 
-## Payroll Calculator v0.1.0 — unchanged code migration (server tests pending)
+## Payroll Calculator v0.1.0 — migrated and verified
 
-The original Payroll Calculator **85 tracked files** have been copied to [Payroll migration instructions](bhandara/payroll-calculator/MIGRATION.md), with **77 byte-identical Git blobs**, 8 reversible path/import-only edits, and four byte-identical supporting common/policy/registry resources. This branch does not change payroll formulas, validation/exception policy, Worktime closure, Ledger commits or any existing Gearbox production route.
+The original Payroll Calculator **85 tracked files** have been copied to [Payroll migration instructions](bhandara/payroll-calculator/MIGRATION.md), with **77 byte-identical Git blobs**, plus narrowly documented reversible path/import-only edits and byte-identical supporting common/policy/registry resources. This branch does not change payroll formulas, validation/exception policy, Worktime closure, Ledger commits or any existing Gearbox production route.
 
 ```sh
 python run.py bhandara payroll-calculator \
@@ -75,4 +75,10 @@ python run.py bhandara payroll-calculator --operation normalize \
   --output-dir /private/normalized-output
 ```
 
-The calculate command retains the **review-only, non-finalizing** Payroll CLI contract and normally returns **exit 2** even for successfully calculated review outputs. The server's migration-only SHA and synthetic CLI parity tests must pass **before merging** this branch.
+The calculate command retains the **review-only, non-finalizing** Payroll CLI contract and normally returns **exit 2** even for successfully calculated review outputs. The migration-only SHA, synthetic CLI parity, and Gearbox official regression tests passed before portfolio PR #7 was merged.
+
+## 독립 모듈 상호배타 검증 (서버 실행 대기)
+
+[MODULE-ISOLATION.md](bhandara/MODULE-ISOLATION.md)에서 **Base + PTO / Base + Worktime / Base + Payroll** 각각의 독립 실행 및 **Worktime JSON → Payroll 인계** 검증 범위와 명령을 확인한다. 한 계산기를 설치할 때 다른 계산기 코드는 설치하지 않는다. 단, 공통 검증 함수는 Base를 통해 공유한다.
+
+이번 브랜치는 기존 계산·정책·예외 판단을 변경하지 않으며, 독립 설치에서 필요한 참조 경로와 테스트·문서만 수정한다.
