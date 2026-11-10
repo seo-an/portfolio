@@ -140,9 +140,9 @@ class PayrollMigrationTests(unittest.TestCase):
         self.assertEqual(manifest["migration_type"],
                          "copy_with_path_only_adaptations")
         self.assertEqual(len(manifest["files"]), 85)
-        self.assertEqual(len(manifest["resources"]), 4)
+        self.assertEqual(len(manifest["resources"]), 5)
         changes = manifest["adaptations"]
-        self.assertEqual(len(changes), 8)
+        self.assertEqual(len(changes), 10)
         adapted_paths = set()
         for entry in manifest["files"]:
             with self.subTest(path=entry["destination"]):
