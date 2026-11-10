@@ -1,200 +1,172 @@
-# Payroll Calculator
+# 급여 계산기(Payroll Calculator) — 독립 실행 모듈 v0.1.0
 
-## 목적
+**기존 Gearbox 급여 계산기를 공개 저장소에서 독립 실행하도록 이전한 모듈**이다. 보상 정보, 월별 급여 입력, 근무시간 결과, 급여항목·회사 정책을 이용해 **검토용 급여 계산 결과**를 만든다.
 
-Payroll Calculator는 확정된 근로시간 사실, effective-dated Compensation, 월별 Payroll Input, Pay Item Registry, 회사 Payroll Policy와 Operating Config를 결합하여 급여 지급·공제·정산 금액을 계산한다.
+> **2026-11-10 이전·검증 완료.** 원본 Payroll 파일 85개를 보존했고, 경로 변경은 원본 해시로 역검증했다. 합성 데이터를 이용한 계산·정규화 진입점 검증, Gearbox 원본 회귀, **Base + Payroll만 설치한 상호배타 테스트**, 다른 위치의 Worktime JSON 인계를 모두 통과했다. 기존 급여 계산식, 지급·공제 정책, 예외처리 기능은 수정하지 않았다.
 
-원본 출퇴근 기록은 Payroll에서 다시 해석하지 않는다. 근로시간 해석은 Worktime Calculator의 책임이며 사회보험료와 원천세는 별도 Calculator의 책임으로 유지한다.
+이 모듈은 **사회보험료·원천세 확정, 급여 지급 승인, 회계 장부 확정, 실제 송금**을 수행하지 않는다. 결과에 금액이 계산되더라도 `finalizable=false`, `ledger_committed=false`이다. 기존 운영 Gearbox Payroll Workflow를 교체하지 않는다.
 
-## 현재 계산 경로
+## 1. Payroll 모듈 하나만 설치하기
+
+필요한 파일 구성은 다음과 같다.
 
 ```text
-Employment Fact / Pay-item Eligibility / Compensation / Payroll Input / Worktime Result
-        ↓
-Worktime handoff + Input Contract Validation
-        ↓
-Operating Input Preparation
-        ├─ Compensation: effective period overlap
-        ├─ Worktime: resolved work_date range
-        └─ Payroll Input: transaction 유지 + origin/payment basis resolve
-        ↓
-Payroll calculation modules
-        ├─ Proration / Eligibility / Effective-date
-        ├─ Dependency Graph
-        ├─ Worktime-linked premium calculation
-        ├─ Absence / unpaid leave deduction
-        └─ Weekly holiday calculation
-        ↓
-Payroll Result
-        ↓
-Payroll Validation
-        ↓
-Payroll Run
-        ↓
-Payroll Totals
-        ↓
-Final Amount Processing
-        ↓
-Payable Amount + Settlement Ledger request
+bhandara-payroll/
+├── run.py
+├── install.py
+├── requirements.txt
+└── bhandara/
+    ├── __init__.py
+    ├── common/                 # 필수: 공통 Base와 Worktime close 검증 계약
+    └── payroll-calculator/    # 급여 계산기
+        ├── run.py
+        ├── functions/
+        ├── resources/         # 급여항목 레지스트리·2026년 기준 정책
+        ├── examples/          # 합성 테스트 자료
+        └── module.json
 ```
 
-과거 급여 수정은 기존 계산값을 재사용하지 않는다. 과거 시점의 source fact·Compensation·Policy·rule로 독립 재계산한 Rerun Result와 기존 확정 Historical Payroll Result를 비교하고 차액만 현재 정산월에 반영한다.
+PTO·Worktime 폴더를 포함할 필요가 없다. Payroll이 승인된 근무시간 마감 영수증을 확인하는 경우에도 **Base에 포함된 원본 동일 검증 함수**를 사용한다. 이 구조를 실제 격리 테스트에서 확인했다.
 
-## 주요 설정 파일
+Git이 있으면 필요한 폴더만 내려받는다.
 
-| 파일 | 책임 |
+```sh
+git clone --depth 1 --sparse https://github.com/seo-an/portfolio.git bhandara-payroll
+cd bhandara-payroll
+git sparse-checkout set bhandara/common bhandara/payroll-calculator
+
+uv venv --python 3.14 .venv
+uv pip install --python .venv/bin/python -r requirements.txt
+
+.venv/bin/python install.py --check
+```
+
+Python 3.12 이상을 지원하며 Hermes 검증 버전은 **3.14.9**다. 외부 의존성은 최상위 `requirements.txt`에서 관리한다. Windows는 `.venv\Scripts\python.exe`를 사용한다. Python 패키지를 설치할 때 시스템 환경을 직접 수정하지 말고 가상환경을 사용한다.
+
+GitHub ZIP을 내려받아 필요한 파일만 옮겨도 되지만 위 트리의 **상대 경로를 그대로 유지**해야 한다. **Payroll 계산기 폴더 하나만 복사해서는 실행할 수 없다.**
+
+## 2. 첫 실행 — Payroll만으로 합성 급여 계산하기
+
+모듈에 **가상 직원 2명의 근무시간 결과 JSON**과 합성 급여파일 생성기가 포함돼 있다. 별도 Worktime 설치 없이 Payroll 단독 실행을 확인할 수 있다.
+
+```sh
+# 1. 제공된 합성 Worktime JSON을 참조해 급여 입력·정책 파일 생성
+.venv/bin/python \
+  bhandara/payroll-calculator/examples/payroll-standalone-demo/generate.py \
+  --worktime-result \
+  bhandara/payroll-calculator/examples/payroll-standalone-demo/worktime-result.synthetic.json \
+  --output-dir /tmp/bhandara-payroll-demo-input
+
+# 2. 계산 실행: 정상적으로 계산돼도 검토 전용이므로 종료 코드 2
+.venv/bin/python run.py bhandara payroll-calculator \
+  --config /tmp/bhandara-payroll-demo-input/payroll-config.json \
+  --output-dir /tmp/bhandara-payroll-demo-result
+```
+
+예제 출력 폴더는 새 경로여야 한다. 동일한 예제를 다시 실행한다면 새로운 이름을 지정한다. 예제 입력의 직원 ID `EP0001`, `EP0002`와 금액은 **가상 데이터**다.
+
+계산이 성공해도 `Payroll: REVIEW_REQUIRED (review only, not finalized)`가 표시되고 프로세스 종료 코드는 **2**다. 이때 계산 성공 여부는 `payroll-calculation.json` 생성과 `payroll-review.json`의 내용으로 확인해야 한다. 종료 코드 2만으로 실패라고 판단하지 않는다.
+
+## 3. 원본 자료 정규화 기능
+
+기존 원본 CSV/XLSX/JSON의 열 이름과 값 매핑을 `manifest.json`으로 정의하면, Payroll에 포함된 `normalize` CLI로 정규화할 수 있다. **Worktime 모듈을 설치할 필요는 없다.**
+
+```sh
+.venv/bin/python run.py bhandara payroll-calculator \
+  --operation normalize \
+  --input-dir bhandara/payroll-calculator/examples/source-mapping-demo \
+  --output-dir /tmp/bhandara-payroll-normalized
+```
+
+기본 설정은 입력 폴더의 `manifest.json`을 사용한다. 별도 설정을 사용하려면 `--manifest /private/mapping/manifest.json`을 지정한다. 정규화 결과가 `READY_FOR_CALCULATION`이면 종료 코드 `0`, 검토·차단이면 `2`다.
+
+**구분할 점:** Payroll의 원본 정규화 기능이 포함되어 있다고 해서 Worktime의 원본 Excel 직접 입력 기능이 생긴 것은 아니다. Worktime은 여전히 별도로 정규화한 `normalized-input.json`을 받는다.
+
+## 4. 실제 입력 파일과 설정
+
+계산 모드에서는 `payroll-config.json`(`schema_version: "0.1"`)에 **모든 자료 경로를 명시**한다. [기존 설정 양식](examples/payroll-standalone-config.example.json)은 필드 계약 참고용으로, 배포 서버의 오래된 `gearbox/` 경로 대신 현재 실제 파일 경로를 입력해야 한다.
+
+| 설정 키 | 내용 |
 |---|---|
-| `gearbox/registry/pay-item-registry.json` | 급여항목의 의미, 유형, 허용 source, 일할/통상임금/법정 rule 연결 |
-| `gearbox/workflow/templates/payroll-calculator/payroll-policy.json` | 회사별 계산 방법과 최종 금액처리 정책 |
-| `gearbox/gear/payroll-calculator/operating-config.json` | 급여월 기준으로 어느 기간의 source를 사용할지 결정 |
-| `gearbox/workflow/templates/payroll-calculator/compensation.xlsx` | 직원별 effective-dated 고정·계약 보상 |
-| `gearbox/workflow/templates/payroll-calculator/payroll-input/yyyy/yyyy-mm.xlsx` | 해당 급여 run의 일회성·변동·조정 transaction |
-| `gearbox/gear/worktime-calculator/contracts/worktime-result.json` | Worktime → Payroll 사실값 handoff 계약 |
-| `gearbox/workflow/templates/payroll-calculator/settlement-ledger-schema.json` | 이월·소급·조정·절사잔액 거래 계약 |
+| `payroll_period` | 계산 대상 급여월(`YYYY-MM`) |
+| `expected_worker_ids` | 계산 대상 직원의 `worker_id` 목록 |
+| `compensation_path` | 직원별 적용기간이 있는 보상 Excel |
+| `payroll_input_path` | 해당 월 지급·공제·조정 입력 Excel |
+| `employment_facts_path` | 재직·퇴직 등 적용 사실 JSON |
+| `registry_path` | 급여항목 정의 JSON. 공개본 `resources/pay-item-registry.json` 사용 가능 |
+| `operating_config_path` | 급여월과 원본 기간에 대한 운영 설정. 공개본 `operating-config.json` 참조 |
+| `company_policy_path` | 회사별 일할 계산·통상임금·반올림 등 정책 JSON |
+| `legal_policy_path` | 해당 시점의 법정 계산 기준 JSON. 공개 예제 `resources/policy/2026.json`은 **원본 스냅샷**이며 현행 법령 검증을 대체하지 않음 |
+| `worktime_result_path` | Worktime이 내보낸 근무시간 결과 JSON(인계 방식 중 하나) |
+| `recurring_pay_item_codes` | 반복 적용할 급여항목 코드 목록 |
 
-회사 적용 시 어떤 값을 어디서 변경하는지는 `RUNBOOK.md`를 기준으로 확인한다.
+상대 경로는 기존 계산기 입력 계약에 따라 급여 설정 파일 위치를 기준으로 처리한다. `--scenario-id`를 지정해 기존 정책 카탈로그의 계산 시나리오를 선택하는 기능도 그대로다.
 
-## 핵심 경계
+원본 Worktime 인계 방식은 `worktime_result_path`, `worktime_rows_path`, `worktime_closes_path` 중 **하나만** 선택한다. 복수 지정하거나 승인되지 않은 근무시간을 임의로 '확정'으로 변경하면 안 된다.
 
-- Registry는 **무슨 급여항목인가**를 정의한다.
-- Payroll Policy는 **어떻게 계산하는가**를 정의한다.
-- Operating Config는 **어느 기간의 자료를 가져오는가**를 정의한다.
-- Compensation과 Payroll Input은 **사실값**이다.
-- Worktime Result는 **금액이 아닌 확정 근로시간 사실**이다.
-- Payroll Result의 `origin_from/to`는 factual origin이고, `calculation_trace.operating_period`는 source 선택 provenance다. 둘을 자동으로 동일시하지 않는다.
-- 계산 중간값은 Decimal 정밀도를 유지하고 회사 절사·반올림은 Final Amount Processing에서 한 번 적용한다.
+## 5. Worktime과 분리된 채로 JSON 파일만 인계하기
 
-## 최신 경로와 Legacy 경로
+Worktime과 Payroll을 **서로 다른 설치 폴더**에 둬도 된다. 두 프로그램은 별도 프로세스로 실행하고 아래 파일만 전달한다.
 
-`payroll_run.py`가 최신 Payroll Result 기반 운영 runner다. 이미 계산·승격된 Payroll Results를 모아 Validation을 집계하고 Final Payroll을 실행한다.
-
-`payroll_orchestrator.py`는 이전 통합 경로다. 기존 회귀 테스트와 업무 시나리오 보존을 위해 유지하지만 새 운영 책임을 계속 추가하지 않는다.
-
-`examples/2026-10-payroll-e2e.json`과 `test_payroll_e2e_example.py`도 현재는 legacy orchestrator 회귀 시나리오다. 최신 operational E2E는 실제 input adapter 연결 단계에서 별도로 구성한다.
-
-## 현재 구현 상태
-
-구현됨:
-
-- Pay Item Registry와 source validation
-- Compensation / Payroll Input XLSX header contract
-- Worktime handoff validation
-- Operating Period Resolver와 Operating Input Preparation
-- Employment Fact / Pay-item Eligibility fact contract와 validation
-- effective-dated Compensation / Eligibility
-- 명시된 recurring Compensation 항목 → Dependency Graph → Payroll Result adapter
-- 월 고정급 역일수 proration
-- Calculation Primitive / Base / Derived / Component / Dependency Graph
-- Worktime-linked 연장·야간·휴일 계산
-- 결근·무급휴가 공제
-- 주휴 판정·금액 처리
-- Payroll Result와 operating provenance
-- Historical Result ↔ Rerun 차액 소급정산
-- Payroll Validation
-- Payroll Totals
-- Final Amount Processing
-- Settlement Ledger 계산 모듈
-- 최신 `payroll_run.py`
-
-현재 독립 실행까지 연결됨:
-
-- `run.py normalize`: 원본 CSV/XLSX/JSON 매핑, 직원명부 대조, 검토 보고
-- Worktime `run.py calculate`: 직원·일별 근로시간 계산 및 검토용 결과 생성
-- Payroll `run.py calculate`: Compensation·Payroll Input·Worktime을 기존 Payroll 엔진으로 연결하고 독립 직원명부와 검토 상태를 확인해 임시 계산서와 검토 리포트 생성
-- 입력·처리 모듈은 계산 엔진과 분리하며, Worktime close receipt 확인 기능은 유지
-
-아직 구현 또는 완결되지 않은 부분:
-
-- 통합 Workflow는 이번 브랜치에서 구현되어 서버 검증 대기 중. 회사별 raw source의 명시적 Compensation/Payroll Input XLSX 매핑은 지원하나 모든 사업장 양식의 자동 추정/정규화는 지원하지 않음
-- Payroll 엔진의 배치 오류는 Workflow에서 직원별 재시도·정상 직원 임시 대장 보존으로 연결됨 (서버 검증 대기)
-- 월 전체 대상자·근무일 완전성 독립 검증, 정산원장 승인·트랜잭션 처리
-- Social Insurance Calculator, Withholding Tax Calculator 및 실제 최종 급여 확정 게이트
-
-## 검증 현황 (2026-10-30)
-
-PR #92의 Payroll 단독 실행 CLI는 사용자 서버에서 **전용 `unittest` 12건, Gearbox 전체 회귀 및 인프라 테스트 PASS**를 보고받았다. 이전 2026-10-07의 699건은 과거 테스트 기준이며 최신 전체 건수로 인용하지 않는다. 실제 회사 급여자료의 승인·세무·보험·마감 완결을 보증하지 않는다.
-
-실행:
-
-```bash
-cd /opt/agents/config/agent-config
-python3 -m unittest discover -s gearbox/_tests/gear/payroll-calculator -p 'test_payroll_standalone_cli.py'
-python3 gearbox/_tests/run.py
-python3 gearbox/_tests/core_run.py
+```text
+Base + Worktime                              Base + Payroll
+   │                                              │
+   └─ worktime-result.json ── 파일 경로 지정 ──>  └─ payroll-config.json
+                                                       │
+                                                       └─ 급여 검토용 산출물
 ```
 
-## Worktime 마감 → 최종 급여대장 경로 (v0.1)
+급여 설정 안에 다음 항목을 포함한다.
 
-`functions/payroll_register.py`의 `run_closed_payroll`은 새 마감 게이트다. 먼저 승인된 Worktime close receipt가 Operating Config에서 정한 근로시간 귀속기간 전체를 덮는지 검사한 뒤 **기존** `payroll_operational_entrypoint.run_operational_payroll`을 호출한다. 새 급여 계산 엔진을 만들거나 Legacy Orchestrator로 우회하지 않는다.
+```json
+{
+  "worktime_result_path": "/private/worktime/result-01/worktime-result.json"
+}
+```
 
-- 원천 월간 근무표/근태 `→` `worktime_source_adapter` `→` `worktime_daily` `→` `worktime_close`
-- 마감 receipt 검증 `→` existing operational Payroll `→` 승인 및 차대 검증 `→` `write_final_payroll_register_xlsx`
-- 출력 `Final Register`, `Calculation Detail`, `Validation`, `Journal`, `Approval`
-- 사업장 계정코드/세금·보험액 승인 근거/사용자 승인은 **필수 입력**이며 자동 산정하지 않는다.
-- 금액 절사로 Settlement Ledger append가 필요하면 실제 commit 후 해당 증빙 `ledger_commit_ref`가 있어야 확정 가능하다.
+이는 설정 파일의 **한 부분만 보여주는 예**다. 나머지 필수 경로 및 정책과 대상 급여월도 지정해야 한다. Worktime 결과의 `status`가 `REVIEW_REQUIRED`, `close_receipt=null`이면 Payroll도 **미마감 사실값으로 계산하는 검토용 실행**이며 자동 승인·Ledger 반영은 발생하지 않는다.
 
-이전 `payroll_output_xlsx.py`는 여전히 **검토용 출력**이며 변경하지 않았다. 새 확정 출력은 변경감지 checksum과 기존 파일 덮어쓰기 방지를 사용한다. checksum은 서명 또는 외부 저장소의 불변 보증은 아니다.
+이 JSON 인계는 **Worktime 폴더 없는 Payroll 설치**에서 합성 테스트를 통과했다. 세 계산기의 독립성 기록은 [상호배타 검증](../MODULE-ISOLATION.md) 참고.
 
-자세한 계약·차단 조건·테스트 명령은 `../worktime-calculator/RUNBOOK.md` 참고.
+## 6. 실행 결과와 종료 코드
 
-## Company-wide source adapter (mapping v0.1)
+| 실행 종류 | 상태·종료 코드 | 판정 방법 |
+|---|---|---|
+| `normalize` 성공 | `READY_FOR_CALCULATION`, 종료 `0` | 입력 가공 보고서 확인 |
+| `normalize` 검토·오류 | 종료 `2` | `review-report.json`의 원인 확인 |
+| `calculate` 정상 계산 | **`REVIEW_REQUIRED`, 종료 `2`** | `payroll-calculation.json` 및 `payroll-review.json` 생성 확인 |
+| `calculate` 계약·계산 오류 | `BLOCKED`, 종료 `2` | 검토 JSON/XLSX를 통해 원인 확인 |
 
-`run.py normalize` is now a standalone preprocessing command. It maps
-arbitrary *structured* CSV/XLSX/JSON headers to canonical facts through an
-explicit JSON manifest, reconciles records with an independent employee roster,
-and writes normalized-input.json plus separate JSON/XLSX review reports.
+정상 계산 시 기존 출력 파일은 다음과 같다.
 
-This is a **partial foundation for the company batch Workflow**, not a final
-end-to-end Payroll runner. The existing Worktime, payroll calculation and final
-register APIs remain independent and unchanged. The independent Worktime and Payroll calculation CLIs are now available.
-Workflow orchestration is implemented in the current branch and awaits server tests.
-Employee-isolated Payroll fault continuation and a full-roster provisional
-register are implemented in the Workflow (pending server verification).
-Remaining tasks are complete period coverage, external payroll-program comparison,
-tax/insurance calculation and safe transactional finalization.
+- `payroll-calculation.json` / `payroll-calculation.xlsx`: 계산 금액·항목·계산 근거를 담은 **임시 계산 결과**.
+- `payroll-review.json` / `payroll-review.xlsx`: 대상 직원 누락·오류·검토 필요 항목.
+- `policy-resolution.json`: 계산에 적용된 정책 선택 내역.
 
-See [BATCH-WORKFLOW.md](BATCH-WORKFLOW.md) for the complete intended contract
-and runnable source-normalization command.
+계약·계산 오류로 중단된 경우 검토용 JSON/XLSX 두 개만 생성될 수 있다. 모두 **최종 급여대장·원천세 신고 파일·회계 승인 전표가 아니다.**
 
+## 7. 이전 이력과 원본 보존
 
-## Payroll standalone calculate CLI v0.1 (PR #92)
+- [원본 이전 기록](MIGRATION.md) 및 [원본 해시 표](migration-manifest.json)에 최초 원본 파일 85개와 참조 경로만 변경한 코드 내역을 보관한다.
+- 실제 사용을 위한 README·RUNBOOK은 **현재의 한국어 문서가 정본**이다.
+- Gearbox 원본 문서의 **바이트 동일 사본**은 `legacy-source-docs/README.md`, `legacy-source-docs/RUNBOOK.md`로 보존했다. 이전 검증 테스트의 원본 해시와 파일 개수 85개는 유지된다. 이 사본의 이전 서버 경로·운영 상태는 **현재 사용 설명이 아니다**.
+- 계산 함수·정책·예외 로직 변경은 이번 프로젝트에서 하지 않았다. 개선은 이후 별도 프로젝트에서 설계한다.
 
-The independent command `python3 gearbox/gear/payroll-calculator/run.py calculate --config <config.json> --output-dir <new-output-dir>` is implemented. It reads Worktime results and Payroll input contracts, reuses the existing operational engine, reconciles an independently supplied employee roster, and emits **review-only** Payroll XLSX/JSON plus separate audit XLSX/JSON. Engine failures produce an error report instead of invented amounts.
+## 8. 테스트와 개인정보 보호
 
-It never changes the Settlement Ledger or issues payment approvals. Worktime UNCLOSED/REVIEW, tax/insurance verification and financial approvals are `ACTION_REQUIRED`, so no result is considered finalized. The one-command company Workflow is now implemented in a separate orchestration module (pending server regression); employee-isolated fault recovery is now implemented in Workflow (pending server validation); statutory/final approval gates remain.
+```sh
+# 전체 portfolio를 내려받은 경우, 해당 가상 자료만 사용
+.venv/bin/python -m unittest discover \
+  -s bhandara/tests -p 'test_payroll_migration.py' -v
 
-See [STANDALONE-CLI.md](STANDALONE-CLI.md) for the input contract, runnable commands, synthetic CLI chain and agent instructions. Existing `run.py normalize` remains supported.
+.venv/bin/python -m unittest discover \
+  -s bhandara/tests -p 'test_module_isolation.py' -v
 
+.venv/bin/python install.py --check
+```
 
-## 회사 전체 급여 Workflow v0.1 — 서버 검증 대기
+계산기 하나만 sparse-checkout한 환경에서는 `bhandara/tests/`가 없을 수 있다. 이 경우 위의 **합성 급여 계산 예제**와 `install.py --check`를 실행하고, 전체 회귀는 전체 저장소에서 확인한다.
 
-개별 Gear와 기존 급여 계산 엔진의 독립성을 유지하며, 입력 정규화 → Worktime → Payroll XLSX 정본 연결 → Payroll 결과를 한 명령으로 실행한다. 단계별 실행 이력과 산출물 SHA-256은 Workflow가 기록한다. 비정상 데이터를 임의 승인하지 않고 원본 행 추적과 검토 파일을 보존한다.
+실제 근로자 식별정보, 급여액, 원본 파일, 결과 JSON/XLSX는 공개 Git이나 Slack에 올리지 않는다. 로컬에서 접근 권한을 제한하고 별도의 승인·법령 확인 절차를 거쳐야 한다.
 
-**[통합 Workflow 운영책](../../workflow/payroll/RUNBOOK.md)** 에 실제 입력 설정, 1회 실행 명령, 가상 데이터 생성, Payroll 프로그램과의 대조 절차 및 에이전트 요청문을 기록했다. **실무용 계산·대조 자료**는 생산하지만, 실제 지급 확정 승인과 프로그램 차액 대조 자동화는 아직 미구현이다. 현재 서버 전체 테스트는 완료되지 않았다.
-
-
-## Payroll 직원별 오류 격리 및 임시 급여대장 — 4단계
-
-기존 Payroll 계산 공식과 단독 CLI는 변경하지 않고 Workflow에서 배치 엔진 예외가 발생했을 때만 직원별 재계산을 실행한다. 성공 직원의 급여액은 보존하고 실패 직원은 금액 공란/오류 사유로 표시한다. 대상자 전체가 포함된 `provisional-payroll-register.json/.xlsx`는 기존 급여 프로그램과의 대조용이며, 지급 승인이나 최종 급여 확정이 아니다.
-
-`workflow-config.json`의 `isolate_worker_failures`는 기본 `true`이고, `false`로 설정하면 기존 배치 전체 오류 처리 방식을 적용한다. 원본 정규화나 Worktime이 이미 BLOCKED인 경우 Payroll을 실행하지 않는 안전 장치는 그대로 유지한다. 자세한 처리 조건과 테스트는 [통합 Workflow 운영책](../../workflow/payroll/RUNBOOK.md)을 참고한다. **아직 서버 검증 결과는 확인되지 않았다.**
-
-
-## Company Policy Catalog와 시나리오 선택 (v0.2)
-
-단일 company_policy_path와 별개로 여러 완전한 정책/상속 정책을 담은 policy_catalog_path를 지원한다. 시나리오를 지정하지 않으면 필수 default_scenario_id를 적용한다. 단독 Payroll 및 통합 Workflow CLI에 --scenario-id가 추가되며 실행 결과에 선택 ID·정책 해시·기본 기준 대비 변경 필드가 남는다. **급여 산식과 법정 정책, 원본 데이터는 바꾸지 않는다.** 자세한 실행·검증은 [POLICY-SCENARIOS.md](POLICY-SCENARIOS.md). 새로운 기능은 PR 브랜치에서 서버 검증 대기 중이다.
-
-
-## 다중 회사정책 시나리오 비교 (신규 Workflow 기능)
-
-`gearbox/workflow/payroll/run.py compare`는 하나의 정책 카탈로그에서 Default와 여러 Profile을 선택하여 같은 원본·근태 계산 결과로 순차 급여 산정한다. 1회 Normalize/Worktime 후 개별 Payroll 산출물을 보존하고 `scenario-comparison.json/.xlsx`에서 직원·급여항목별/회사 전체 차액과 정책 변경을 보고한다. 누락 계산은 0원으로 바꾸지 않으며 승인이나 Ledger commit을 하지 않는다. 자세한 명령과 테스트는 [SCENARIO-COMPARISON.md](../../workflow/payroll/SCENARIO-COMPARISON.md)를 참고한다. 현재 서버 회귀 테스트는 아직 완료되지 않았다.
-
-
-## 외부 급여 프로그램 결과 대조 (Workflow, 서버 검증 대기)
-
-기존 Payroll 계산 JSON과 외부 급여 프로그램 XLSX의 직원·급여항목·합계를 명시적 JSON 매핑으로 대조하는 별도의 Workflow 명령이 추가되었다. 기존 계산 엔진과 근태 원천자료를 변경하거나 재실행하지 않는다. 직원 ID·항목 명칭은 추정하지 않으며 사회보험·원천세 미산정 금액은 외부 전용 항목으로 표시한다. 실지급액은 내부 법정 공제가 완성되기 전까지 진단용 비교만 가능하다. 자세한 CLI, 오류 처리, JSON/XLSX 산출물은 [EXTERNAL-RECONCILIATION.md](../../workflow/payroll/EXTERNAL-RECONCILIATION.md)를 참고한다. 이 기능은 아직 서버 검증 대기 중이다.
-
-
-## 회계식 급여대장·전월 대비 검토용 Excel (신규 Workflow 기능)
-
-외부 급여 프로그램에서 대조할 공통 기준 데이터가 필요할 때 기존 계산 JSON으로부터 별도 Workbook을 생성한다. 계산식은 재실행·변경하지 않으며 직원별 수당·공제/귀속기간/근거, 계정별 차변·대변 분개와 합계 검증, 개인/회사 전체 전월 대비 증감, 증빙 SHA-256을 함께 출력한다. 미산정 보험·세금은 자동 분개하지 않는다. 기존 승인된 Final Register와 구별되는 **검토용 Provisional Accounting Book**이며 지급·전표 승인은 하지 않는다. 명령 및 11개 시트 구조는 [ACCOUNTING-BOOK.md](../../workflow/payroll/ACCOUNTING-BOOK.md)를 참고한다. 서버 검증은 아직 완료되지 않았다.
+관련 문서: [급여 운영 실행서](RUNBOOK.md) · [저장소 README](../../README.md) · [반다라 공통 RUNBOOK](../RUNBOOK.md).

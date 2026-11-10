@@ -1,6 +1,6 @@
 # Worktime Calculator — 독립 모듈 이전 v0.1.0
 
-**상태 (2026-11-10):** 기존 Gearbox Worktime 계산 코드의 **무수정 복사 및 독립 진입점 추가 PR**. Hermes 서버에서의 실제 이전 검증은 PR 브랜치 시험 전까지 미완료다. 기능 검사·개선·예외처리 변경은 **별도 프로젝트**로 미룬다.
+**상태 (2026-11-10):** 기존 Worktime 코드 10개 파일의 바이트 동일성 및 합성 JSON·XLSX 결과를 확인해 [Portfolio PR #6](https://github.com/seo-an/portfolio/pull/6)을 병합했다. 이후 **Base + Worktime만 설치한 단독 실행 및 상호배타 테스트**도 Hermes 서버에서 PASS했다. 계산 정책·예외 처리 개선은 별도 프로젝트에서 다룬다.
 
 ## 이전 범위
 
@@ -10,6 +10,35 @@
 - [migration-manifest.json](migration-manifest.json)에 각 원본 Git blob SHA를 기록했다. `unittest`는 복사본의 **원본 바이트 단위 동일성**을 검증한다. 이전 중 근태 계산식·검토·오류 처리의 내용은 수정하지 않는다.
 - 최상위 `portfolio/run.py`에 `bhandara worktime-calculator` 명령의 **단순 전달 기능만** 추가했다. 기존 Worktime `run.py calculate`의 인자·결과·종료 코드가 그대로 사용된다.
 - 외부 네트워크·Hermes·Slack·Drive·인증은 계산 모듈의 요구사항이 아니다. 승인된 Python 3.12+ 및 `openpyxl==3.1.5`를 사용한다. 설치는 `requirements.txt` 하나로 관리한다.
+
+## Worktime 모듈만 내려받기
+
+**다른 계산기 없이** `bhandara/common/`(공통 Base)과 `bhandara/worktime-calculator/`, 최상위 실행·설치 파일만 있으면 된다. Git으로 필요한 파일만 받는 예시:
+
+```sh
+git clone --depth 1 --sparse https://github.com/seo-an/portfolio.git bhandara-worktime
+cd bhandara-worktime
+git sparse-checkout set bhandara/common bhandara/worktime-calculator
+
+uv venv --python 3.14 .venv
+uv pip install --python .venv/bin/python -r requirements.txt
+.venv/bin/python install.py --check
+```
+
+GitHub ZIP으로 직접 복사할 때는 `run.py`, `install.py`, `requirements.txt`, `bhandara/__init__.py`, `bhandara/common/`, `bhandara/worktime-calculator/`만 **원래 위치 그대로** 보존한다. **Worktime 폴더 하나만 복사하면 안 된다.** Base는 필수지만 PTO·Payroll 설치는 필요 없다.
+
+### 제공된 합성 JSON으로 즉시 실행
+
+이전 테스트에서 사용한 것과 같은 구조의 가상 직원 두 명(`E01`, `E02`)에 대한 입력을 `examples/`에 별도 제공한다. **실제 근무 승인 기록이 아니며 오직 독립 실행 확인용**이다.
+
+```sh
+.venv/bin/python run.py bhandara worktime-calculator \
+  --normalized bhandara/worktime-calculator/examples/normalized-input.demo.json \
+  --config bhandara/worktime-calculator/examples/worktime-config.approved.demo.json \
+  --output-dir /tmp/bhandara-worktime-demo-result
+```
+
+기대되는 정상 예제 상태는 `CALCULATED_UNCLOSED`와 종료 코드 `0`이다. **`approved`라는 예제 파일명의 뜻은 승인 필드가 채워진 합성 입력을 사용한다는 것일 뿐, 실제 승인이나 근태 마감이 완료됐다는 의미가 아니다.** 출력 대상 경로가 이미 존재한다면 새 디렉터리 이름을 지정한다.
 
 ## 입력 계약 유지
 
@@ -82,4 +111,4 @@ python run.py compare-golden --profile strict-json \
   --actual /private/public/worktime-review.json
 ```
 
-**동등성 판정은 실제 서버 테스트 결과를 받아 확인한 뒤에만 한다.** 테스트 PASS는 동일 코드 이전에 대한 증거이지 새 기능/정책/법적 적합성의 검증이 아니다.
+**2026-11-10 서버 이전·상호배타 검증 PASS.** 기존 계산기와 공개 코드의 동일 합성 입력 결과를 확인했다. 이는 새 기능/정책/법적 적합성 검증이 아니다.

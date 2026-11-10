@@ -1,4 +1,4 @@
-# Golden JSON 의미 비교기 — Phase 1 / PR #2
+# Golden JSON 의미 비교기 — 공개 계산기 이전 검증용
 
 **목적:** 기존 Gearbox 결과와 포트폴리오 이관 결과를 숫자·상태·검토 사유 단위로 비교한다. 원본 Golden은 서버 비공개 데이터이고 공개 Git에는 포함하지 않는다.
 
@@ -7,7 +7,7 @@
 동일한 가상 입력, 같은 정책·계산기간, 검증된 Python/모듈 버전으로 실행한 결과 두 개를 사용한다.
 
 ```bash
-# Root is seo-an/portfolio; Python is your approved uv-managed interpreter.
+# seo-an/portfolio 저장소 루트에서 승인된 uv 관리 Python으로 실행
 python run.py compare-golden --profile payroll-workflow \
   --expected /private/bhandara/baseline/output \
   --actual /private/bhandara/candidate/output
@@ -48,7 +48,7 @@ PTO 결과는 `source_commit`, `source_hashes`, `period`, `results`가 있는 **
 - `bool`, 정수, 실수, `null`, 문자열을 구분한다. JSON 객체의 중복 키와 비유한 값(NaN/Infinity)은 실패 처리한다.
 - 메타데이터 제외는 재귀적인 단어 패턴이 아니라 위 경로의 정확한 필드에 한정한다. 시각이나 ID라는 이름이 붙은 **업무 필드**를 자동으로 버리지 않는다.
 
-## 아직 보증하지 않는 항목
+## 비교기 결과로 보증하지 않는 항목
 
 - **XLSX 셀·수식·시트·서식의 논리 비교는 미구현.** 파일바이트 SHA를 결과 동등성으로 간주하지 않는다.
 - `03-payroll-input/` 산출물과 `payroll-source-lineage.json`은 이 9개 JSON 비교 목록에 포함되지 않는다. 이관 시에는 별도 검증이 필요하다.
@@ -64,3 +64,7 @@ python run.py compare-golden --help
 ```
 
 실제 운영환경에서는 Hermes `uv` 관리 Python `3.14.9`로 PR 브랜치에서 직접 테스트한다. 실데이터는 테스트 출력과 Git에 올리지 않는다.
+
+## 2026-11-10 이후 사용 범위
+
+PTO·Worktime·Payroll의 **1차 모듈 이전과 독립 실행 상호배타 검증**은 완료됐다. Golden 비교기는 계산기 자체를 실행하거나 운영 Pipeline을 전환하는 기능이 아니다. 전체 저장소를 내려받았을 때만 이 비교 명령을 사용하는 편이 안전하며, **모듈 하나만 설치하려는 사용자에게는 필수 파일이 아니다.** 단독 설치 지침은 [한국어 저장소 README](../README.md)를 따른다.

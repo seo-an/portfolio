@@ -19,12 +19,12 @@
     },
     {
       "source": "gearbox/gear/payroll-calculator/README.md",
-      "destination": "bhandara/payroll-calculator/README.md",
+      "destination": "bhandara/payroll-calculator/legacy-source-docs/README.md",
       "source_git_blob_sha": "7870398b6fd58eb3587907d8b74f8f49e723d30b"
     },
     {
       "source": "gearbox/gear/payroll-calculator/RUNBOOK.md",
-      "destination": "bhandara/payroll-calculator/RUNBOOK.md",
+      "destination": "bhandara/payroll-calculator/legacy-source-docs/RUNBOOK.md",
       "source_git_blob_sha": "9a77fe5b7b9cd9e801b6120a2a24b8caa480a948"
     },
     {
@@ -550,5 +550,5 @@
       ]
     ]
   },
-  "note": "85 original Payroll files preserved. 10 import/path-only adaptations are reversible to original Git blob SHAs. A byte-identical Worktime close verifier is available in shared Base so Payroll does not require Worktime installation. No calculation, policy, exception or approval logic changed."
+  "note": "85 original Payroll source blobs preserved and tested, including the original English README/RUNBOOK in legacy-source-docs/; current human-facing README/RUNBOOK are independent Korean documents. 10 reversible code path/import adaptations, 5 byte-identical shared resources. Calculator behavior unchanged."
 }

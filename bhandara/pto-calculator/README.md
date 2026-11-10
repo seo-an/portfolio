@@ -4,13 +4,13 @@
 
 **계산하지 않는 것:** 회계연도 기준 연차 정산, 휴가 사용 잔액, 퇴직 정산·수당, 임금 지급 승인, 법률 적합성 확정, 근태 마감. 이 엔진의 과거 정책·계산식을 자동으로 개선했다고 주장하지 않는다.
 
-**현재 상태 (2026-11-09):** 공개 PTO v0.1.0은 [portfolio PR #4](https://github.com/seo-an/portfolio/pull/4)로 **병합 완료**했다. Hermes Python 3.14.9에서 전체 60/60 `unittest` PASS, 2026-07 합성 직원 3명(E001·E005·E020)의 Golden 비교도 **`PTO_GOLDEN_PASS`**로 확인됐다. [agent-config PR #144](https://github.com/seo-an/agent-config/pull/144)의 **PTO Preview Adapter**도 별도 병합·합성 CLI 연동 검증을 완료했다. 단, **기존 PTO 운영 Pipeline은 그대로 유지 중이며 Hermes Tool/Slack 등록은 아직 없다**. Golden 일치는 해당 합성 데이터의 동등성만 의미한다.
+**현재 상태 (2026-11-10):** 공개 PTO v0.1.0 이전([portfolio PR #4](https://github.com/seo-an/portfolio/pull/4))과 2026-07 합성 Golden 비교, 2026년 전체 기간의 기존 Gearbox 대비 합성 직원 3명 계산 동등성, **Base + PTO만 설치한 독립 실행 및 상호배타 테스트**가 모두 PASS했다. 합성 전용 Hermes PTO Preview Tool의 Slack 호출도 검증했다. 단, **기존 운영 PTO Pipeline은 그대로 유지**한다. 합성 자료의 일치는 실제 직원·회사 정책의 적합성이나 승인 결과를 의미하지 않는다.
 
 ## 필요한 환경
 
 - Python 3.12 이상(코드 문법 하한; 실서버 검증 대상은 Python **3.14.9**).
 - 같은 Hermes 실행환경에 포함된 **openpyxl 3.1.5**, **korean-lunar-calendar 0.4.0**.
-- 공개 Portfolio 루트에 설치 환경과 모든 모듈이 함께 존재해야 한다. Hermes·Slack·Google Drive·OAuth·GitHub 인증은 실행에 필요 없다.
+- **필요한 모듈만 사용해도 된다.** 최상위 `run.py`·`install.py`·`requirements.txt`, `bhandara/__init__.py`, `bhandara/common/`과 **이 `pto-calculator/`만** 있으면 된다. Worktime·Payroll 코드, Hermes·Slack·Google Drive·OAuth·GitHub 인증은 필요하지 않다.
 
 Portfolio 루트에서 일반 사용자 환경을 준비한다.
 
@@ -19,6 +19,24 @@ uv venv --python 3.14 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python install.py --check
 ```
+
+## PTO 모듈만 내려받아 사용하기
+
+`portfolio` 저장소의 **공통 Base와 PTO 폴더만 선택**해 내려받아도 독립 실행할 수 있다. 다른 계산기를 복사하지 않아도 된다.
+
+```sh
+git clone --depth 1 --sparse https://github.com/seo-an/portfolio.git bhandara-pto
+cd bhandara-pto
+git sparse-checkout set bhandara/common bhandara/pto-calculator
+
+uv venv --python 3.14 .venv
+uv pip install --python .venv/bin/python -r requirements.txt
+.venv/bin/python install.py --check
+```
+
+GitHub ZIP을 사용한다면 최상위 `run.py`, `install.py`, `requirements.txt`, `bhandara/__init__.py`, `bhandara/common/`, `bhandara/pto-calculator/`를 **상대 디렉터리 구조 그대로** 복사한다. **PTO 폴더만으로는 실행할 수 없다.** 시스템 Python 대신 가상환경에서 명령을 실행한다.
+
+이 설치 조합의 합성 Excel 계산은 [상호배타 테스트](../MODULE-ISOLATION.md)로 검증을 마쳤다. PTO 결과의 `approved=false`, `finalizable=false`는 독립 실행하더라도 변경되지 않는다.
 
 ## 1. 입력 Excel 준비
 
@@ -87,14 +105,14 @@ uv pip install --python .venv/bin/python -r requirements.txt
 
 ## 검증 기록 — 기존 비공개 PTO Golden 대조 (2026-11-09 PASS)
 
-서버의 **원본 합성 fixture와 비공개 Golden**은 Git에 복사하지 않는다.
+서버의 **원본 합성 fixture와 비공개 Golden**은 Git에 복사하지 않는다. 다음 명령은 **기존 Hermes 내부 검증을 다시 수행할 운영자 전용 예시**이며, `--baseline`은 실제 보존된 비공개 파일 경로로 교체해야 한다. 독립 PTO 사용자는 이 Golden 비교가 필요하지 않다.
 수치/검토 결과는 다음 게이트에서 대조하며, 출력에는 값이 아닌 차이 경로만 보인다.
 
 ```sh
 /opt/hermes/.venv/bin/python \
   /opt/agent-config/.external/portfolio/bhandara/pto-calculator/examples/verify_private_golden.py \
   --fixture-root /opt/agent-config/gearbox/_tests/gear/pto-calculator/fixtures/common \
-  --baseline /tmp/bhandara-pto-phase0-n_fy3m6k/pto-golden.json
+  --baseline /private/bhandara/baselines/pto-golden.json
 ```
 
 2026-11-09 Hermes 서버에서 실제 **`PTO_GOLDEN_PASS: synthetic E001/E005/E020 July 2026 parity`**를 확인했다. 재검증할 때도 `PTO_GOLDEN_PASS`가 나와야 해당 합성 Golden과 입력 해시·기간·직원별 결과가 동등하다.
@@ -104,7 +122,7 @@ uv pip install --python .venv/bin/python -r requirements.txt
 
 ### Gearbox Adapter 연동 결과 (2026-11-09)
 
-- Private `agent-config` PR #144 merged the opt-in Adapter at `gearbox/adapters/bhandara/pto.py`; the old PTO pipeline was not modified.
+- 비공개 `agent-config` PR #144에서 선택적 PTO Preview Adapter를 병합했다. 기존 PTO 운영 Pipeline은 수정하지 않았다.
 - 실제 Hermes 컨테이너에서 합성 Excel 2명에 대해 Adapter가 공개 PTO CLI를 호출한 결과: `status=PASS`, `calculated_employee_count=2`, `processed_employee_count=2`, `finding_count=0`, `approved=false`, `finalizable=false`.
 - Adapter의 출력 경로는 Hermes 컨테이너 `/opt/data/bhandara/runs/pto-preview-<id>/output/`이며, 호스트에서 대응하는 경로는 `/opt/agents/data/hermes/bhandara`이다. Excel 원본·직원별 JSON을 공개 Git/Slack으로 업로드하지 않는다.
-- **미구현:** Hermes Tool/Slack 노출, 기존 PTO Gearbox Pipeline 교체, Worktime/Payroll 공개 모듈 이전.
+- **별도 완료:** 합성 전용 Hermes Tool/Slack 호출, Worktime·Payroll 공개 이전, 각 계산기의 Base+1 독립 실행 검증. **미전환:** 기존 PTO Gearbox 운영 Pipeline의 실제 직원 데이터 경로 및 승인·결재 연동.

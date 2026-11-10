@@ -1,6 +1,6 @@
 # Payroll Calculator — Bhandara 독립 모듈 이전 기록
 
-> **상태 (2026-11-10):** 기존 Gearbox 소스를 공개 `portfolio` 작업 브랜치에 이전하고, **합성 입력 동등성·원본 Git 해시 검증 코드를 작성함**. 실제 Hermes 서버 테스트 및 PR Merge 전이며 계산 결과 PASS를 아직 주장하지 않는다.
+> **최종 상태 (2026-11-10):** 기존 Gearbox 소스의 이전·합성 입력 동등성·Git blob SHA 검증을 거쳐 [Portfolio PR #7](https://github.com/seo-an/portfolio/pull/7)을 병합했다. 이후 [PR #8](https://github.com/seo-an/portfolio/pull/8)에서 **Base + Payroll 단독 실행, Worktime JSON 파일 인계 및 전체 회귀 테스트**도 완료했다. 현재 실행 방법은 [한국어 README](README.md)와 [한국어 RUNBOOK](RUNBOOK.md)이 정본이다.
 >
 > **프로젝트 경계:** 이번 작업은 **소스 이전과 이전이 잘됐는지만 확인**한다. 계산 로직 수정, 기능 평가, 예외처리 개선, 급여 정책 변경, 직원별 실패 격리 보완, 세금·보험 계산 추가, 승인·마감 기능은 별도 프로젝트에서만 다룬다.
 
@@ -10,12 +10,12 @@
 - 공개: `seo-an/portfolio/bhandara/payroll-calculator/`
 - 원본 커밋: [`migration-manifest.json`](migration-manifest.json)의 `source_commit`에 고정.
 - **원본 추적 파일 85개 전체** 이전(기존 `run.py`, `functions/`의 69개 계산·입력·검토 모듈, 정책·계약·예제·기존 RUNBOOK 및 문서 포함).
-- **초기 이전 기준 77개는 원본 Git blob SHA와 동일.** 나머지 8개는 `migration-manifest.json`에 선언한 경로/임포트 문자열 변경만 허용한다. 테스트는 해당 문자열만 역변환해 원본 Git blob SHA가 일치하는지 확인한다.
+- **초기 이전 기준 77개는 원본 Git blob SHA와 동일.** 당시 나머지 8개는 `migration-manifest.json`에 선언한 경로/임포트 문자열 변경만 허용한다. 테스트는 해당 문자열만 역변환해 원본 Git blob SHA가 일치하는지 확인한다.
 - 다른 경로에서 **초기 4개 원본 자원도 바이트 단위로 그대로 복사**: `gearbox/core/xlsx.py`, `gearbox/diagnostics/catalog.py`, 급여항목 레지스트리 JSON, 2026년 급여 정책 JSON.
 - Gearbox 진단 규약 및 날짜 구간 함수는 이전 PTO에서 이미 옮긴 **동일한 내용의 공개 Base** `bhandara/common/contracts/pto_diagnostics.py`와 `bhandara/common/utils/date_interval.py`를 재사용한다. Excel row reader 및 진단 catalog는 이름만 분리한 원본 사본을 공개 Base에 보유한다.
 - Worktime close Receipt 검증 함수는 이미 검증된 `bhandara/worktime-calculator/functions/worktime_close.py`의 **바이트 동일 사본을 Base `common/contracts/worktime_close.py`에 추가해 사용**한다. 기존 Worktime 구현은 변경하지 않는다. Payroll 단독 설치 시 Worktime 모듈을 요구하지 않도록 수정한 **경로 변경만** 추가했으며 출처 SHA를 `migration-manifest.json`에 남겼다.
 
-> 원본에서 복사한 `README.md`, `RUNBOOK.md`, `STANDALONE-CLI.md` 등의 기존 문서에는 이전 전 `gearbox/` 경로가 남아 있다. **원본 보존용 기록**이므로 이전 후 CLI·폴더 경로는 이 문서를 우선 사용한다. 문서의 정책/법령 기술은 새로 검증하지 않았다.
+> Gearbox 원본 `README.md`와 `RUNBOOK.md`는 `legacy-source-docs/README.md` 및 `legacy-source-docs/RUNBOOK.md`에 **바이트 동일하게 보존**했다. 현재 경로의 README/RUNBOOK은 **한국어로 다시 작성한 사용자용 정본**이다. `STANDALONE-CLI.md`, `BATCH-WORKFLOW.md`, `POLICY-SCENARIOS.md` 등 일부 원본 참고 문서의 이전 전 `gearbox/` 경로는 역사적 기록이므로 최신 사용법으로 해석하지 않는다.
 
 ## 기존 기능 계약 그대로 보존
 
@@ -113,7 +113,7 @@ sudo docker exec -w /opt/agent-config hermes \
   /opt/hermes/.venv/bin/python gearbox/_tests/run.py
 ```
 
-**서버 검증을 통과한 후에만 Merge.** 기존 `agent-config` 실행 경로, Hermes Plugin, n8n/Slack, 실제 직원자료는 변경하지 않는다.
+**2026-11-10 사용자 Hermes 서버 이전·코어·기능 회귀 검증을 통과하고 PR #7을 병합했다.** 이후 PR #8의 상호배타 검증도 통과하고 병합했다. 기존 `agent-config` 실행 경로, Hermes Plugin, n8n/Slack, 실제 직원자료는 변경하지 않았다.
 
 ### 기존 Gearbox 테스트 실행 경로 주의 (2026-11-10)
 
@@ -131,4 +131,8 @@ python -m unittest discover \
 
 ## 이후 상호배타 테스트 연결 (2026-11-10)
 
-이전 PR #7은 병합 및 Hermes 서버 회귀검증을 마쳤다. 이후 진행하는 [상호배타 검증](../MODULE-ISOLATION.md)은 **Base + Payroll만 설치**한 별도 디렉터리에서 원본 합성 급여 CLI를 실행해 다른 계산기 코드 설치 의존성이 없는지 확인한다. Payroll 결과를 최종 승인하거나 계산 정책을 변경하지 않는다.
+이전 PR #7은 병합 및 Hermes 서버 회귀검증을 마쳤다. [상호배타 검증](../MODULE-ISOLATION.md)도 PR #8에서 **Base + Payroll만 설치**한 별도 디렉터리의 합성 급여 CLI 실행과 다른 계산기의 코드 설치 불필요성을 확인하고 병합했다. Payroll 결과를 최종 승인하거나 계산 정책을 변경하지 않는다.
+
+## 사용자 설명 문서와 원본 해시의 관계
+
+원본 Gearbox 문서까지 공개 사용자용 문서로 사용하면 예전 경로·상태가 노출되므로, **사용자용 README·RUNBOOK을 한국어로 교체**했다. 이전 이력은 훼손하지 않도록 기존 두 문서를 `legacy-source-docs/`로 복사했고, `migration-manifest.json`의 해당 두 항목 `destination`만 보존 경로로 이동시켰다. 원본 `source_git_blob_sha`는 변경하지 않았다. 85개 원본 파일의 해시 검증과 나머지 10개 경로 역변환 검증은 기존 `test_payroll_migration.py`에서 계속 확인한다.
