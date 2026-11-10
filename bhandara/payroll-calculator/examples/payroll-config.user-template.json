@@ -1,0 +1,19 @@
+{
+  "schema_version": "0.1",
+  "payroll_period": "2026-10",
+  "expected_worker_ids": [
+    "EP0001",
+    "EP0002"
+  ],
+  "compensation_path": "compensation.xlsx",
+  "payroll_input_path": "payroll-input.xlsx",
+  "worktime_result_path": "worktime-result.json",
+  "registry_path": "resources/pay-item-registry.json",
+  "operating_config_path": "resources/operating-config.json",
+  "company_policy_path": "company-policy.json",
+  "legal_policy_path": "resources/policy/2026.json",
+  "employment_facts_path": "employment-facts.json",
+  "recurring_pay_item_codes": [
+    "base_salary"
+  ]
+}

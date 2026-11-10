@@ -1,5 +1,8 @@
 # Worktime Calculator — 독립 모듈 이전 v0.1.0
 
+> **실제 사용하려는 분:** [근무시간 계산기 RUNBOOK](RUNBOOK.md)에 입력 JSON의 준비 방법·직원별 필드·기간·승인 참조 설정·Excel을 직접 넣을 수 없는 한계를 설명했습니다. **이 README는 개발자·설치 담당자용 기술 및 검증 문서**입니다.
+
+
 **상태 (2026-11-10):** 기존 Worktime 코드 10개 파일의 바이트 동일성 및 합성 JSON·XLSX 결과를 확인해 [Portfolio PR #6](https://github.com/seo-an/portfolio/pull/6)을 병합했다. 이후 **Base + Worktime만 설치한 단독 실행 및 상호배타 테스트**도 Hermes 서버에서 PASS했다. 계산 정책·예외 처리 개선은 별도 프로젝트에서 다룬다.
 
 ## 이전 범위
