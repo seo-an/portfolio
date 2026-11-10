@@ -1,6 +1,6 @@
 # Bhandara — Development / Operations RUNBOOK
 
-**상태 (2026-11-10):** 공개 Base·PTO v0.1.0은 병합 및 검증을 마쳤다. 기존 PTO Gearbox 운영 Pipeline은 그대로 유지하며, 합성 데이터 전용 Hermes Tool/Slack 호출 및 합성 연간 계산 비교를 별도로 검증했다. Worktime v0.1.0은 **원본 코드 무수정 이전 PR 진행 중(서버 검증 전)**이며 Payroll은 아직 이전하지 않았다. **이번 단계는 기존 기능 이전·동등성 검증만** 수행한다. 기능 검토·개선 및 신규 정책 구현은 별도 프로젝트로 분리한다.
+**상태 (2026-11-10):** 공개 Base·PTO 및 Worktime v0.1.0 이전/서버 검증/병합을 완료했다. 기존 Gearbox 운영 Pipeline은 그대로 유지하며 합성 전용 PTO Hermes/Slack은 별도 검증을 마쳤다. 현재 Payroll Calculator 85개 원본 파일의 **독립 모듈 이전 PR**을 진행 중이며 서버 검증·병합 전이다. 이번 프로젝트는 원본 소스 이전과 이전 결과 동등성만 확인한다. 기능·예외처리·법령 정책 개선은 별도 프로젝트로 분리한다.
 
 ## Ownership and compatibility
 
@@ -21,9 +21,9 @@ See [Base contract](BASE-CONTRACT.md) for fully specified function APIs, excepti
 
 ## Calculation boundaries
 
-- The **PTO v0.1.0 calculation engine** is now published in `bhandara/pto-calculator/src/`, migrated from the legacy Gearbox snapshot without editing the calculation function bodies. The legacy PTO Gear **also remains in Gearbox** as the active operating Pipeline. Worktime은 이번 PR에서 기존 기능 파일을 그대로 복사하고 Portfolio 실행 경로를 추가한다. Payroll은 아직 이전하지 않는다.
+- The **PTO v0.1.0 calculation engine** is now published in `bhandara/pto-calculator/src/`, migrated from the legacy Gearbox snapshot without editing the calculation function bodies. The legacy PTO Gear **also remains in Gearbox** as the active operating Pipeline. Worktime은 portfolio PR #6으로 기존 파일 그대로 이전하고 서버 검증·병합했다. Payroll은 이번 PR에서 소스를 이전 중이다.
 - No module may directly import another business calculator. Common functions may be imported only after their semantics match.
-- `bhandara/pto-calculator/module.json` and `config.json` are now implemented with a PTO-specific public CLI dispatch (`run.py bhandara pto-calculator`). General automatic module discovery and cross-module JSON interchange are **not implemented**; Worktime is a direct CLI dispatch using the unchanged normalized-input.json contract; Payroll remains unavailable.
+- `bhandara/pto-calculator/module.json` and `config.json` are now implemented with a PTO-specific public CLI dispatch (`run.py bhandara pto-calculator`). General automatic module discovery and cross-module JSON interchange are **not implemented**; Worktime is a direct CLI dispatch using the unchanged normalized-input.json contract. Payroll is an opt-in CLI dispatch in this branch, retaining the original normalize/calculate contracts.
 - Unclear inputs, missing approvals, calculation errors, employee-level review, and settlement ledger decisions are **not automatically corrected or approved**. A calculation must never itself authorize payment, tax filing, or ledger posting.
 - The private Golden baselines created 2026-11-09 use `agent-config` commit `296f909dd84bbdb6196be84568bd0e60775c7dbd`; hash preservation and semantic comparison are separate evidence. See [Golden comparison contract](GOLDEN-COMPARISON.md).
 
@@ -53,10 +53,17 @@ For a PR, test its actual branch directly on the server. Do not use worktrees/Dr
 - PTO v0.1.0 is anniversary-basis accrual/review only. It is not a full fiscal-year PTO balance, usage, payout, retirement settlement, legal compliance or payroll approval system.
 - Base `ArtifactBatch` uses per-file atomic publication and rollback during handled exceptions; **crash recovery and one-transaction atomic publication across multiple files remain unimplemented**. The collision suffix is spelled `pto-result(1).json` (no space).
 
-## Worktime Calculator — 무수정 코드 이전 (서버 검증 전)
+## Worktime Calculator — 무수정 코드 이전 완료
 
 - 원본 `agent-config/gearbox/gear/worktime-calculator`의 **7개 함수 파일**, `run.py`, 원본 계약 JSON 및 예시 설정 JSON을 **바이트 단위로 동일하게 복사**했다.
 - 변경은 Portfolio 최상위 `run.py`의 Worktime 명령 전달과 공개 모듈의 `module.json`·README·이전 검증 테스트에 한정한다. 계산식·예외처리·기존 Worktime 마감/검토 판단은 수정하지 않는다.
 - [Worktime README](worktime-calculator/README.md)에서 원래 `normalized-input.json` 입력 계약과 실행·검증 명령을 확인한다. 외부 Source Mapping 정규화기는 이번 이전에 포함하지 않는다.
 - `migration-manifest.json`의 원본 Git blob SHA 10개 확인과, 동일 합성 입력으로 기존 Worktime 진입점과 Portfolio 진입점이 낸 JSON·XLSX **내용 일치**만 이번 PR의 통과 기준으로 삼는다.
-- Hermes 서버 테스트가 완료되기 전까지 이전 동등성 PASS라고 기록하지 않는다. 새로운 기능·오류 격리·정책 개선 작업은 이 PR에서 금지한다.
+- 2026-11-10 Hermes 서버 이전 테스트와 기존 회귀 테스트 PASS 보고 후 portfolio PR #6을 병합했다. 새로운 기능·오류 격리·정책 개선 작업은 별도 프로젝트에서 다룬다.
+
+## Payroll Calculator — 소스 이전 PR (서버 검증 대기)
+
+- 원본 `agent-config/gearbox/gear/payroll-calculator` 추적 파일 85개 전체 복사, 77개 Git blob SHA 완전 일치. 8개 import·경로 참조만 변경했고, `migration-manifest.json`에서 역변환하여 원본 SHA가 일치하는지 테스트한다.
+- 기존 `gearbox.core.date_interval`·`gearbox.diagnostics.contract`은 이미 공개된 동일 Base 함수에 연결한다. `gearbox.core.xlsx`와 diagnostics catalog 사본을 공개 Base로 이전하고 2026 정책/급여항목 registry 원본 JSON도 독립 모듈의 `resources/`에 보존한다.
+- `run.py bhandara payroll-calculator`는 원본 `calculate`·`normalize` CLI를 새 포트폴리오 최상위 진입점에서 전달한다. 기존 Worktime close 계약, payroll 검토용 산출물 및 종료코드는 유지한다.
+- [Payroll 이전 실행서](payroll-calculator/MIGRATION.md)의 테스트만 수행한다. 계산 로직·정책 개선, 사용자 데이터 연결, 운영 정본 전환, Payroll Workflow 수정은 포함하지 않는다.
