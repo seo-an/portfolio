@@ -10,10 +10,10 @@
 - 공개: `seo-an/portfolio/bhandara/payroll-calculator/`
 - 원본 커밋: [`migration-manifest.json`](migration-manifest.json)의 `source_commit`에 고정.
 - **원본 추적 파일 85개 전체** 이전(기존 `run.py`, `functions/`의 69개 계산·입력·검토 모듈, 정책·계약·예제·기존 RUNBOOK 및 문서 포함).
-- **77개는 원본 Git blob SHA와 동일.** 나머지 8개는 `migration-manifest.json`에 선언한 경로/임포트 문자열 변경만 허용한다. 테스트는 해당 문자열만 역변환해 원본 Git blob SHA가 일치하는지 확인한다.
-- 다른 경로에서 **4개 원본 자원도 바이트 단위로 그대로 복사**: `gearbox/core/xlsx.py`, `gearbox/diagnostics/catalog.py`, 급여항목 레지스트리 JSON, 2026년 급여 정책 JSON.
+- **초기 이전 기준 77개는 원본 Git blob SHA와 동일.** 나머지 8개는 `migration-manifest.json`에 선언한 경로/임포트 문자열 변경만 허용한다. 테스트는 해당 문자열만 역변환해 원본 Git blob SHA가 일치하는지 확인한다.
+- 다른 경로에서 **초기 4개 원본 자원도 바이트 단위로 그대로 복사**: `gearbox/core/xlsx.py`, `gearbox/diagnostics/catalog.py`, 급여항목 레지스트리 JSON, 2026년 급여 정책 JSON.
 - Gearbox 진단 규약 및 날짜 구간 함수는 이전 PTO에서 이미 옮긴 **동일한 내용의 공개 Base** `bhandara/common/contracts/pto_diagnostics.py`와 `bhandara/common/utils/date_interval.py`를 재사용한다. Excel row reader 및 진단 catalog는 이름만 분리한 원본 사본을 공개 Base에 보유한다.
-- Worktime close Receipt는 이미 이전 완료된 `bhandara/worktime-calculator/functions/worktime_close.py`를 기존 상대 경로 규칙으로 읽는다. **기존 Worktime 구현을 변경하거나 복제하지 않는다.**
+- Worktime close Receipt 검증 함수는 이미 검증된 `bhandara/worktime-calculator/functions/worktime_close.py`의 **바이트 동일 사본을 Base `common/contracts/worktime_close.py`에 추가해 사용**한다. 기존 Worktime 구현은 변경하지 않는다. Payroll 단독 설치 시 Worktime 모듈을 요구하지 않도록 수정한 **경로 변경만** 추가했으며 출처 SHA를 `migration-manifest.json`에 남겼다.
 
 > 원본에서 복사한 `README.md`, `RUNBOOK.md`, `STANDALONE-CLI.md` 등의 기존 문서에는 이전 전 `gearbox/` 경로가 남아 있다. **원본 보존용 기록**이므로 이전 후 CLI·폴더 경로는 이 문서를 우선 사용한다. 문서의 정책/법령 기술은 새로 검증하지 않았다.
 
@@ -71,7 +71,7 @@ python bhandara/payroll-calculator/run.py normalize \
 
 ## 이전 검증
 
-**범위:** 85개 원본 파일 SHA, 8개 경로 변경의 정확한 역변환, 자원 4개 SHA, 기존 Payroll CLI 직접 호출 vs Portfolio CLI로 같은 합성 자료를 계산했을 때 JSON/XLSX 내용과 종료 코드가 같은지 검사한다. 이는 **이전 동등성 검증**이며 새 정책 테스트가 아니다.
+**범위:** 85개 원본 파일 SHA, 10개 경로 변경의 정확한 역변환, 자원 5개 SHA, 기존 Payroll CLI 직접 호출 vs Portfolio CLI로 같은 합성 자료를 계산했을 때 JSON/XLSX 내용과 종료 코드가 같은지 검사한다. 이는 **이전 동등성 검증**이며 새 정책 테스트가 아니다.
 
 ```sh
 # portfolio 저장소 루트, Hermes uv Python을 사용
@@ -128,3 +128,7 @@ python -m unittest discover \
 `test_absence_deduction_calculation_adapter.py`가 `importlib.util.spec_from_file_location`으로 원본 모듈을 단독 로드하는데, `effective_absence_deduction.py`가 fallback으로 참조하는 `absence_deduction`이 검색 경로에 없으면 `ModuleNotFoundError`가 난다. 이는 독립 모듈로 이전한 Payroll의 회귀가 아니라 **기존 테스트 실행 경로 차이**이다.
 
 원본 공식 실행기 `gearbox/_tests/run.py`의 `gear/payroll-calculator` Suite는 `gearbox/gear/payroll-calculator/functions`를 `PYTHONPATH`에 자동 주입한다. 따라서 **기존 회귀 검증 정본 명령은 위의 `gearbox/_tests/run.py`**이며, 원본 계산·테스트 코드를 바꾸거나 새 기능을 추가하지 않는다.
+
+## 이후 상호배타 테스트 연결 (2026-11-10)
+
+이전 PR #7은 병합 및 Hermes 서버 회귀검증을 마쳤다. 이후 진행하는 [상호배타 검증](../MODULE-ISOLATION.md)은 **Base + Payroll만 설치**한 별도 디렉터리에서 원본 합성 급여 CLI를 실행해 다른 계산기 코드 설치 의존성이 없는지 확인한다. Payroll 결과를 최종 승인하거나 계산 정책을 변경하지 않는다.
