@@ -29,6 +29,16 @@ Payroll 이전 후 다음 두 경로가 여전히 Worktime 패키지의 `worktim
 - Payroll `migration-manifest.json`의 경로 역변환 대상이 기존 8개에서 **10개**가 되었고, 원본 동일성 자원은 4개에서 **5개**가 되었다. 기존 원본을 복원했을 때의 SHA가 같은지 `test_payroll_migration.py`에서 재확인한다.
 - `run.py`는 설치되지 않은 다른 계산기 이름으로 호출되면 Python traceback 대신 기존 `UNAVAILABLE`, exit 2를 반환한다. `install.py --check`는 실제 존재하는 모듈만 안내한다. **모듈 설치/제거 작업 자체를 수행하지 않는다**.
 
+## 서버 1차 실행에서 확인한 테스트 환경 차이 (2026-11-10)
+
+상호배타 테스트 최초 실행 결과 **7개 중 6개 통과, 1개 테스트의 하위 사례 3건 실패**. 세 하위 사례 모두 `install.py --check`에서 `korean-lunar-calendar: NOT INSTALLED`를 반환했다. 반면 **PTO 단독 실행, Worktime 단독 실행, Payroll 단독 실행, Payroll의 Worktime 미설치 상태 import, 미설치 모듈 차단, Worktime JSON → Payroll 인계는 통과**했다.
+
+원인은 `_run()`의 **의도적인 실행 격리**와 `install.py --check`의 **Python 패키지 설치 여부 검사**를 같은 환경으로 실행한 데 있었다. `_run()`은 `HOME`과 환경을 임시 루트로 제한하고 Python `-E`로 환경변수를 무시하도록 설계되어, Hermes의 실제 uv 환경에서 접근 가능한 패키지 배포 메타데이터도 숨길 수 있다. 따라서 의존성이 실제 없다고 결론 내릴 수 없다.
+
+**테스트 하네스만 수정:** 계산기 3종의 **실제 CLI 독립 실행은 기존 `_run()` 격리를 그대로 유지**한다. 오직 설치된 배포판 버전을 확인하는 읽기 전용 `install.py --check`만 정상 Hermes 프로세스 환경을 상속해 호출하고, 출력에 실제 설치된 **선택된 모듈 하나**만 표시되는지도 검사한다. `install.py` 및 계산 모듈 본문은 수정하지 않는다. 정상 환경에서 `install.py --check`는 앞선 서버 검사에서 의존성 둘 다 발견한 이력이 있다.
+
+수정 후 서버 **재검증 전**이며, 성공 여부는 아래 재실행 결과에 따라 판정한다.
+
 ## 실행
 
 PR 브랜치를 직접 서버에 가져온 다음 Portfolio 저장소에서 다음 테스트를 실행한다.
