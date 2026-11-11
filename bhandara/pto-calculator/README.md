@@ -30,7 +30,7 @@
 .venv/bin/python -m unittest bhandara.tests.test_pto_case_studies
 ```
 
-기존 2인 데모는 손대지 않았으며, 혼합 사례를 별도 생성한다. `case-index.json`은 권리 일수의 절대적 정답이 아니라 **사례의 목적과 식별자**를 기록한다. 법령·기업 정책에 따른 이견은 `REVIEW_REQUIRED`로 남길 수 있다.
+기존 2인 데모는 손대지 않았으며, 혼합 사례를 별도 생성한다. 생성된 `input/employee.xlsx`의 추가 열 `case_id`로 사례를 구별할 수 있고, `case-index.xlsx`에는 사례별 검토 목적과 예상 동작을 함께 표시한다. `case-index.json`과 `case-index.xlsx`는 권리 일수의 절대적 정답이 아니라 **사례의 목적과 검토 가설**을 기록한다. 법령·기업 정책에 따른 이견은 `REVIEW_REQUIRED`로 남길 수 있다.
 
 ## 필요한 환경
 
@@ -125,7 +125,7 @@ GitHub ZIP을 사용한다면 최상위 `run.py`, `install.py`, `requirements.tx
 
 ## 원본 Gearbox와의 관계
 
-원본: `seo-an/agent-config` commit `296f909dd84bbdb6196be84568bd0e60775c7dbd`의 `gearbox/gear/pto-calculator/run.py` 및 `functions/*.py`. 계산식·정책 파일 내용은 그대로 옮기고 import만 공개 모듈 경계로 변경했다. 원본의 `gearbox.core`와 진단 계약도 동일 동작의 공개 공통 함수로 대체한다. 새 Excel 입력·검토·출력 경계는 원본 Tooth와 의미가 같다고 **가정해서는 안 되며**, 비공개 합성 Golden 비교로 확인해야 한다.
+원본: `seo-an/agent-config` commit `296f909dd84bbdb6196be84568bd0e60775c7dbd`의 `gearbox/gear/pto-calculator/run.py` 및 `functions/*.py`. **최초 v0.1.0 이전 시점**에는 계산식·정책 파일 내용은 그대로 옮기고 import만 공개 모듈 경계로 변경했다. **v0.1.1에서는 이 문서에 기록된 실무 검토 결과에 따라 공개 PTO의 계산 규칙이 의도적으로 변경되었으므로, 기존 Gearbox와의 수치 일치를 더 이상 기대하지 않는다.** 원본의 `gearbox.core`와 진단 계약도 동일 동작의 공개 공통 함수로 대체한다. 새 Excel 입력·검토·출력 경계는 원본 Tooth와 의미가 같다고 **가정해서는 안 되며**, 비공개 합성 Golden 비교로 확인해야 한다.
 
 **주의:** 현재 `agent-config`의 원본 Gearbox는 여전히 기존 경로에서 운영된다. 양쪽의 전환·중복 제거는 별도 승인과 테스트 후 진행한다.
 
