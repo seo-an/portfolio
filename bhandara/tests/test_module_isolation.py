@@ -142,9 +142,11 @@ class ModuleIsolationTests(unittest.TestCase):
                 "--input-dir", str(demo / "input"),
                 "--output-dir", str(output),
             )
-            self.assertEqual(result.returncode, 0, result.stderr)
+            # A standalone PTO deployment must also preserve the
+            # incomplete-attendance REVIEW_REQUIRED safety outcome.
+            self.assertEqual(result.returncode, 1, result.stderr)
             data = json.loads((output / "pto-result.json").read_text())
-            self.assertEqual(data["status"], "PASS")
+            self.assertEqual(data["status"], "REVIEW_REQUIRED")
             self.assertIs(data["approved"], False)
             self.assertIs(data["finalizable"], False)
             self.assertEqual(len(data["results"]), 2)
