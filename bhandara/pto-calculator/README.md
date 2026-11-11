@@ -1,4 +1,4 @@
-# PTO Calculator — 공개 독립 실행 모듈 v0.1.0
+# PTO Calculator — 공개 독립 실행 모듈 v0.1.1
 
 > **실제 사용하려는 분:** [연차 계산기 RUNBOOK](RUNBOOK.md)에 Excel 저장 위치·파일 이름·활성 시트·헤더·예시 데이터·`config.json`의 수정 항목을 설명했습니다. **이 README는 개발자·설치 담당자용 기술 및 검증 문서**입니다.
 
@@ -8,6 +8,29 @@
 **계산하지 않는 것:** 회계연도 기준 연차 정산, 휴가 사용 잔액, 퇴직 정산·수당, 임금 지급 승인, 법률 적합성 확정, 근태 마감. 이 엔진의 과거 정책·계산식을 자동으로 개선했다고 주장하지 않는다.
 
 **현재 상태 (2026-11-10):** 공개 PTO v0.1.0 이전([portfolio PR #4](https://github.com/seo-an/portfolio/pull/4))과 2026-07 합성 Golden 비교, 2026년 전체 기간의 기존 Gearbox 대비 합성 직원 3명 계산 동등성, **Base + PTO만 설치한 독립 실행 및 상호배타 테스트**가 모두 PASS했다. 합성 전용 Hermes PTO Preview Tool의 Slack 호출도 검증했다. 단, **기존 운영 PTO Pipeline은 그대로 유지**한다. 합성 자료의 일치는 실제 직원·회사 정책의 적합성이나 승인 결과를 의미하지 않는다.
+
+## 2026-11-11 기능·법령 검토
+
+실무 검토에서 확인한 누락을 보완했다. 과거 Gearbox와의 결과 동등성만으로 법적 타당성을 주장하지 않는다.
+
+- 기간 전체의 일별 기록이 충분하지 않으면 월별 개근·연간 80%를 **확정하지 않고 검토**한다.
+- 발생 시점 이후까지 계산하더라도 **퇴사일 이후 연차 발생은 제외**한다.
+- 전년도 출근율 80% 미만인 경우, 개근한 월을 기준으로 **다음 근속연도에 부여하는 월별 발생분**을 검토한다. 1년 미만에 이미 발생한 월별 분량은 중복 부여하지 않는다.
+- `employee-events.xlsx`에는 선택 열 `reduced_hours`(0 이상의 숫자)를 추가할 수 있다. 기존 7열 형식도 그대로 읽는다.
+- **확정 결근**은 `event_type=CONFIRMED_ABSENCE`, `status=CONFIRMED`로 명시한다. 누락된 출퇴근 시각만으로 결근을 추정하지 않는다. 확정 결근과 정상 출퇴근 기록이 함께 있으면 검토가 필요하다.
+- 검증 예제는 정상·경계 상황을 **같은 엑셀에 재현 가능한 순서로 혼합**하며, 사례별 기대 검토 동작은 `unittest`에서 확인한다.
+
+**근거 버전 기록:** [resources/legal-basis.json](resources/legal-basis.json)에 근로기준법 법률번호·공포일·시행일, 제60조 제2항 관련 개정일, 법제처 2024-06-03(24-0114)·2024-11-04(24-0674) 해석례, 2026-11-11 확인일을 기록했다. 실행 결과 JSON과 Excel 요약에도 적용 검토 자료의 버전·확인일을 포함한다. **2025년 등 과거 계산기간에는 그 기간의 시행 법령을 별도 확인해야 한다.** 소정근로시간 15시간 미만·사업장 규모 등 법 적용 판단 자료가 없는 경우 자동으로 법적 적합성을 확정하지 않는다.
+
+혼합 엑셀 예제 생성:
+
+```sh
+.venv/bin/python bhandara/pto-calculator/examples/generate_review_cases.py --output-dir /tmp/pto-review-cases
+.venv/bin/python run.py bhandara pto-calculator --config /tmp/pto-review-cases/config.json --input-dir /tmp/pto-review-cases/input --output-dir /tmp/pto-review-cases/output
+.venv/bin/python -m unittest bhandara.tests.test_pto_case_studies
+```
+
+기존 2인 데모는 손대지 않았으며, 혼합 사례를 별도 생성한다. `case-index.json`은 권리 일수의 절대적 정답이 아니라 **사례의 목적과 식별자**를 기록한다. 법령·기업 정책에 따른 이견은 `REVIEW_REQUIRED`로 남길 수 있다.
 
 ## 필요한 환경
 

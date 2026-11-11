@@ -178,8 +178,11 @@ class PTOMixedExcelTests(unittest.TestCase):
         cls.temp.cleanup()
 
     def test_employee_and_exception_cases_are_mixed_in_actual_xlsx(self):
-        with load_workbook(self.root / "input/employee.xlsx", read_only=True) as wb:
+        wb = load_workbook(self.root / "input/employee.xlsx", read_only=True)
+        try:
             rows = list(wb.active.values)
+        finally:
+            wb.close()
         ids = [row[0] for row in rows[1:]]
         self.assertEqual(len(ids), 14)
         self.assertNotEqual(ids, sorted(ids))
