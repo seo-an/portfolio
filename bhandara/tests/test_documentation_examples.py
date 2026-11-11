@@ -45,9 +45,11 @@ class DocumentationExamplesTests(unittest.TestCase):
                 "--input-dir", str(demo / "input"),
                 "--output-dir", str(out),
             )
-            self.assertEqual(result.returncode, 0, result.stderr)
+            # The two-person demo intentionally lacks earlier months.
+            # Do not mistake missing evidence for a verified full attendance.
+            self.assertEqual(result.returncode, 1, result.stderr)
             data = read_json(out / "pto-result.json")
-            self.assertEqual(data["status"], "PASS")
+            self.assertEqual(data["status"], "REVIEW_REQUIRED")
             self.assertFalse(data["approved"])
             self.assertFalse(data["finalizable"])
             self.assertEqual(len(data["results"]), 2)
