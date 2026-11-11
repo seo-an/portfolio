@@ -4,7 +4,7 @@ on:
   pull_request:
     paths:
       - "bhandara/pto-calculator/**"
-      - "bhandara/tests/test_pto_*.py"
+      - "bhandara/tests/**"
       - ".github/workflows/pto-review-unittest.yml"
   workflow_dispatch:
 
