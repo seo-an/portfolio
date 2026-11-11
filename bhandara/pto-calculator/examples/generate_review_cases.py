@@ -87,8 +87,8 @@ def add_event(rows: list[tuple], id_: str, day: date, event_type: str,
 
 def build_rows() -> dict[str, list[tuple]]:
     employees = [
-        (id_, hired, terminated, "FIXED")
-        for id_, _, hired, terminated, _ in EMPLOYEE_CASES
+        (id_, hired, terminated, "FIXED", case_id)
+        for id_, case_id, hired, terminated, _ in EMPLOYEE_CASES
     ]
     master = []
     for schedule_id in ("FIXED_7", "OFF_7"):
@@ -169,7 +169,7 @@ def generate_review_cases(root: Path, *, seed: int = SEED) -> dict:
         "events": "employee-events.xlsx",
     }
     save_book(source / files["employees"],
-              ("employee_id", "hire_date", "termination_date", "work_system"),
+              ("employee_id", "hire_date", "termination_date", "work_system", "case_id"),
               rows["employees"])
     save_book(source / files["schedule"],
               ("schedule_id", "work_system", "sequence", "day_type", "shift_code",
@@ -199,6 +199,38 @@ def generate_review_cases(root: Path, *, seed: int = SEED) -> dict:
         json.dumps(config, ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
+    # Human-readable companion workbook is not a calculation input. It
+    # identifies policy hypotheses and review expectations, not universal truths.
+    descriptions = {
+        "NORMAL_ANNIVERSARY": ("정상 1년 근속", "연간 15일 및 첫해 월별 발생"),
+        "LOW_80_FALLBACK": ("연간 출근율 80% 미만", "다음 연도 개근월 발생 검토"),
+        "EXACTLY_80": ("연간 출근율 정확히 80%", "연간 발생 경계 확인"),
+        "ABOVE_80": ("연간 출근율 80% 초과", "연간 발생 정상 확인"),
+        "MISSING_CLOCK": ("근태 기록 누락", "REVIEW_REQUIRED"),
+        "TERMINATED": ("연중 퇴사", "퇴사일 이후 발생 금지"),
+        "END_OF_MONTH_HIRE": ("1월 31일 입사", "월별 발생기간·연간 기산 점검"),
+        "REDUCED_HOURS": ("승인된 임신기 단축근무", "근무시간 합성 검토"),
+        "ZERO_WORKDAYS": ("소정근로일 0일", "REVIEW_REQUIRED"),
+        "SICK_LEAVE_REVIEW": ("회사 병가 정책 미제공", "REVIEW_REQUIRED"),
+        "PARENTAL_LEAVE": ("법정 육아휴직", "출근 간주 처리"),
+        "ABSENCE_CLOCK_CONFLICT": ("결근 확정·출근기록 충돌", "REVIEW_REQUIRED"),
+        "NORMAL_CONTROL_A": ("정상 대조 직원 A", "다른 직원의 예외 영향 없음"),
+        "NORMAL_CONTROL_B": ("정상 대조 직원 B", "입력 순서를 바꿔도 동일"),
+    }
+    id_to_case = {id_: case_id for id_, case_id, *_ in EMPLOYEE_CASES}
+    case_rows = []
+    for row in rows["employees"]:
+        id_ = row[0]
+        case_id = id_to_case[id_]
+        focus, expectation = descriptions[case_id]
+        case_rows.append((
+            id_, case_id, focus, expectation,
+            "KR-LSA-PTO", "가정 및 적용기간은 human review 필요",
+        ))
+    save_book(root / "case-index.xlsx",
+              ("employee_id", "case_id", "검토 대상", "기대 동작(확정 정답 아님)",
+               "basis_id", "주의 사항"), case_rows)
+
     catalogue = {
         "schema_version": "1.0",
         "seed": seed,
