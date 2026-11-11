@@ -8,7 +8,7 @@ from typing import Iterable
 from bhandara.common.contracts.pto_diagnostics import REVIEW_REQUIRED, WARNING, build_diagnostic
 
 
-ACTIVE_EVENT_STATUSES = {"APPROVED"}
+ACTIVE_EVENT_STATUSES = {"APPROVED", "CONFIRMED"}
 
 
 def find_daily_employee_events(

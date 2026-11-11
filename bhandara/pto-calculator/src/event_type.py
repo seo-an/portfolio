@@ -7,6 +7,9 @@ import unicodedata
 
 
 EVENT_TYPE_ALIASES = {
+    "CONFIRMED_ABSENCE": {
+        "확정결근", "결근확정",
+    },
     "ANNUAL_LEAVE": {
         "연차", "연차휴가", "연차유급휴가",
     },

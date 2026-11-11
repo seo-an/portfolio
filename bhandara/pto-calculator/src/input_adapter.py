@@ -8,6 +8,7 @@ human review and the private Golden baseline can be reconciled.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from decimal import Decimal, InvalidOperation
 from datetime import date, datetime, time
 from pathlib import Path
 from typing import Any
@@ -197,6 +198,31 @@ def read_pto_sheet(path: Path, kind: str, *, sheet_name: str | None = None) -> L
                 continue
             selected = header_map.project([c.value for c in cells])
             invalid = False
+            # Optional event field. Existing 7-column event workbooks still load.
+            if kind == "events":
+                header_values = [cell.value for cell in first]
+                if "reduced_hours" in header_values:
+                    position = header_values.index("reduced_hours")
+                    if position < len(cells) and cells[position].data_type == "f":
+                        loaded.findings.append(_finding(
+                            kind, path, sheet.title, row_number,
+                            "reduced_hours", "FORMULA_UNSUPPORTED",
+                        ))
+                        invalid = True
+                    else:
+                        value = cells[position].value if position < len(cells) else None
+                        if value not in (None, ""):
+                            try:
+                                hours = Decimal(str(value))
+                                if not hours.is_finite() or hours < 0:
+                                    raise ValueError("reduced_hours must be nonnegative")
+                                selected["reduced_hours"] = float(hours)
+                            except (InvalidOperation, ValueError, TypeError, OverflowError):
+                                loaded.findings.append(_finding(
+                                    kind, path, sheet.title, row_number,
+                                    "reduced_hours", "INVALID_REDUCED_HOURS",
+                                ))
+                                invalid = True
             owner = selected.get("employee_id")
             if isinstance(owner, str) and owner and owner == owner.strip():
                 owner_id = owner
