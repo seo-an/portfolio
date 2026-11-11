@@ -186,6 +186,18 @@ class PTOMixedExcelTests(unittest.TestCase):
         ids = [row[0] for row in rows[1:]]
         self.assertEqual(len(ids), 14)
         self.assertNotEqual(ids, sorted(ids))
+        self.assertEqual(rows[0][4], "case_id")
+        id_to_case = {row[0]: row[4] for row in rows[1:]}
+        case_book = load_workbook(self.root / "case-index.xlsx", read_only=True)
+        try:
+            case_rows = list(case_book.active.values)
+        finally:
+            case_book.close()
+        self.assertEqual(case_rows[0][:2], ("employee_id", "case_id"))
+        self.assertEqual(
+            {row[0]: row[1] for row in case_rows[1:]},
+            id_to_case,
+        )
         cases = json.loads((self.root / "case-index.json").read_text())["cases"]
         self.assertEqual({row["employee_id"] for row in cases}, set(ids))
         self.assertEqual(len(self.by_id), 14)
