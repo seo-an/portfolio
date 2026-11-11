@@ -104,8 +104,8 @@ def anniversary_grants(
 ) -> list[dict]:
     """Build statutory anniversary-basis grants with separate attendance rules.
 
-    monthly_attendance_met evaluates each completed month during the first year.
-    annual_attendance_met evaluates each completed service year independently.
+    monthly_attendance_met evaluates completed months and the low-attendance
+    yearly fallback. annual_attendance_met evaluates completed service years.
     Omitted evaluators preserve the v1 assumption that requirements are met.
     """
     events: list[dict] = []
@@ -146,6 +146,46 @@ def anniversary_grants(
                 "service_year": service_year,
                 "raw_days": Decimal(annual_days_for_service_year(service_year)),
             })
+        elif eligibility is False or eligibility == NOT_ELIGIBLE:
+            # Article 60(2): when annual attendance is below 80%, award
+            # one day for each fully attended month in the COMPLETED service
+            # year, to be granted in the following service year (MOLEG
+            # opinions 24-0114 and 24-0674).
+            #
+            # Months 1..11 of the first year were already considered above
+            # as first-year monthly entitlements. Do not double-award them.
+            check_from = 11 if service_year == 1 else 0
+            for month in range(check_from, 12):
+                period_start = add_months(
+                    hire_date, (service_year - 1) * 12 + month
+                )
+                next_boundary = add_months(
+                    hire_date, (service_year - 1) * 12 + month + 1
+                )
+                period_end = next_boundary.fromordinal(next_boundary.toordinal() - 1)
+                monthly_eligibility = (
+                    monthly_attendance_met(period_start, period_end)
+                    if monthly_attendance_met else ELIGIBLE
+                )
+                if monthly_eligibility is True or monthly_eligibility == ELIGIBLE:
+                    events.append({
+                        "grant_date": grant_date,
+                        "grant_type": "monthly_under_80",
+                        "service_year": service_year,
+                        "period_start": period_start,
+                        "period_end": period_end,
+                        "raw_days": Decimal("1"),
+                    })
+                elif monthly_eligibility == UNDETERMINED:
+                    events.append({
+                        "grant_date": grant_date,
+                        "grant_type": "monthly_under_80",
+                        "service_year": service_year,
+                        "period_start": period_start,
+                        "period_end": period_end,
+                        "raw_days": None,
+                        "eligibility": UNDETERMINED,
+                    })
         elif eligibility == UNDETERMINED:
             events.append({
                 "grant_date": grant_date,

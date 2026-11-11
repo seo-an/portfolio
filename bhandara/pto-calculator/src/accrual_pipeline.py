@@ -6,8 +6,11 @@ from datetime import date
 from typing import Iterable
 
 from .aggregation import aggregate_attendance_period
-from .core import anniversary_grants
-from .eligibility import build_attendance_eligibility_callbacks
+from .core import add_months, anniversary_grants
+from .eligibility import (
+    build_attendance_eligibility_callbacks,
+    has_complete_calendar_coverage,
+)
 
 
 def calculate_anniversary_accrual(
@@ -31,31 +34,51 @@ def calculate_anniversary_accrual(
         if grant.get("eligibility") != "UNDETERMINED":
             continue
         if grant["grant_type"] == "monthly":
-            period_start = grant["grant_date"]
-            # Core monthly uncertainty details are recovered from the preceding
-            # employment month by matching the grant boundary.
-            from .core import add_months
-            period_start = add_months(grant["grant_date"], -1)
-        else:
-            from .core import add_months
-            period_start = add_months(
-                hire_date,
-                (grant["service_year"] - 1) * 12,
+            # Reverse-clamping grant_date (e.g. Feb 28 -> Jan 28) is unsafe.
+            # Recover month boundaries from the ORIGINAL hire-date anchor.
+            matched_month = next(
+                month for month in range(1, 12)
+                if add_months(hire_date, month) == grant["grant_date"]
             )
-        period_end = grant["grant_date"].fromordinal(
-            grant["grant_date"].toordinal() - 1
-        )
-        summary = aggregate_attendance_period(
-            record
-            for record in records
+            period_start = add_months(hire_date, matched_month - 1)
+            period_end = grant["grant_date"].fromordinal(
+                grant["grant_date"].toordinal() - 1
+            )
+        elif grant["grant_type"] == "monthly_under_80":
+            period_start, period_end = grant["period_start"], grant["period_end"]
+        else:
+            period_start = add_months(
+                hire_date, (grant["service_year"] - 1) * 12
+            )
+            period_end = grant["grant_date"].fromordinal(
+                grant["grant_date"].toordinal() - 1
+            )
+        period_records = [
+            record for record in records
             if period_start <= record["work_date"] <= period_end
-        )
+        ]
+        summary = aggregate_attendance_period(period_records)
+        reasons = list(summary["unresolved_reasons"])
+        if not has_complete_calendar_coverage(
+            period_records, period_start, period_end
+        ):
+            reasons.append({
+                "work_date": None,
+                "reasons": ["PERIOD_SOURCE_COVERAGE_INCOMPLETE"],
+                "resolution_categories": ["DATA_REQUIRED"],
+            })
+        if summary["denominator_included_days"] == 0:
+            reasons.append({
+                "work_date": None,
+                "reasons": ["NO_SCHEDULED_WORKDAYS"],
+                "resolution_categories": ["POLICY_REVIEW_REQUIRED"],
+            })
         unresolved.append({
             "grant_date": grant["grant_date"],
             "grant_type": grant["grant_type"],
             "period_start": period_start,
             "period_end": period_end,
-            "unresolved_reasons": summary["unresolved_reasons"],
+            "unresolved_reasons": reasons,
         })
 
     return {
