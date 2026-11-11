@@ -22,6 +22,6 @@ jobs:
           python-version: "3.13"
       - name: Install pinned public dependencies
         run: python -m pip install -r requirements.txt
-      - name: Run standalone and mixed-case unittest
+      - name: Run entire Bhandara unittest suite
         run: |
-          python -m unittest bhandara.tests.test_pto_standalone bhandara.tests.test_pto_case_studies
+          python -m unittest discover -s bhandara/tests -p "test_*.py"
