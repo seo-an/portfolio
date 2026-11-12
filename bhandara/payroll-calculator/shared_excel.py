@@ -70,7 +70,8 @@ def _employment_facts(root: Path, identities: Mapping[str, Mapping[str, str]],
 
 def prepare_shared_payroll(root: Path, period: str, *,
                            overrides: Mapping | None = None,
-                           worktime_result_path: Path | None = None) -> Path:
+                           worktime_result_path: Path | None = None,
+                           generated_dir: Path | None = None) -> Path:
     """Validate Excel mapping and derive a traceable config, no user JSON editing."""
     from bhandara.common.io.input_layout import period_bounds
 
@@ -115,17 +116,18 @@ def prepare_shared_payroll(root: Path, period: str, *,
                         "Recalculate Worktime and specify --worktime-result."
                     )
     module_root = Path(__file__).resolve().parent
-    config_root = root.parent / "config"
-    config_root.mkdir(parents=True, exist_ok=True)
-    facts_path = config_root / f"employment-facts-{period}.json"
+    # The entire sample input tree may be a read-only bind mount.
+    # Always put generated employment facts with the calculated run settings.
+    config_root = (
+        Path(generated_dir).resolve()
+        if generated_dir is not None
+        else root.parent / "config"
+    )
     facts = _employment_facts(root, identities, overrides)
-    if facts_path.exists():
-        if json.loads(facts_path.read_text(encoding="utf-8")) != facts:
-            raise InputLayoutError(f"employment facts differ from existing {facts_path}")
-    else:
-        facts_path.write_text(
-            json.dumps(facts, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
-        )
+    facts_path = write_auto_config(
+        root, f"employment-facts-{period}.json", facts,
+        generated_dir=config_root,
+    )
     config = {
         "schema_version": "0.1",
         "payroll_period": period,
@@ -142,4 +144,7 @@ def prepare_shared_payroll(root: Path, period: str, *,
         "employment_facts_path": str(facts_path),
         "recurring_pay_item_codes": ["base_salary"],
     }
-    return write_auto_config(root, f"payroll-auto-{period}.json", config)
+    return write_auto_config(
+        root, f"payroll-auto-{period}.json", config,
+        generated_dir=config_root,
+    )
