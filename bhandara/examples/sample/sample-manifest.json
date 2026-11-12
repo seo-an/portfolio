@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "seed": 20261112,
+  "employees": 80,
+  "note": "Synthetic inputs. Raw reader layouts are illustrative, not vendor-certified.",
+  "worktime_month": "2026-06",
+  "pto_month": "2026-07",
+  "payroll_month": "2026-07",
+  "identity_map": "input/common/id-map.xlsx",
+  "source_files": {
+    "pto_schedule": 2469,
+    "pto_attendance": 1831,
+    "worktime_schedule": 2400,
+    "worktime_attendance": 1760,
+    "raw_security_events": 1201,
+    "compensation": 80
+  }
+}
