@@ -18,6 +18,10 @@ python run.py bhandara pto-calculator --period 2026-07
 python run.py bhandara payroll-calculator --period 2026-07
 ```
 
+Worktime과 Payroll 결과는 첫 실행 시 `bhandara/data/output/<모듈명>/`에 저장되며,
+같은 이름의 결과 폴더가 이미 있으면 `<모듈명>-001/`, `-002/`로 새 폴더를 만듭니다.
+따라서 이전 계산 결과를 덮어쓰지 않습니다.
+
 Worktime은 출퇴근 인증이나 근무시간을 자동 승인하지 않습니다.
 Payroll의 기본 샘플 `payroll/worktime-result.json`은 **Worktime 샘플의
 2026-06 실행 결과(미마감)**를 보관한 것입니다.
