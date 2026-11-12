@@ -139,31 +139,107 @@ def _load_components(path: Path, contracts: Mapping[str, dict]) -> dict[str, dic
     return components
 
 
-def _load_services(path: Path | None) -> list[dict]:
-    if path is None:
+def _load_services(
+    contracts_path: Path | None,
+    records_path: Path | None,
+    payroll_period: str,
+) -> list[dict]:
+    """Estimate separate service remuneration; never mix with employee payroll."""
+    if contracts_path is None:
+        if records_path is not None:
+            raise InputLayoutError(
+                "service-work-records.xlsx requires service-contracts.xlsx"
+            )
         return []
-    rows = read_sheet(path, SERVICE_COLUMNS)
-    result, seen = [], set()
+    rows = read_sheet(contracts_path, SERVICE_COLUMNS)
+    services: dict[str, dict] = {}
     for row in rows:
         ident = str(row.get("service_contract_id") or "").strip()
         vendor = str(row.get("external_vendor_id") or "").strip()
         basis = str(row.get("pay_basis") or "").strip().upper()
-        if not ident or ident in seen or not vendor or basis not in {"HOURLY", "DAILY"}:
-            raise InputLayoutError(f"service-contracts.xlsx row {row['_row_number']}: invalid contract/vendor/basis")
+        if not ident or ident in services or not vendor or basis not in {"HOURLY", "DAILY"}:
+            raise InputLayoutError(
+                f"service-contracts.xlsx row {row['_row_number']}: invalid contract/vendor/basis"
+            )
         start = as_day(row["effective_from"], "effective_from")
         end = _optional_day(row.get("effective_to"), "effective_to")
         if end and end < start:
-            raise InputLayoutError(f"service-contracts.xlsx row {row['_row_number']}: inverted period")
-        amount = _decimal(row["contract_amount"], "service contract rate")
-        result.append({
+            raise InputLayoutError(
+                f"service-contracts.xlsx row {row['_row_number']}: inverted period"
+            )
+        rate = _decimal(row["contract_amount"], "service contract rate")
+        services[ident] = {
             "service_contract_id": ident, "external_vendor_id": vendor,
-            "pay_basis": basis, "contract_rate": str(amount),
+            "pay_basis": basis, "contract_rate": str(rate),
             "effective_from": start, "effective_to": end,
+            "payroll_period": payroll_period,
+            "billable_quantity": "0",
+            "estimated_service_amount": None,
+            "source_record_count": 0,
             "status": "REVIEW_REQUIRED",
-            "reason": "SERVICE_CONTRACT_OUTSIDE_EMPLOYMENT_PAYROLL",
-        })
-        seen.add(ident)
-    return result
+            "approved": False,
+            "reason": "SERVICE_RECORDS_NOT_PROVIDED",
+        }
+    if records_path is None:
+        return [services[key] for key in sorted(services)]
+
+    period_from, period_to = period_bounds(payroll_period)
+    raw_records = read_sheet(
+        records_path,
+        ("service_contract_id", "service_date",
+         "billable_hours", "billable_days", "source_reference"),
+    )
+    quantities: dict[str, Decimal] = defaultdict(lambda: Decimal("0"))
+    seen: set[tuple[str, str, str]] = set()
+    for row in raw_records:
+        ident = str(row.get("service_contract_id") or "").strip()
+        date_text = as_day(row.get("service_date"), "service_date")
+        evidence = str(row.get("source_reference") or "").strip()
+        if ident not in services or not evidence:
+            raise InputLayoutError(
+                f"service-work-records.xlsx row {row['_row_number']}: missing contract/reference"
+            )
+        service = services[ident]
+        if not (period_from <= date_text <= period_to):
+            raise InputLayoutError(
+                f"service-work-records.xlsx row {row['_row_number']}: date outside service payment period"
+            )
+        if not _inside(
+            date_text, service["effective_from"], service["effective_to"]
+        ):
+            raise InputLayoutError(
+                f"service-work-records.xlsx row {row['_row_number']}: date outside contract"
+            )
+        key = (ident, date_text, evidence)
+        if key in seen:
+            raise InputLayoutError(
+                f"service-work-records.xlsx row {row['_row_number']}: duplicate source evidence"
+            )
+        seen.add(key)
+        hours, days = row.get("billable_hours"), row.get("billable_days")
+        if service["pay_basis"] == "HOURLY":
+            if days not in (None, ""):
+                raise InputLayoutError("hourly service cannot declare billable_days")
+            quantity = _decimal(hours, "billable_hours")
+        else:
+            if hours not in (None, ""):
+                raise InputLayoutError("daily service cannot declare billable_hours")
+            quantity = _decimal(days, "billable_days")
+        quantities[ident] += quantity
+        service["source_record_count"] += 1
+
+    for ident, service in services.items():
+        quantity = quantities[ident]
+        service["billable_quantity"] = str(quantity)
+        service["estimated_service_amount"] = (
+            str(Decimal(service["contract_rate"]) * quantity)
+            if quantity > 0 else None
+        )
+        service["reason"] = (
+            "SERVICE_REMITTANCE_AND_TAX_REVIEW_REQUIRED"
+            if quantity > 0 else "SERVICE_QUANTITY_MISSING"
+        )
+    return [services[key] for key in sorted(services)]
 
 
 def _load_worktime(path: Path, expected_workers: set[str], from_day: str,
@@ -264,10 +340,19 @@ def build_contract_compensation(
         if service_override is not None or optional_service_file.is_file()
         else None
     )
+    service_records_override = (
+        (overrides or {}).get("payroll", {}).get("service_records")
+    )
+    optional_service_records = root / "payroll/service-work-records.xlsx"
+    records_path = (
+        role(root, "payroll", "service_records", overrides)
+        if service_records_override is not None or optional_service_records.is_file()
+        else None
+    )
     contracts, _ = _load_employee_contracts(contract_path, identities, period)
     contract_map = {x["contract_id"]: x for x in contracts}
     components = _load_components(component_path, contract_map)
-    services = _load_services(service_path)
+    services = _load_services(service_path, records_path, period)
     worktime, source_rows = _load_worktime(
         worktime_path,
         {x["worker_id"] for x in identities.values()},
@@ -278,6 +363,7 @@ def build_contract_compensation(
         "pay_contract": hash_file(contract_path),
         "contract_components": hash_file(component_path),
         "service_contracts": hash_file(service_path) if service_path else "NO_SERVICES",
+        "service_records": hash_file(records_path) if records_path else "NO_SERVICE_RECORDS",
         "worktime_result": hash_file(worktime_path),
     }
     fingerprint = hashlib.sha256(
@@ -515,13 +601,17 @@ def export_review_workbook(review_path: Path, destination: Path) -> None:
         service = work.create_sheet("Service Review Only")
         service.append([
             "service_contract_id", "external_vendor_id", "pay_basis",
-            "contract_rate", "effective_from", "effective_to", "reason",
+            "contract_rate", "effective_from", "effective_to",
+            "billable_quantity", "estimated_service_amount", "source_record_count",
+            "reason",
         ])
         for item in report["service_contracts"]:
             service.append([
                 item["service_contract_id"], item["external_vendor_id"],
                 item["pay_basis"], item["contract_rate"],
-                item["effective_from"], item["effective_to"], item["reason"],
+                item["effective_from"], item["effective_to"],
+                item["billable_quantity"], item["estimated_service_amount"],
+                item["source_record_count"], item["reason"],
             ])
         service.freeze_panes = "A2"
         service.auto_filter.ref = service.dimensions
