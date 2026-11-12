@@ -59,8 +59,10 @@ class ModuleLocalSettingsTests(unittest.TestCase):
 
     def test_local_changes_to_strings_are_read_by_only_that_module(self):
         module = importlib.import_module("bhandara.pto-calculator.user_settings")
-        with patch.object(module, "PERIOD", "2026-08"), \\
-             patch.object(module, "SCHEDULE_FILE", "pto/alternate-schedule.xlsx"):
+        with (
+            patch.object(module, "PERIOD", "2026-08"),
+            patch.object(module, "SCHEDULE_FILE", "pto/alternate-schedule.xlsx"),
+        ):
             cfg = root_cli.local_cli_config("pto-calculator")
             self.assertEqual(cfg["period"], "2026-08")
             self.assertEqual(
