@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "module_id": "payroll-calculator",
-  "module_version": "0.2.0",
+  "module_version": "0.3.0",
   "status": "review_only",
   "requires_base": "0.1",
   "python": ">=3.12",
@@ -39,10 +39,11 @@
   },
   "migration_manifest": "migration-manifest.json",
   "limitations": [
-    "No calculation, policy or error-handling improvements in this migration",
     "No worktime close or payroll payment approval",
     "Runtime source registry and policy are copied from the existing Gearbox snapshot",
-    "Existing Gearbox operations and workflows remain unchanged"
+    "Existing Gearbox operations and workflows remain unchanged",
+    "Contract wage mode calculates annual/monthly base salary and hourly/daily ordinary base pay from the separately reviewed Worktime source; employee hourly/daily premiums and paid weekly holidays are flagged but not calculated.",
+    "Freelance service contracts are isolated for review, excluded from employee payroll; no tax or withholding decision is inferred."
   ],
   "shared_excel_input": {
     "supported": true,
@@ -52,6 +53,9 @@
       "identity": "common/id-map.xlsx"
     },
     "roles": {
+      "contracts": "payroll/pay-contract.xlsx",
+      "contract_components": "payroll/pay-contract-components.xlsx",
+      "service_contracts": "payroll/service-contracts.xlsx",
       "compensation": "payroll/compensation.xlsx",
       "payroll_input": "payroll/payroll-input.xlsx",
       "company_policy": "payroll/company-policy.json",
@@ -60,6 +64,6 @@
     "monthly_files": [],
     "default_period_option": "--period YYYY-MM",
     "advanced_overrides": "--paths-config JSON role map",
-    "note": "Fixed paths are defaults. Old explicit JSON/normalized CLI modes remain supported."
+    "note": "New pay-contract.xlsx mode derives base salary and produces audited REVIEW_REQUIRED results; legacy compensation.xlsx remains a fallback if no contract file is present."
   }
 }
