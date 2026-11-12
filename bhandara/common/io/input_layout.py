@@ -202,11 +202,26 @@ def as_clock(value: Any, field: str) -> str | None:
     raise InputLayoutError(f"invalid {field}: {value!r}")
 
 
-def write_auto_config(input_root: Path, name: str, payload: Mapping[str, Any]) -> Path:
-    """Materialize an auditable auto-config outside public Git-tracked inputs."""
+def write_auto_config(
+    input_root: Path,
+    name: str,
+    payload: Any,
+    *,
+    generated_dir: Path | None = None,
+) -> Path:
+    """Persist generated inputs outside source data and (optionally) read-only trees.
+
+    The CLI passes a writable runtime config directory alongside --output-dir.
+    Keeping the default only preserves callers that already manage a writable
+    local bhandara/data directory; it must never be used by a read-only sample.
+    """
     if "/" in name or name.startswith("."):
         raise InputLayoutError("invalid generated config name")
-    base = input_root.resolve().parent / "config"
+    base = (
+        Path(generated_dir).resolve()
+        if generated_dir is not None
+        else input_root.resolve().parent / "config"
+    )
     base.mkdir(parents=True, exist_ok=True)
     fingerprint = hashlib.sha256(
         json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
