@@ -161,5 +161,25 @@
     "Unresolved attendance eligibility requires human review",
     "No automatic close, payout or payroll approval",
     "Current input error isolation can block a whole run for unassignable global source rows"
-  ]
+  ],
+  "shared_excel_input": {
+    "supported": true,
+    "default_root": "bhandara/data/input",
+    "common_roles": {
+      "employees": "common/employee.xlsx",
+      "identity": "common/id-map.xlsx"
+    },
+    "roles": {
+      "schedule": "pto/work-schedule.xlsx",
+      "assignments": "pto/work-schedule-assignment.xlsx",
+      "events": "pto/employee-events.xlsx"
+    },
+    "monthly_files": [
+      "pto/work-records/{year}/{yyyy-mm}-schedule.xlsx",
+      "pto/work-records/{year}/{yyyy-mm}-attendance.xlsx"
+    ],
+    "default_period_option": "--period YYYY-MM",
+    "advanced_overrides": "--paths-config JSON role map",
+    "note": "Fixed paths are defaults. Old explicit JSON/normalized CLI modes remain supported."
+  }
 }

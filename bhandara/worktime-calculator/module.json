@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "module_id": "worktime-calculator",
-  "module_version": "0.1.0",
+  "module_version": "0.2.0",
   "status": "review_only",
   "requires_base": "0.1",
   "python": ">=3.12",
@@ -48,5 +48,21 @@
     "No source-normalizer migration or new Excel input handling",
     "No approval, period close, or payroll finalization",
     "Original functions and standalone CLI are copied without logic edits"
-  ]
+  ],
+  "shared_excel_input": {
+    "supported": true,
+    "default_root": "bhandara/data/input",
+    "common_roles": {
+      "employees": "common/employee.xlsx",
+      "identity": "common/id-map.xlsx"
+    },
+    "roles": {
+      "schedule": "worktime/work-schedule.xlsx",
+      "attendance": "worktime/attendance.xlsx"
+    },
+    "monthly_files": [],
+    "default_period_option": "--period YYYY-MM",
+    "advanced_overrides": "--paths-config JSON role map",
+    "note": "Fixed paths are defaults. Old explicit JSON/normalized CLI modes remain supported."
+  }
 }

@@ -1,0 +1,24 @@
+{
+  "proration": {
+    "base_salary": {
+      "method": "역일수"
+    }
+  },
+  "ordinary_wage": {
+    "monthly_basis_hours": 200,
+    "pay_items": {}
+  },
+  "worktime_pay": {
+    "base_component_policy": {}
+  },
+  "amount_processing": {
+    "unit": 10,
+    "method": "절사",
+    "apply_at": "최종지급액",
+    "remainder": {
+      "handling": "settlement_ledger",
+      "transaction_type": "rounding_carry",
+      "settlement_month": 12
+    }
+  }
+}

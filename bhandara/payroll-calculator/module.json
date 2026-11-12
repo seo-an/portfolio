@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "module_id": "payroll-calculator",
-  "module_version": "0.1.0",
+  "module_version": "0.2.0",
   "status": "review_only",
   "requires_base": "0.1",
   "python": ">=3.12",
@@ -43,5 +43,23 @@
     "No worktime close or payroll payment approval",
     "Runtime source registry and policy are copied from the existing Gearbox snapshot",
     "Existing Gearbox operations and workflows remain unchanged"
-  ]
+  ],
+  "shared_excel_input": {
+    "supported": true,
+    "default_root": "bhandara/data/input",
+    "common_roles": {
+      "employees": "common/employee.xlsx",
+      "identity": "common/id-map.xlsx"
+    },
+    "roles": {
+      "compensation": "payroll/compensation.xlsx",
+      "payroll_input": "payroll/payroll-input.xlsx",
+      "company_policy": "payroll/company-policy.json",
+      "worktime_result": "payroll/worktime-result.json"
+    },
+    "monthly_files": [],
+    "default_period_option": "--period YYYY-MM",
+    "advanced_overrides": "--paths-config JSON role map",
+    "note": "Fixed paths are defaults. Old explicit JSON/normalized CLI modes remain supported."
+  }
 }
