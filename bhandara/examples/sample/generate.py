@@ -293,6 +293,27 @@ def build_shared_input(root: Path) -> dict[str, int]:
               ("service_contract_id", "external_vendor_id", "pay_basis",
                "contract_amount", "effective_from", "effective_to", "note"),
               services)
+    service_records = []
+    for n in range(1, 9):
+        sid = f"SVC-{n:03d}"
+        if n % 2:
+            service_records.extend([
+                (sid, f"2026-07-{n+1:02d}", None, 1,
+                 f"SYNTHETIC-SERVICE-{n:03d}-A"),
+                (sid, f"2026-07-{n+14:02d}", None, 2,
+                 f"SYNTHETIC-SERVICE-{n:03d}-B"),
+            ])
+        else:
+            service_records.extend([
+                (sid, f"2026-07-{n+1:02d}", 8, None,
+                 f"SYNTHETIC-SERVICE-{n:03d}-A"),
+                (sid, f"2026-07-{n+14:02d}", 14, None,
+                 f"SYNTHETIC-SERVICE-{n:03d}-B"),
+            ])
+    rng.shuffle(service_records)
+    save_xlsx(input_dir / "payroll/service-work-records.xlsx",
+              ("service_contract_id", "service_date", "billable_hours",
+               "billable_days", "source_reference"), service_records)
     variable = [
         (x["worker_id"], "performance_bonus", 100000, None,
          None, None, None, "Synthetic one-off bonus")
@@ -338,6 +359,7 @@ def build_shared_input(root: Path) -> dict[str, int]:
             "contracts": len(contracts),
             "contract_components": len(components),
             "service_contracts_excluded": len(services),
+            "service_delivery_records": len(service_records),
         },
     })
     return {"employees": EMPLOYEES, "worktime_days": len(work_attendance),
