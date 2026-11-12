@@ -27,7 +27,7 @@ python run.py bhandara payroll-calculator --period 2026-07
 
 신규 `contract_adapter.py`는 기존 Payroll 계산 엔진 **앞단**에서 다음 데이터를 만듭니다.
 
-- `ANNUAL`: 연 총액 / 12 − 계약에 포함된 월 고정수당.
+- `ANNUAL`: 연 총액 / 12 − 계약에 포함된 월 고정수당. **12회 균등분할 전제**를 검토 코드로 남기며 다른 지급구조는 미지원.
 - `MONTHLY`: 월 총액 − 계약에 포함된 월 고정수당.
 - `HOURLY`: 계약 시급 × 검토 대상 Worktime 일반 근로시간.
 - `DAILY`: 계약 일급 × 계약상 기준 근무시간을 충족한 일수.
