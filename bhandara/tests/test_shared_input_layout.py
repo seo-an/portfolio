@@ -16,7 +16,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from bhandara.common.io.input_layout import (
-    InputLayoutError, choose_path, next_result_dir, period_bounds, read_id_map,
+    InputLayoutError, ROLE_PATHS, choose_path, next_result_dir, period_bounds, read_id_map,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -60,6 +60,17 @@ class SharedLayoutFixtureTests(unittest.TestCase):
             self.assertIn("payroll_id", headers)
         finally:
             book.close()
+
+    def test_manifest_files_are_real_default_input_contract(self):
+        for module in ("pto", "worktime", "payroll"):
+            path = ROOT / "bhandara" / f"{module}-calculator/module.json"
+            with self.subTest(module=module):
+                content = json.loads(path.read_text(encoding="utf-8"))
+                shared = content["shared_excel_input"]
+                self.assertEqual(shared["roles"], ROLE_PATHS[module])
+                self.assertEqual(
+                    shared["common_roles"], ROLE_PATHS["common"]
+                )
 
     def test_no_fuzzy_input_fallback_and_no_path_escape(self):
         with tempfile.TemporaryDirectory() as dirname:
