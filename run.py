@@ -152,7 +152,7 @@ def main(argv: list[str] | None = None) -> int:
             if shared_root is not None:
                 from importlib import import_module
                 from bhandara.common.io.input_layout import InputLayoutError
-                worktime = import_module("bhandara.worktime-calculator.run")
+                worktime = import_module("bhandara.worktime-calculator.shared_excel")
                 try:
                     return worktime.run_shared_excel(
                         shared_root, args.period,
