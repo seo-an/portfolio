@@ -23,6 +23,8 @@ def build_parser() -> argparse.ArgumentParser:
                           help="Payroll only; defaults to review-only calculate")
     bhandara.add_argument("--manifest", help="Payroll normalize manifest")
     bhandara.add_argument("--scenario-id", help="Payroll policy scenario override")
+    bhandara.add_argument("--isolate-worker-failures", action="store_true",
+                          help="Payroll calculate only: retry workers independently after batch failure")
     bhandara.add_argument(
         "--period", help="YYYY-MM for automatic shared Excel input (no JSON editing)")
     bhandara.add_argument(
@@ -45,6 +47,14 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.collection == "bhandara":
+        if args.isolate_worker_failures and (
+            args.module_id != "payroll-calculator"
+            or args.operation == "normalize"
+            or args.period is not None
+        ):
+            print("PAYROLL_INVALID: worker isolation requires direct Payroll calculate mode",
+                  file=sys.stderr)
+            return 2
         # In Base + single-calculator installations, never pretend an absent
         # calculator exists or leak a Python traceback from import_module().
         if args.module_id in ("pto-calculator", "worktime-calculator", "payroll-calculator"):
@@ -266,6 +276,11 @@ def main(argv: list[str] | None = None) -> int:
                     file=sys.stderr,
                 )
                 return 2
+            if args.isolate_worker_failures:
+                isolation = import_module("bhandara.payroll-calculator.isolation_cli")
+                return isolation.calculate_cli(
+                    args.config, args.output_dir, scenario_id=args.scenario_id,
+                )
             cli = ["calculate", "--config", args.config,
                    "--output-dir", args.output_dir]
             if args.scenario_id:
