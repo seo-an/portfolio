@@ -1,5 +1,37 @@
 # 연차 계산기 사용 안내서 — 엑셀 준비부터 결과 확인까지
 
+
+## 내 설정 파일 하나만 수정하는 독립 실행
+
+계산기 폴더의 `user_settings.py`를 열어 아래 **문자열**을 수정합니다.
+기본값을 그대로 써도 되지만 `PERIOD`가 2026년 7월 예시이므로
+**계산할 월을 반드시 확인**하세요.
+
+| 변수 | 기본값 | 입력 가능한 값 |
+|---|---|---|
+| `PERIOD` | `"2026-07"` | `"YYYY-MM"` 문자열 |
+| `EMPLOYEES_FILE` | `"common/employee.xlsx"` | 입력 폴더 기준 상대 Excel 경로 |
+| `SCHEDULE_FILE` | `"pto/work-schedule.xlsx"` | 입력 폴더 기준 상대 Excel 경로 |
+| `ASSIGNMENTS_FILE` | `"pto/work-schedule-assignment.xlsx"` | 입력 폴더 기준 상대 Excel 경로 |
+| `EVENTS_FILE` | `"pto/employee-events.xlsx"` | 선택 Excel 상대 경로 (파일이 없으면 생략) |
+
+`bhandara/data/input/`에 Excel을 준비하고 프로젝트 루트에서 다음 한 줄만 실행합니다.
+
+```bash
+python run.py bhandara pto-calculator
+```
+
+실행 전에 다른 파일 경로를 지정하려면 `--input-dir`, 결과 위치는 `--output-dir`
+인자로 지정할 수 있습니다. 사용자가 `--config`를 전달하면
+`user_settings.py` 설정과 **혼합하지 않고** 지정된 전체 JSON 설정만 사용합니다.
+`--period`를 명시하면 기존 공통 Excel 폴더 계약을 그대로 사용합니다.
+
+설정 파일이 잘못됐을 때는 기존 예제나 다른 설정으로 대체하지 않고
+`SETTINGS_INVALID`로 차단합니다. 이 파일의 설정은 **월과 입력 파일 위치**
+범위이며, 연차 적격성·승인 여부를 임의로 확정하는 기능이 아닙니다.
+
+---
+
 ## 간편 모드: 고정된 Excel 파일명으로 실행하기
 
 [80명 공통 샘플](../examples/sample/input/)을 `bhandara/data/input/`에
