@@ -101,6 +101,39 @@ class SharedLayoutFixtureTests(unittest.TestCase):
             with self.assertRaisesRegex(InputLayoutError, "duplicated identity"):
                 read_id_map(root)
 
+    def test_duplicate_attendance_is_isolated_to_worker_day(self):
+        with tempfile.TemporaryDirectory(prefix="bhandara-duplicate-") as dirname:
+            root = Path(dirname)
+            for relative in (
+                "common/id-map.xlsx", "common/employee.xlsx",
+                "worktime/work-schedule.xlsx", "worktime/attendance.xlsx",
+            ):
+                target = root / relative
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(SAMPLE / relative, target)
+            book = load_workbook(root / "worktime/attendance.xlsx")
+            sheet = book.active
+            sheet.append([cell.value for cell in sheet[2]])
+            book.save(root / "worktime/attendance.xlsx")
+            book.close()
+            result = invoke(
+                "bhandara", "worktime-calculator", "--period", "2026-06",
+                "--input-dir", root, "--output-dir", root.parent / (root.name + "-output"),
+            )
+            self.assertEqual(result.returncode, 2, result.stderr + result.stdout)
+            output = root.parent / (root.name + "-output") / "worktime-result.json"
+            self.assertTrue(output.is_file(), result.stderr)
+            reviewed = json.loads(output.read_text(encoding="utf-8"))
+            self.assertEqual(reviewed["status"], "BLOCKED")
+            self.assertGreater(len(reviewed["rows"]), 1000)
+            report = json.loads(
+                (output.parent / "worktime-review.json").read_text(encoding="utf-8")
+            )
+            self.assertTrue(any(
+                issue["code"] == "WORKTIME_DUPLICATE_DAY"
+                for issue in report["issues"]
+            ))
+
     def test_payroll_rejects_stale_worktime_handoff(self):
         loader = importlib.import_module("bhandara.payroll-calculator.shared_excel")
         with tempfile.TemporaryDirectory(prefix="bhandara-stale-") as dirname:
