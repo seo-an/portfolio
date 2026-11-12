@@ -115,3 +115,29 @@ python run.py bhandara payroll-calculator --period 2026-07
 `payroll-config.json` 경로 지정 방식은 계속 동작합니다.
 이 고급 실행 방식의 코드 계약 및 예제는 [Payroll 개발자 README](README.md)와
 [사용자 JSON 템플릿](examples/payroll-config.user-template.json)을 참고하세요.
+
+## 8. 직원별 계산 오류 격리(고급 모드)
+
+회사에서 제공한 `payroll-config.json`과 Excel을 사용하는 고급 모드에서만
+`--isolate-worker-failures` 옵션을 추가할 수 있습니다.
+
+```bash
+python run.py bhandara payroll-calculator \
+  --config /private/payroll-config.json \
+  --output-dir /private/payroll-review-2026-10 \
+  --isolate-worker-failures
+```
+
+- 전체 급여 계산이 예외로 실패한 경우에만 각 직원을 분리해 다시 계산합니다.
+  정상 계산에는 이 옵션을 넣어도 기존 계산 결과가 바뀌지 않습니다.
+- 한 명만 실패하면 정상 직원의 계산 결과는 남기고, 실패 직원은 **금액을
+  0으로 채우지 않고 누락/검토 대상으로 표시**합니다.
+- 직원명부에 없는 급여 원천 행, 매칭 불가한 직원 데이터, 전원 계산 실패는
+  **전체 차단**합니다. 누락을 무시하고 지급 가능한 명부를 만들지 않습니다.
+- 부분 성공이어도 상태는 `BLOCKED`, `finalizable=false`,
+  `ledger_committed=false`입니다. 산출물은 반드시 담당자 확인 후 사용하세요.
+- `--period`로 Excel 폴더만 지정하는 간편 모드에서는 아직 사용하지
+  않습니다. 옵션 지원은 고급 `--config` 실행에 한정됩니다.
+
+이 기능은 Bhandara 안에서 완결되며 Gearbox나 AWS가 설치되어 있지 않아도
+독립 실행할 수 있습니다.
