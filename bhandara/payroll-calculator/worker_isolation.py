@@ -193,6 +193,32 @@ def _aggregate(data: Mapping[str, Any], successes: dict[str, dict[str, Any]],
     }
 
 
+def validate_roster_sources(data: Mapping[str, Any]) -> None:
+    """Reject any unassignable source row before accepting a batch result.
+
+    The public batch engine can ignore some unrelated source rows; opting in
+    to worker isolation must not silently discard them when a batch succeeds.
+    """
+    workers = data["expected_worker_ids"]
+    if (not isinstance(workers, list) or not workers
+            or len(workers) != len(set(workers))):
+        raise WorkerIsolationError("independent unique worker roster required")
+    allowed = set(workers)
+    _split_xlsx(data["compensation_path"], allowed)
+    _split_xlsx(data["payroll_input_path"], allowed)
+    for name, values in (
+        ("employment_facts", data["employment_facts"]),
+        ("settlement_ledger_rows", data["settlement_ledger_rows"]),
+        ("worktime.rows", data["worktime"]["rows"]),
+        *data["optional"].items(),
+    ):
+        _filter_objects(values, workers[0], allowed, name)
+    for warning in data["worktime"]["warnings"]:
+        owner = warning.get("worker_id")
+        if owner is not None and owner not in allowed:
+            raise WorkerIsolationError("Worktime warning refers to unknown worker")
+
+
 def recover_employee_payroll(data: Mapping[str, Any], *, temp_parent: str | Path) -> dict[str, Any]:
     """Retry independently, keeping only complete worker payroll results."""
     workers = data["expected_worker_ids"]
