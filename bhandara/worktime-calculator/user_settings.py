@@ -4,7 +4,7 @@
 기본 입력 파일은 bhandara/data/input/에 저장합니다.
 """
 
-PERIOD = "2026-07"  # 계산 대상 월 (YYYY-MM)
+PERIOD = "2026-06"  # 계산 대상 월 (YYYY-MM)
 
 EMPLOYEES_FILE = "common/employee.xlsx"
 IDENTITY_FILE = "common/id-map.xlsx"
