@@ -7,11 +7,18 @@ payloads, employee identities, or raw exception text to stdout/stderr.
 from __future__ import annotations
 
 from pathlib import Path
+import sys
+
+# Keep the existing standalone migrated engine imports resolvable when the
+# isolation CLI is imported on its own (no Gearbox or external path required).
+FUNCTIONS = Path(__file__).resolve().parent / "functions"
+if str(FUNCTIONS) not in sys.path:
+    sys.path.insert(0, str(FUNCTIONS))
 
 from .functions.payroll_standalone_input import load_standalone_inputs
 from .functions.payroll_standalone_runner import run_standalone_payroll
 from .functions.payroll_standalone_report import write_standalone_outputs
-from .worker_isolation import recover_employee_payroll
+from .worker_isolation import recover_employee_payroll, validate_roster_sources
 
 
 class PayrollRecoveryError(RuntimeError):
@@ -21,6 +28,9 @@ class PayrollRecoveryError(RuntimeError):
 def _calculate_with_optional_recovery(config: Path, output: Path, scenario_id: str | None):
     """Use normal batch first; retry independently only after engine exception."""
     data = load_standalone_inputs(config, scenario_id=scenario_id)
+    # Fail closed on orphaned payroll source rows EVEN IF batch calculation
+    # would otherwise succeed. Missing worker amounts must never be ignored.
+    validate_roster_sources(data)
     try:
         return run_standalone_payroll(data)
     except Exception:
