@@ -87,6 +87,33 @@ def prepare_shared_payroll(root: Path, period: str, *,
     )
     if not handoff.is_file():
         raise InputLayoutError(f"Worktime result handoff missing: {handoff}")
+    with handoff.open("r", encoding="utf-8") as source:
+        worktime_result = json.load(source)
+    if not isinstance(worktime_result, dict):
+        raise InputLayoutError("Worktime handoff must be a JSON object")
+    covered = set(worktime_result.get("covered_worker_ids") or [])
+    expected = {item["worker_id"] for item in identities.values()}
+    if covered and covered != expected:
+        raise InputLayoutError(
+            "Worktime handoff worker roster differs from current id-map.xlsx"
+        )
+    # Verify a default Worktime handoff against the current shared Excel.
+    # An explicit --worktime-result can come from a separate standalone run.
+    if worktime_result_path is None:
+        from bhandara.common.io.input_layout import hash_file
+        fingerprints = worktime_result.get("source_hashes") or {}
+        for key, filename in (
+            ("employees", "common/employee.xlsx"),
+            ("schedule", "worktime/work-schedule.xlsx"),
+            ("attendance", "worktime/attendance.xlsx"),
+        ):
+            if (root / filename).is_file():
+                expected_sha = hash_file(root / filename)
+                if fingerprints.get(key) != expected_sha:
+                    raise InputLayoutError(
+                        f"Stale Worktime handoff: {key} Excel changed. "
+                        "Recalculate Worktime and specify --worktime-result."
+                    )
     module_root = Path(__file__).resolve().parent
     config_root = root.parent / "config"
     config_root.mkdir(parents=True, exist_ok=True)
