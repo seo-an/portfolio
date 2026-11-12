@@ -225,10 +225,25 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"PAYROLL_INPUT_INVALID: {type(exc).__name__}: {exc}",
                           file=sys.stderr)
                     return 2
-                return payroll.main([
+                exit_code = payroll.main([
                     "calculate", "--config", str(config), "--output-dir",
                     str(output),
                 ])
+                # Contract audit artifacts belong to the same output run.
+                # They are not part of the old calculation/approval engine.
+                generated = json.loads(config.read_text(encoding="utf-8"))
+                if generated.get("contract_review_path") and output.is_dir():
+                    import shutil
+                    from importlib import import_module
+                    report = Path(generated["contract_review_path"])
+                    shutil.copy2(report, output / "contract-basis-review.json")
+                    contract = import_module("bhandara.payroll-calculator.contract_adapter")
+                    contract.export_review_workbook(
+                        report, output / "contract-basis-review.xlsx"
+                    )
+                    print("CONTRACT_BASE_STATUS: REVIEW_REQUIRED (no payroll approval)")
+                    print("CONTRACT_BASE_ARTIFACT: " + str(output / "contract-basis-review.xlsx"))
+                return exit_code
             if args.operation == "normalize":
                 if not all((args.input_dir, args.output_dir)):
                     print(
