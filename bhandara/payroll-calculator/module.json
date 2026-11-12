@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "module_id": "payroll-calculator",
-  "module_version": "0.3.0",
+  "module_version": "0.3.1",
   "status": "review_only",
   "requires_base": "0.1",
   "python": ">=3.12",
@@ -12,7 +12,8 @@
     "calculate": "python run.py bhandara payroll-calculator --config <payroll-config.json> --output-dir <new-private-output>",
     "normalize": "python run.py bhandara payroll-calculator --operation normalize --input-dir <raw-input> --output-dir <new-private-output>",
     "network_access": false,
-    "requires_authentication": false
+    "requires_authentication": false,
+    "calculate_with_isolation": "python run.py bhandara payroll-calculator --config <payroll-config.json> --output-dir <new-private-output> --isolate-worker-failures"
   },
   "source_contract": "Original Gearbox Payroll standalone CLI 0.1 with optional existing Worktime result / rows / approved close receipts; not an approved payment or settlement process.",
   "output_files": {
@@ -48,7 +49,8 @@
     "Runtime source registry and policy are copied from the existing Gearbox snapshot",
     "Existing Gearbox operations and workflows remain unchanged",
     "Contract wage mode calculates annual/monthly base salary and hourly/daily ordinary base pay from the separately reviewed Worktime source; employee hourly/daily premiums and paid weekly holidays are flagged but not calculated.",
-    "Freelance service contracts are isolated for review, excluded from employee payroll; no tax or withholding decision is inferred."
+    "Freelance service contracts are isolated for review, excluded from employee payroll; no tax or withholding decision is inferred.",
+    "Optional --isolate-worker-failures retries employees only after a batch exception; unassignable rows fail closed and partial results remain BLOCKED and review-only."
   ],
   "shared_excel_input": {
     "supported": true,
