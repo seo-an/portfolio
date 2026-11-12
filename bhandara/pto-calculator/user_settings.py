@@ -9,4 +9,4 @@ PERIOD = "2026-07"  # 계산 대상 월 (YYYY-MM)
 EMPLOYEES_FILE = "common/employee.xlsx"
 SCHEDULE_FILE = "pto/work-schedule.xlsx"
 ASSIGNMENTS_FILE = "pto/work-schedule-assignment.xlsx"
-EVENTS_FILE = "pto/employee-events.xlsx"  # 선택 파일: 없어도 실행 가능
+EVENTS_FILE = ""  # 선택 파일: 비워두면 기본 경로의 파일이 있을 때만 사용
