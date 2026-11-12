@@ -13,7 +13,7 @@
 | `EMPLOYEES_FILE` | `"common/employee.xlsx"` | 입력 폴더 기준 상대 Excel 경로 |
 | `SCHEDULE_FILE` | `"pto/work-schedule.xlsx"` | 입력 폴더 기준 상대 Excel 경로 |
 | `ASSIGNMENTS_FILE` | `"pto/work-schedule-assignment.xlsx"` | 입력 폴더 기준 상대 Excel 경로 |
-| `EVENTS_FILE` | `"pto/employee-events.xlsx"` | 선택 Excel 상대 경로 (파일이 없으면 생략) |
+| `EVENTS_FILE` | `""` | 빈 문자열이면 기본 이벤트 파일이 있을 때만 사용. 별도 파일을 지정하면 해당 상대 경로 필수 |
 
 `bhandara/data/input/`에 Excel을 준비하고 프로젝트 루트에서 다음 한 줄만 실행합니다.
 
