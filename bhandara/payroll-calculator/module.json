@@ -21,14 +21,16 @@
       "payroll-calculation.xlsx",
       "payroll-review.json",
       "payroll-review.xlsx",
-      "policy-resolution.json",
-      "contract-basis-review.json",
-      "contract-basis-review.xlsx",
-      "contract-derived-compensation.xlsx"
+      "policy-resolution.json"
     ],
     "calculate_blocked": [
       "payroll-review.json",
       "payroll-review.xlsx"
+    ],
+    "contract_mode_additional": [
+      "contract-basis-review.json",
+      "contract-basis-review.xlsx",
+      "contract-derived-compensation.xlsx"
     ]
   },
   "exit_codes": {
@@ -88,7 +90,8 @@
         "statutory_tax_and_insurance"
       ],
       "service_records_optional": true,
-      "service_estimates": "hourly/daily contract rate multiplied by separately evidenced quantity, review only"
+      "service_estimates": "hourly/daily contract rate multiplied by separately evidenced quantity, review only",
+      "annual_payout_assumption": "12 equal monthly installments, always flagged for human review"
     }
   }
 }
