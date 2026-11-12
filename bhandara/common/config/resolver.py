@@ -17,8 +17,10 @@ class SettingsContractError(ValueError):
 
 
 def _validate(value: Any, kind: str, name: str) -> str:
-    if type(value) is not str or not value or value != value.strip():
+    if type(value) is not str or (not value and kind != "optional_file") or value != value.strip():
         raise SettingsContractError(f"{name} must be a nonempty string without surrounding spaces")
+    if kind == "optional_file" and value == "":
+        return value
     if kind == "month":
         try:
             month = date.fromisoformat(value + "-01")
@@ -26,7 +28,7 @@ def _validate(value: Any, kind: str, name: str) -> str:
             raise SettingsContractError(f"{name} must be YYYY-MM") from exc
         if month.strftime("%Y-%m") != value:
             raise SettingsContractError(f"{name} must be YYYY-MM")
-    elif kind == "file":
+    elif kind in ("file", "optional_file"):
         path = Path(value)
         if (path.is_absolute() or len(path.parts) == 0
                 or any(part in (".", "..") for part in path.parts)
