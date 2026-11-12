@@ -1,0 +1,63 @@
+name: Publish separate freelance service records Excel once
+
+on:
+  push:
+    branches:
+      - feat/payroll-contract-basis-20261112
+    paths:
+      - ".github/workflows/bhandara-publish-service-records-once.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/payroll-contract-basis-20261112
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install -r requirements.txt
+      - name: Produce actual service activity Excel and updated manifest
+        run: |
+          python bhandara/examples/sample/generate.py --output-dir "$RUNNER_TEMP/synthetic"
+          cp "$RUNNER_TEMP/synthetic/input/payroll/service-work-records.xlsx" \
+            bhandara/examples/sample/input/payroll/service-work-records.xlsx
+          cp "$RUNNER_TEMP/synthetic/sample-manifest.json" \
+            bhandara/examples/sample/sample-manifest.json
+      - name: Contract and service regression
+        run: |
+          python -m unittest discover -s bhandara/tests -p "test_*.py"
+          set +e
+          python run.py bhandara payroll-calculator --period 2026-07 \
+            --input-dir bhandara/examples/sample/input \
+            --output-dir "$RUNNER_TEMP/payroll"
+          code=$?
+          set -e
+          test "$code" -eq 2
+          python - <<'PY'
+          import json,os
+          from pathlib import Path
+          root=Path(os.environ['RUNNER_TEMP'])/'payroll'
+          r=json.loads((root/'contract-basis-review.json').read_text())
+          s={x['service_contract_id']:x for x in r['service_contracts']}
+          assert s['SVC-001']['estimated_service_amount']=='690000',s['SVC-001']
+          assert s['SVC-002']['estimated_service_amount']=='814000',s['SVC-002']
+          assert len(r['employees'])==80
+          assert len(s)==8
+          assert r['service_contracts_in_employee_payroll'] is False
+          print('SERVICE_ESTIMATE_AUDIT_OK')
+          PY
+      - name: Permanently commit actual service Excel
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -f bhandara/examples/sample/input/payroll/service-work-records.xlsx \
+                     bhandara/examples/sample/sample-manifest.json
+          test "$(git diff --cached --name-only | grep -c 'service-work-records.xlsx')" -eq 1
+          git commit -m "test(sample): publish 16 service records linked to 8 non-payroll contracts"
+          git push origin HEAD:feat/payroll-contract-basis-20261112
