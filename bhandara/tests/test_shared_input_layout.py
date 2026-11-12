@@ -191,6 +191,19 @@ class SharedLayoutThreeModulesTests(unittest.TestCase):
     def tearDownClass(cls):
         cls.temp.cleanup()
 
+    def test_auto_configs_are_written_beside_output_not_source(self):
+        config_dir = self.workdir / "config"
+        self.assertTrue(config_dir.is_dir(), "PTO and Payroll must use writable output-adjacent config")
+        generated = list(config_dir.glob("*.json"))
+        names = [path.name for path in generated]
+        self.assertTrue(any(name.startswith("pto-auto-2026-07-") for name in names), names)
+        self.assertTrue(any(name.startswith("payroll-auto-2026-07-") for name in names), names)
+        self.assertTrue(any(name.startswith("employment-facts-2026-07-") for name in names), names)
+        self.assertFalse(
+            (SAMPLE.parent / "config").exists(),
+            "public fixture checkout must stay read-only and clean",
+        )
+
     def test_worktime_80_people_from_xlsx_no_manual_json(self):
         run, output = self.runs["worktime-calculator"]
         self.assertEqual(run.returncode, 2, run.stderr + run.stdout)
