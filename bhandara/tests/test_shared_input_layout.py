@@ -139,6 +139,10 @@ class SharedLayoutThreeModulesTests(unittest.TestCase):
     def test_worktime_80_people_from_xlsx_no_manual_json(self):
         run, output = self.runs["worktime-calculator"]
         self.assertEqual(run.returncode, 2, run.stderr + run.stdout)
+        self.assertTrue(
+            (output / "worktime-result.json").is_file(),
+            run.stderr + "\n" + run.stdout,
+        )
         data = json.loads((output / "worktime-result.json").read_text())
         self.assertEqual(data["status"], "REVIEW_REQUIRED")
         self.assertEqual(len(data["covered_worker_ids"]), 80)
