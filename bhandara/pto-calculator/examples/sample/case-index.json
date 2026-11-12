@@ -1,0 +1,77 @@
+{
+  "schema_version": "1.0",
+  "seed": 20261111,
+  "note": "Case objectives, not universally authoritative legal outcomes.",
+  "cases": [
+    {
+      "employee_id": "R001",
+      "case_id": "NORMAL_ANNIVERSARY",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R002",
+      "case_id": "LOW_80_FALLBACK",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R003",
+      "case_id": "EXACTLY_80",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R004",
+      "case_id": "ABOVE_80",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R005",
+      "case_id": "MISSING_CLOCK",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R006",
+      "case_id": "TERMINATED",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R007",
+      "case_id": "END_OF_MONTH_HIRE",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R008",
+      "case_id": "REDUCED_HOURS",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R009",
+      "case_id": "ZERO_WORKDAYS",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R010",
+      "case_id": "SICK_LEAVE_REVIEW",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R011",
+      "case_id": "PARENTAL_LEAVE",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R012",
+      "case_id": "ABSENCE_CLOCK_CONFLICT",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R013",
+      "case_id": "NORMAL_CONTROL_A",
+      "review_status": "synthetic test expectation, not legal certification"
+    },
+    {
+      "employee_id": "R014",
+      "case_id": "NORMAL_CONTROL_B",
+      "review_status": "synthetic test expectation, not legal certification"
+    }
+  ]
+}
