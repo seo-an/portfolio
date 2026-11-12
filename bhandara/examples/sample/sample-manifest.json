@@ -15,6 +15,7 @@
     "raw_security_events": 1201,
     "contracts": 80,
     "contract_components": 20,
-    "service_contracts_excluded": 8
+    "service_contracts_excluded": 8,
+    "service_delivery_records": 16
   }
 }
