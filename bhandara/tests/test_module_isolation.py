@@ -127,6 +127,38 @@ class ModuleIsolationTests(unittest.TestCase):
                     self.assertIn("BASE_CHECK_OK", result.stdout)
                     self.assertIn(f"Available modules: {selected}.", result.stdout)
 
+    def test_module_local_defaults_run_in_single_module_install(self):
+        """No JSON required and no imports of another calculator."""
+        samples = ROOT / "bhandara/examples/sample/input"
+        expected = {
+            "pto-calculator": ("pto-result.json", "REVIEW_REQUIRED", 1),
+            "worktime-calculator": ("worktime-result.json", "REVIEW_REQUIRED", 2),
+            "payroll-calculator": ("payroll-calculation.json", "REVIEW_REQUIRED", 2),
+        }
+        for module_id in MODULES:
+            with self.subTest(module=module_id):
+                with tempfile.TemporaryDirectory(prefix="bhandara-settings-only-") as td:
+                    root = Path(td)
+                    entry = _install_one(root, module_id)
+                    result_root = root / "output"
+                    result = _run(
+                        root, str(entry), "bhandara", module_id,
+                        "--input-dir", str(samples),
+                        "--output-dir", str(result_root),
+                    )
+                    filename, status, exit_code = expected[module_id]
+                    self.assertEqual(result.returncode, exit_code, result.stderr)
+                    payload = json.loads(
+                        (result_root / filename).read_text(encoding="utf-8")
+                    )
+                    self.assertEqual(payload["status"], status)
+                    self.assertFalse(payload["finalizable"])
+                    for other in MODULES:
+                        self.assertEqual(
+                            (root / "bhandara" / other).is_dir(),
+                            other == module_id,
+                        )
+
     def test_pto_runs_with_only_base_and_pto(self):
         with tempfile.TemporaryDirectory(prefix="bhandara-pto-only-") as tmp:
             root = Path(tmp)

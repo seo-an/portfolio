@@ -175,12 +175,13 @@ class WorktimeMigrationTests(unittest.TestCase):
             approved=False, status="REVIEW_REQUIRED", exit_code=2,
         )
 
-    def test_public_cli_missing_required_args_is_invalid(self):
+    def test_no_json_default_requires_real_excel_input(self):
         result = _run_cli([
             str(ROOT / "run.py"), "bhandara", "worktime-calculator",
         ])
         self.assertEqual(result.returncode, 2)
-        self.assertIn("WORKTIME_INVALID", result.stderr)
+        self.assertIn("WORKTIME_INPUT_INVALID", result.stderr)
+        self.assertIn("Missing required input", result.stderr)
 
 
 if __name__ == "__main__":

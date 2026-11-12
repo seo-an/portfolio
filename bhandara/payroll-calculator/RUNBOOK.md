@@ -1,5 +1,43 @@
 # 급여 계산기 사용 안내서 — 계약금액부터 기본급 산정까지
 
+
+## 내 설정 파일 하나만 수정하는 독립 실행
+
+`bhandara/payroll-calculator/user_settings.py`를 열고 문자열만 바꿉니다.
+일반 사용자는 급여 산식을 수정하거나 JSON 설정 파일을 만들지 않아도
+기본 Excel 폴더 구조로 **검토용 계산**을 실행할 수 있습니다.
+
+| 변수 | 기본값 | 입력 가능한 값 |
+|---|---|---|
+| `PERIOD` | `"2026-07"` | `"YYYY-MM"` 형식의 급여월 |
+| `EMPLOYEES_FILE` | `"common/employee.xlsx"` | 직원명부 Excel 상대 경로 |
+| `IDENTITY_FILE` | `"common/id-map.xlsx"` | 사번 대응 ID_MAP Excel 상대 경로 |
+| `CONTRACTS_FILE` | `"payroll/pay-contract.xlsx"` | 계약금액 Excel 상대 경로(있을 때 적용) |
+| `COMPENSATION_FILE` | `"payroll/compensation.xlsx"` | 기존 월 보상액 Excel 상대 경로(계약 파일이 없을 때 적용) |
+| `PAYROLL_INPUT_FILE` | `"payroll/payroll-input.xlsx"` | 월별 수당·공제 Excel 상대 경로 |
+| `COMPANY_POLICY_FILE` | `"payroll/company-policy.json"` | **회사 계산 정책을 명시한 입력 파일** 상대 경로 |
+| `WORKTIME_RESULT_FILE` | `"payroll/worktime-result.json"` | 검증 대상 Worktime 결과 상대 경로 |
+
+자료를 `bhandara/data/input/`에 놓고 프로젝트 루트에서 실행합니다.
+
+```bash
+python run.py bhandara payroll-calculator
+```
+
+필요시 `--input-dir`, `--output-dir`을 지정할 수 있습니다.
+`--config`를 명시하면 외부 전체 JSON 설정을 우선하며
+`user_settings.py`와 섞지 않습니다. `--period`를 명시하면 기존
+공통 Excel 입력 계약으로 계산합니다.
+
+**이번 1차 설정 도입 범위는 기간·파일 역할입니다.** 회사별 지급
+정책값 자체는 아직 입력 `company-policy.json`으로 전달해야 합니다.
+다음 단계에서 허용된 **정책 선택 문자열**을 검토·도입할 예정이며,
+현재 없는 지급 정책을 기본값으로 가정하지 않습니다.
+근태가 없거나 정책에 근거가 부족하면 임의 지급액을 확정할 수 없습니다.
+모든 결과는 검토용이며 승인·세금/보험 산출·원장 반영을 하지 않습니다.
+
+---
+
 **일반 사용자는 JSON 파일 경로를 편집할 필요가 없습니다.** 이 안내서는 연봉·월급·시급·일급 계약을 입력하고 월별 검토용 급여를 계산하는 방법을 설명합니다.
 
 > 실제 급여 지급·세금 신고·근태 마감·법정 수당 최종 승인을 대신하지 않습니다. 특히 시급·일급의 연장·야간·휴일 가산수당과 유급주휴는 현재 별도 검토 대상입니다.
