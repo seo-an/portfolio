@@ -118,10 +118,10 @@ class SharedLayoutFixtureTests(unittest.TestCase):
             book.close()
             result = invoke(
                 "bhandara", "worktime-calculator", "--period", "2026-06",
-                "--input-dir", root, "--output-dir", root.parent / (root.name + "-output"),
+                "--input-dir", root, "--output-dir", root / "output",
             )
             self.assertEqual(result.returncode, 2, result.stderr + result.stdout)
-            output = root.parent / (root.name + "-output") / "worktime-result.json"
+            output = root / "output" / "worktime-result.json"
             self.assertTrue(output.is_file(), result.stderr)
             reviewed = json.loads(output.read_text(encoding="utf-8"))
             self.assertEqual(reviewed["status"], "BLOCKED")
