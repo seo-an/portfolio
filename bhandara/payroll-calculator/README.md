@@ -1,5 +1,19 @@
 # 급여 계산기(Payroll Calculator) — 독립 실행 모듈 v0.1.0
 
+## 공통 Excel 고정 경로 자동 입력
+
+`bhandara/data/input/{common,payroll}`의 직원·매핑·보상·
+급여 입력 Excel을 검증해 CLI용 설정·고용 사실 파일을 자동 생성합니다.
+
+```bash
+python run.py bhandara payroll-calculator --period 2026-07
+```
+
+별도 Worktime 설치 없이 미마감 Worktime 결과 JSON을 받아
+독립 실행할 수 있습니다. 기본 인계는 현재 Worktime Excel의 해시를 확인하고,
+원본이 바뀌면 재계산을 요구합니다.
+[80명 실물 샘플](../examples/sample/input/).
+
 > **실제 사용하려는 분:** [급여 계산기 RUNBOOK](RUNBOOK.md)에 `compensation.xlsx`·`payroll-input.xlsx` 작성법, 활성 시트, 정확한 헤더, 폴더 구성 및 JSON에서 바꿀 항목을 모아 뒀습니다. [바로 수정할 수 있는 급여 설정 JSON 틀](examples/payroll-config.user-template.json)도 제공하며, **이 README는 개발자·설치 담당자용 기술·코드 계약·검증 문서**입니다.
 
 

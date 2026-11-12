@@ -1,5 +1,23 @@
 # 반다라 사용 안내서 — 처음 사용하는 사람을 위한 설명
 
+## 가장 쉬운 첫 실행
+
+[공통 80명 실물 Excel 샘플](examples/sample/input/)의 파일을
+`bhandara/data/input/` 아래 그대로 복사합니다.
+직원명부와 연결정보는 `common/`에 한 번만 두며,
+연차·근태·급여 입력은 각각 `pto/`, `worktime/`,
+`payroll/`에 분리합니다.
+
+```bash
+python run.py bhandara worktime-calculator --period 2026-06
+python run.py bhandara pto-calculator --period 2026-07
+python run.py bhandara payroll-calculator --period 2026-07
+```
+
+**일반 사용자는 JSON 경로를 수정하지 않습니다.** 아래 설명의
+수동 설정·정규화 JSON은 기존의 고급 사용자용 실행 방식입니다.
+출입 인증을 출퇴근 승인으로 추정하지 않으며 실제 급여 지급도 하지 않습니다.
+
 **대상:** 인사·총무·급여 업무를 하면서 엑셀과 파일을 다룰 수 있지만 Python이나 개발 도구에는 익숙하지 않은 사용자.
 
 이 문서는 **“무슨 파일을 만들고, 어디에 두며, 어떤 값을 바꾸고, 결과를 어디서 보는가”**를 설명합니다. 프로그램 설치, 코드 구조, 테스트 및 원본 동일성 검증은 [프로젝트 README](../README.md)와 **각 계산기의 README**에 따로 정리합니다.
@@ -11,8 +29,8 @@
 | 하고 싶은 일 | 선택할 계산기 | 내가 준비할 파일 | 자세한 사용 안내 |
 |---|---|---|---|
 | 직원별 연차 **발생 내역** 확인 | PTO(연차) | `.xlsx` 직원명부·근무표 등과 `config.json` | [연차 사용 안내](pto-calculator/RUNBOOK.md) |
-| 근태로 일별 **근무시간** 계산 | Worktime(근무시간) | `normalized-input.json`과 `worktime-config.json` | [근무시간 사용 안내](worktime-calculator/RUNBOOK.md) |
-| 직원별 **급여 계산 초안** 확인 | Payroll(급여) | `compensation.xlsx`·`payroll-input.xlsx`, 고용 사실·정책 JSON 등 | [급여 사용 안내](payroll-calculator/RUNBOOK.md) |
+| 근태로 일별 **근무시간** 계산 | Worktime(근무시간) | 공통 Excel 파일과 ID_MAP (고급: 정규화 JSON) | [근무시간 사용 안내](worktime-calculator/RUNBOOK.md) |
+| 직원별 **급여 계산 초안** 확인 | Payroll(급여) | 공통 Excel과 ID_MAP (고급: 별도 정책·JSON) | [급여 사용 안내](payroll-calculator/RUNBOOK.md) |
 
 **중요:** 계산기는 각각 독립적으로 사용할 수 있습니다. 다른 계산기까지 내려받을 필요는 없지만, 프로그램 실행에 필요한 **공통 Base** 파일은 함께 있어야 합니다. 설치를 맡기는 경우 “반다라 Base와 사용할 계산기 하나만 필요하다”고 전달하면 됩니다.
 

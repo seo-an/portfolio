@@ -1,5 +1,19 @@
 # Worktime Calculator — 독립 모듈 이전 v0.1.0
 
+## 공통 Excel 고정 경로 자동 입력
+
+`bhandara/data/input/{common,worktime}`의 Excel을 자동으로 읽어
+원본 해시·행번호가 있는 정규화 입력을 만들고 기존 계산기를 실행합니다.
+
+```bash
+python run.py bhandara worktime-calculator --period 2026-06
+```
+
+기존 `run.py calculate --normalized ... --config ...`의 소스는
+바이트 단위로 보존되었으며, Excel 어댑터는
+`shared_excel.py`에 독립적으로 추가했습니다.
+[80명 실물 샘플](../examples/sample/input/).
+
 > **실제 사용하려는 분:** [근무시간 계산기 RUNBOOK](RUNBOOK.md)에 입력 JSON의 준비 방법·직원별 필드·기간·승인 참조 설정·Excel을 직접 넣을 수 없는 한계를 설명했습니다. **이 README는 개발자·설치 담당자용 기술 및 검증 문서**입니다.
 
 

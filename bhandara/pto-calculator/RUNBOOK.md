@@ -1,5 +1,19 @@
 # 연차 계산기 사용 안내서 — 엑셀 준비부터 결과 확인까지
 
+## 간편 모드: 고정된 Excel 파일명으로 실행하기
+
+[80명 공통 샘플](../examples/sample/input/)을 `bhandara/data/input/`에
+복사하고 다음 명령을 실행하면 **경로 설정 JSON을 직접 고치지 않아도 됩니다.**
+
+```bash
+python run.py bhandara pto-calculator --period 2026-07
+```
+
+계산기는 `common/employee.xlsx`와
+`pto/work-schedule.xlsx`·`pto/work-schedule-assignment.xlsx`,
+`pto/work-records/2026/2026-07-*.xlsx`를 정해진 위치에서만 읽습니다.
+기존 설정 JSON 방식은 아래 설명대로 계속 사용할 수 있는 **고급 모드**입니다.
+
 **이 문서는 개발자가 아니어도 연차 계산기에 넣을 Excel과 설정 파일을 준비할 수 있도록 작성했습니다.** 설치·Python 실행 명령·코드·테스트 결과는 [연차 계산기 README](README.md)를 참고하세요.
 
 > **계산 범위:** 입사일을 기준으로 발생하는 연차 내역을 검토합니다. 휴가 **사용 잔액, 회계연도 기준 전환·정산, 퇴직 시 수당, 최종 승인**을 처리하는 도구는 아닙니다.

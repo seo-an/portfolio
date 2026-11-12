@@ -1,5 +1,24 @@
 # 급여 계산기 사용 안내서 — 엑셀과 설정 파일을 직접 준비하는 방법
 
+## 간편 모드: 보상·급여 Excel 직접 입력
+
+[80명 공통 샘플](../examples/sample/input/)의
+`common/employee.xlsx`, `common/id-map.xlsx`,
+`payroll/compensation.xlsx`, `payroll/payroll-input.xlsx`를
+정해진 위치에 복사하고 다음과 같이 실행합니다.
+
+```bash
+python run.py bhandara payroll-calculator --period 2026-07
+```
+
+공통 직원명부에서 입퇴사 사실을 구성하고 ID 매핑을 검증하므로
+JSON 파일 경로를 일일이 수정하지 않습니다. 샘플의
+`payroll/worktime-result.json`은 **이미 계산된 미마감 Worktime JSON**입니다.
+근태 Excel이 달라졌다면 Worktime을 재계산한 결과를
+`--worktime-result 실제경로`로 지정해야 합니다.
+
+기존 수동 설정 JSON 방식은 아래 고급 사용 안내에서 그대로 지원합니다.
+
 이 문서는 인사·총무·급여 담당자가 **어떤 파일을 준비하고, 어디에 저장하고, 무엇을 수정하며, 결과를 어떻게 확인하는지** 설명합니다. Python 설치·실행 명령·코드·테스트와 이전 이력은 [급여 계산기 README](README.md)에 따로 정리합니다.
 
 > **중요:** Payroll은 **검토용 급여 금액만 계산**합니다. 계산이 정상이어도 `REVIEW_REQUIRED`가 표시되고, **급여 지급·세금 신고·회계 확정이나 승인**을 대신하지 않습니다. 이 모듈에 포함된 2026년 정책 JSON도 현재 법령·회사 기준에 맞는지 별도로 검토해야 합니다.

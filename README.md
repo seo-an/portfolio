@@ -1,5 +1,27 @@
 # Portfolio · Bhandara(반다라)
 
+## 이제 Excel만 복사해서 실행할 수 있습니다
+
+**공개 샘플:** [가상 직원 80명의 실제 Excel](bhandara/examples/sample/input/) · [샘플 설명](bhandara/examples/sample/README.md)
+
+가장 쉬운 방법은 샘플의 `input/`을 `bhandara/data/input/`에 복사한 뒤
+계산할 **월만 지정**하는 것입니다. 세 계산기는 서로 독립적이며 공통 직원명부와
+ID 매핑을 재사용합니다.
+
+```bash
+mkdir -p bhandara/data/input
+cp -R bhandara/examples/sample/input/. bhandara/data/input/
+.venv/bin/python run.py bhandara worktime-calculator --period 2026-06
+.venv/bin/python run.py bhandara pto-calculator --period 2026-07
+.venv/bin/python run.py bhandara payroll-calculator --period 2026-07
+```
+
+입력 폴더는 `common/`, `pto/`, `worktime/`,
+`payroll/`로 구분합니다. 설정 JSON의 파일 경로 수정은
+**고급 사용자에게만 선택 사항**입니다. 기본 모드에서는 파일명이나 ID가
+맞지 않으면 오류로 알려주며 비슷한 이름을 임의 추측하지 않습니다.
+출입 인증 기록은 자동 확정 근태가 아니며 급여도 검토용입니다.
+
 > **처음 사용하는 인사·총무·급여 담당자라면:** 먼저 [쉬운 사용 안내서](bhandara/RUNBOOK.md)를 읽으세요. **Excel 파일 위치·확장자·활성 시트·1행 열 제목·JSON 설정 수정 위치**를 계산기별로 설명합니다.
 >
 > - [연차 Excel·설정 준비](bhandara/pto-calculator/RUNBOOK.md)
@@ -18,8 +40,8 @@
 | 모듈 | 하는 일 | 입력 | 결과 | 실행 상태 |
 |---|---|---|---|---|
 | [PTO Calculator](bhandara/pto-calculator/README.md) | 입사일 기준 연차 **발생 내역** 계산·검토 | 직원·근무표·근태 등의 Excel, 설정 JSON | 연차 결과·검토 JSON/XLSX·실행 기록 | 독립 실행 검증 완료 |
-| [Worktime Calculator](bhandara/worktime-calculator/README.md) | 정규화된 근무표·근태로 일별 근무시간 계산 | **이미 정규화된** `normalized-input.json`, 설정 JSON | 근무시간 결과·검토 JSON/XLSX | 독립 실행 검증 완료 |
-| [Payroll Calculator](bhandara/payroll-calculator/README.md) | 보상·월별 급여 입력·근무시간 사실값·정책으로 **검토용** 급여 계산 | 급여 설정 JSON과 그 안에 지정된 원본 파일 | 급여 계산·검토 JSON/XLSX | 독립 실행 검증 완료 |
+| [Worktime Calculator](bhandara/worktime-calculator/README.md) | 정규화된 근무표·근태로 일별 근무시간 계산 | 고정 경로 Excel 자동 입력 또는 정규화 JSON(고급) | 근무시간 결과·검토 JSON/XLSX | 독립 실행 검증 완료 |
+| [Payroll Calculator](bhandara/payroll-calculator/README.md) | 보상·월별 급여 입력·근무시간 사실값·정책으로 **검토용** 급여 계산 | 고정 경로 보상·급여 Excel 또는 설정 JSON(고급) | 급여 계산·검토 JSON/XLSX | 독립 실행 검증 완료 |
 | [공통 Base](bhandara/BASE-CONTRACT.md) | Excel 읽기·진단·해시·결과 저장·검토 계약 | 각 계산기가 호출 | 공통 함수 | **모든 계산기에 필수** |
 
 세 모듈은 서로를 직접 설치하지 않고 실행할 수 있습니다. 다만 **계산기 폴더 하나만 복사해서는 안 됩니다.** 공통 Base와 최상위 실행 파일도 함께 필요합니다. 구체적인 검증 기준은 [상호배타 검증 문서](bhandara/MODULE-ISOLATION.md)를 참고하세요.
