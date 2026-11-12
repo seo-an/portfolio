@@ -1,27 +1,36 @@
-"""Map heterogeneous tabular inputs into canonical Gearbox facts.
+"""Map explicitly declared source aliases into canonical Payroll facts.
 
-No dynamic evaluation or implicit guessing. Every source cell must be mapped
-explicitly; rejected rows and source provenance are retained separately.
+Generic CSV/XLSX/JSON reading, path validation and scalar coercion are owned
+by Bhandara Common. This module retains caller-selected field aliases,
+company-provided value maps, rejection lineage and source-specific findings.
+No implicit mapping, payroll computation, or approval is performed here.
 """
 from __future__ import annotations
 
-import csv
 import hashlib
-import json
-from datetime import date, datetime, time
-from decimal import Decimal, InvalidOperation
+from decimal import InvalidOperation
 from pathlib import Path
 from typing import Any, Mapping
 
-from openpyxl import load_workbook
+from bhandara.common.io.tabular import (
+    MISSING as _MISSING,
+    SUPPORTED_FORMATS as _SUPPORTED,
+    TabularInputError,
+    is_blank_value as _blank,
+    lookup_field as _field,
+    read_csv_rows as _read_csv,
+    read_json_rows as _read_json,
+    read_xlsx_rows as _read_xlsx,
+    resolve_source_path as _source_path,
+)
+from bhandara.common.validation.scalars import (
+    UnsupportedScalarType,
+    convert_scalar,
+)
 
 
 class SourceMappingError(ValueError):
     pass
-
-
-_MISSING = object()
-_SUPPORTED = {"csv", "json", "xlsx"}
 
 
 def _issue(code: str, source: str, message: str, *,
@@ -33,129 +42,16 @@ def _issue(code: str, source: str, message: str, *,
     }
 
 
-def _field(row: Mapping[str, Any], path: str) -> Any:
-    # Exact matching takes precedence: spreadsheet headers can contain dots.
-    if path in row:
-        return row[path]
-    current: Any = row
-    for part in path.split("."):
-        if isinstance(current, Mapping):
-            if part not in current:
-                return _MISSING
-            current = current[part]
-        elif isinstance(current, list) and part.isdigit():
-            index = int(part)
-            if index >= len(current):
-                return _MISSING
-            current = current[index]
-        else:
-            return _MISSING
-    return current
-
-
-def _blank(value: Any) -> bool:
-    return value is _MISSING or value is None or (
-        isinstance(value, str) and not value.strip()
-    )
-
-
-def _column_names(values: list[Any]) -> list[str]:
-    names = [str(item).strip() if item is not None else "" for item in values]
-    if not names or any(not name for name in names) or len(set(names)) != len(names):
-        raise SourceMappingError("source headers must be unique and non-empty")
-    return names
-
-
-def _read_csv(path: Path, spec: Mapping[str, Any]) -> list[tuple[int, dict[str, Any]]]:
-    encoding = str(spec.get("encoding", "utf-8-sig"))
-    delimiter = str(spec.get("delimiter", ","))
-    if len(delimiter) != 1:
-        raise SourceMappingError("CSV delimiter must be a single character")
-    with path.open("r", encoding=encoding, newline="") as handle:
-        reader = csv.reader(handle, delimiter=delimiter)
-        try:
-            columns = _column_names(next(reader))
-        except StopIteration as exc:
-            raise SourceMappingError("CSV source is empty") from exc
-        rows = []
-        previous_end_line = reader.line_num
-        for values in reader:
-            # CSV reader line numbers track physical lines, including skipped
-            # blank lines and multi-line quoted cells.
-            number = previous_end_line + 1
-            previous_end_line = reader.line_num
-            # A physical blank CSV line has no cells and can be ignored.
-            # A represented record such as '""' or ',,' still exists and
-            # must be validated: dropping it hides missing required fields.
-            if not values:
-                continue
-            if len(values) != len(columns):
-                raise SourceMappingError(f"CSV row {number}: column count mismatch")
-            rows.append((number, dict(zip(columns, values))))
-        return rows
-
-
-def _read_xlsx(path: Path, spec: Mapping[str, Any]) -> list[tuple[int, dict[str, Any]]]:
-    header_row = spec.get("header_row", 1)
-    if type(header_row) is not int or header_row < 1:
-        raise SourceMappingError("header_row must be a positive integer")
-    workbook = load_workbook(path, read_only=True, data_only=True)
-    try:
-        sheet_name = spec.get("sheet")
-        if sheet_name is not None and sheet_name not in workbook.sheetnames:
-            raise SourceMappingError(f"worksheet not found: {sheet_name}")
-        sheet = workbook[sheet_name] if sheet_name is not None else workbook.active
-        iterator = sheet.iter_rows(min_row=header_row, values_only=True)
-        try:
-            columns = _column_names(list(next(iterator)))
-        except StopIteration as exc:
-            raise SourceMappingError("XLSX source has no header row") from exc
-        result = []
-        for number, values in enumerate(iterator, start=header_row + 1):
-            if all(_blank(value) for value in values):
-                continue
-            if any(not _blank(value) for value in values[len(columns):]):
-                raise SourceMappingError(f"XLSX row {number}: unexpected extra columns")
-            result.append((number, dict(zip(columns, values))))
-        return result
-    finally:
-        workbook.close()
-
-
-def _read_json(path: Path, spec: Mapping[str, Any]) -> list[tuple[int, dict[str, Any]]]:
-    with path.open("r", encoding=str(spec.get("encoding", "utf-8"))) as handle:
-        value = json.load(handle)
-    records_path = spec.get("records_path")
-    if records_path:
-        value = _field(value, str(records_path)) if isinstance(value, Mapping) else _MISSING
-    if not isinstance(value, list):
-        raise SourceMappingError("JSON rows must be a list or records_path must select a list")
-    rows = []
-    for number, row in enumerate(value, start=1):
-        if not isinstance(row, Mapping):
-            raise SourceMappingError(f"JSON row {number}: object required")
-        rows.append((number, dict(row)))
-    return rows
-
-
-def _source_path(root: Path, name: Any) -> Path:
-    if not isinstance(name, str) or not name.strip():
-        raise SourceMappingError("source.path is required")
-    target = (root / name).resolve()
-    if not target.is_relative_to(root.resolve()):
-        raise SourceMappingError("source path must stay within input directory")
-    if not target.is_file():
-        raise SourceMappingError(f"source file not found: {name}")
-    return target
-
-
 def _read_rows(root: Path, source: str, spec: Mapping[str, Any]):
-    path = _source_path(root, spec.get("path"))
-    fmt = str(spec.get("format", path.suffix.lstrip("."))).lower()
-    if fmt not in _SUPPORTED:
-        raise SourceMappingError(f"{source}: unsupported source format {fmt}")
-    readers = {"csv": _read_csv, "json": _read_json, "xlsx": _read_xlsx}
-    return path, readers[fmt](path, spec)
+    try:
+        path = _source_path(root, spec.get("path"))
+        fmt = str(spec.get("format", path.suffix.lstrip("."))).lower()
+        if fmt not in _SUPPORTED:
+            raise SourceMappingError(f"{source}: unsupported source format {fmt}")
+        readers = {"csv": _read_csv, "json": _read_json, "xlsx": _read_xlsx}
+        return path, readers[fmt](path, spec)
+    except TabularInputError as exc:
+        raise SourceMappingError(str(exc)) from exc
 
 
 def _sources(field_spec: Any) -> tuple[list[str], dict[str, Any]]:
@@ -174,6 +70,8 @@ def _sources(field_spec: Any) -> tuple[list[str], dict[str, Any]]:
 
 
 def _convert(value: Any, options: Mapping[str, Any]) -> Any:
+    # Business value meaning is explicitly supplied by this source's mapping,
+    # never guessed by the generic Bhandara scalar converter.
     value_map = options.get("value_map")
     if value_map is not None:
         if not isinstance(value_map, Mapping):
@@ -184,56 +82,10 @@ def _convert(value: Any, options: Mapping[str, Any]) -> Any:
         value = value_map[key]
     kind = str(options.get("type", "str")).lower()
     fmt = options.get("format")
-    if kind == "str":
-        return str(value).strip()
-    if kind == "date":
-        if isinstance(value, datetime):
-            return value.date().isoformat()
-        if isinstance(value, date):
-            return value.isoformat()
-        parsed = datetime.strptime(str(value).strip(), fmt).date() if fmt else date.fromisoformat(str(value).strip())
-        return parsed.isoformat()
-    if kind == "time":
-        if isinstance(value, datetime):
-            parsed = value.timetz()
-        elif isinstance(value, time):
-            parsed = value
-        else:
-            parsed = datetime.strptime(str(value).strip(), fmt).time() if fmt else time.fromisoformat(str(value).strip())
-        if parsed.second or parsed.microsecond or parsed.tzinfo is not None:
-            raise ValueError("clock time must have naive minute precision")
-        return parsed.isoformat(timespec="minutes")
-    if kind == "datetime":
-        parsed = value if isinstance(value, datetime) else (
-            datetime.strptime(str(value).strip(), fmt) if fmt else datetime.fromisoformat(str(value).strip())
-        )
-        if parsed.second or parsed.microsecond:
-            raise ValueError("datetime must have minute precision")
-        return parsed.isoformat(timespec="minutes")
-    if kind == "decimal":
-        if isinstance(value, bool):
-            raise ValueError("boolean is not a decimal")
-        number = Decimal(str(value).strip().replace(",", ""))
-        if not number.is_finite():
-            raise ValueError("non-finite decimal")
-        return format(number, "f")
-    if kind == "int":
-        if isinstance(value, bool):
-            raise ValueError("boolean is not an integer")
-        number = Decimal(str(value).strip().replace(",", ""))
-        if not number.is_finite() or number != number.to_integral_value():
-            raise ValueError("integer required")
-        return int(number)
-    if kind == "bool":
-        if isinstance(value, bool):
-            return value
-        text = str(value).strip().lower()
-        if text in ("true", "1", "yes", "y"):
-            return True
-        if text in ("false", "0", "no", "n"):
-            return False
-        raise ValueError("boolean mapping requires explicit value_map or true/false")
-    raise SourceMappingError(f"unsupported field type: {kind}")
+    try:
+        return convert_scalar(value, kind=kind, fmt=fmt)
+    except UnsupportedScalarType as exc:
+        raise SourceMappingError(str(exc)) from exc
 
 
 def _normalize_row(source: str, number: int, row: Mapping[str, Any],

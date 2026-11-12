@@ -143,6 +143,18 @@ class PayrollMigrationTests(unittest.TestCase):
         self.assertEqual(len(manifest["resources"]), 5)
         changes = manifest["adaptations"]
         self.assertEqual(len(changes), 10)
+        # The initial migration manifest is an immutable historic snapshot.
+        # Only separately declared, reviewed post-migration extractions may
+        # change the original Git blob contents.
+        refactors = json.loads(
+            (MODULE / "post-migration-refactors.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(refactors["schema_version"], "1.0")
+        self.assertEqual(refactors["historical_manifest"], "migration-manifest.json")
+        declared = {item["destination"]: item for item in refactors["refactors"]}
+        self.assertEqual(set(declared), {
+            "bhandara/payroll-calculator/functions/source_mapping.py"
+        })
         adapted_paths = set()
         for entry in manifest["files"]:
             with self.subTest(path=entry["destination"]):
@@ -157,8 +169,19 @@ class PayrollMigrationTests(unittest.TestCase):
                         self.assertEqual(restored.count(relocated), 1)
                         restored = restored.replace(relocated, original)
                     data = restored.encode("utf-8")
-                self.assertEqual(_blob_hash(data),
-                                 entry["source_git_blob_sha"])
+                if entry["destination"] in declared:
+                    item = declared[entry["destination"]]
+                    self.assertEqual(item["original_source_git_blob_sha"],
+                                     entry["source_git_blob_sha"])
+                    # A refactor changes its source SHA only by an explicitly
+                    # reviewed new Git blob; all other 84 files still match
+                    # the original (or reversible imports/path patches).
+                    self.assertNotEqual(item["current_git_blob_sha"],
+                                        item["original_source_git_blob_sha"])
+                    self.assertEqual(_blob_hash(data), item["current_git_blob_sha"])
+                else:
+                    self.assertEqual(_blob_hash(data),
+                                     entry["source_git_blob_sha"])
         self.assertEqual(adapted_paths, set(changes))
         for entry in manifest["resources"]:
             with self.subTest(resource=entry["destination"]):

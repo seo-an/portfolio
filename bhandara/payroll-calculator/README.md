@@ -1,4 +1,4 @@
-# 급여 계산기(Payroll Calculator) — 독립 실행 모듈 v0.3.0
+# 급여 계산기(Payroll Calculator) — 독립 실행 모듈 v0.3.1
 
 ## 공통 Excel 고정 경로 자동 입력
 
@@ -118,6 +118,22 @@ GitHub ZIP을 내려받아 필요한 파일만 옮겨도 되지만 위 트리의
 
 **구분할 점:** Payroll의 원본 정규화 기능이 포함되어 있다고 해서 Worktime의 원본 Excel 직접 입력 기능이 생긴 것은 아니다. Worktime은 여전히 별도로 정규화한 `normalized-input.json`을 받는다.
 
+### 범용 입력 변환 기능의 Common 분리
+
+2026-11-12 이후 공개 계산기의 정규화 처리는 다음처럼 역할을 구분합니다.
+
+| 위치 | 담당 기능 |
+|---|---|
+| `bhandara/common/io/tabular.py` | CSV·XLSX·JSON 읽기, 일반 헤더 구조 검사, 상대 입력 경로 범위 제한, 물리적 행번호 보존 |
+| `bhandara/common/validation/scalars.py` | 날짜·시간·정수·소수·불리언 등 범용 값 변환 |
+| `bhandara/payroll-calculator/functions/source_mapping.py` | 명시적 필드 별칭과 `value_map` 적용, 데이터 누락·중복 검토, 원본 행번호·SHA·거절 사유 연결 |
+| Gearbox의 회사별 Adapter/설정 | 어떤 원본 컬럼·코드에 어떤 의미를 부여할지 결정, 외부 인증·가명화·운영 승인 |
+
+**공통 입력 변환기는 특정 회사나 급여항목 이름을 알지 못합니다.** Payroll을 독립 설치한 경우에는 기존처럼 `manifest.json`에 원하는 매핑 규칙을 직접 지정합니다. Gearbox가 입력을 전달할 때는 Gearbox 측 규칙으로 선택한 매핑 계약을 사용합니다.
+
+이 변경은 **CSV/XLSX/JSON의 원래 읽기 방식과 Payroll 정규화 CLI의 결과 계약을 유지하기 위한 코드 분리**입니다. 다른 계산기로의 자동 전환, 지급액 확정, 오류 무시 기능은 추가하지 않습니다. 최초 Gearbox 소스 이관의 SHA 기록은 `migration-manifest.json`에 남기고, 이후 변경한 정규화 파일은 `post-migration-refactors.json`으로 별도 추적합니다.
+
+---
 ## 4. 실제 입력 파일과 설정
 
 계산 모드에서는 `payroll-config.json`(`schema_version: "0.1"`)에 **모든 자료 경로를 명시**한다. [기존 설정 양식](examples/payroll-standalone-config.example.json)은 필드 계약 참고용으로, 배포 서버의 오래된 `gearbox/` 경로 대신 현재 실제 파일 경로를 입력해야 한다.

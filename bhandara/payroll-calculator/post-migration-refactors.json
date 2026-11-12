@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "historical_manifest": "migration-manifest.json",
+  "purpose": "Record intentional, behavior-preserving extraction after the original source migration. Historical migration SHA is retained unchanged.",
+  "refactors": [
+    {
+      "destination": "bhandara/payroll-calculator/functions/source_mapping.py",
+      "original_source_git_blob_sha": "62ed9c22f9887322c4faac61d11735507ea25f5e",
+      "current_git_blob_sha": "0a0ded02873b1e7b2fb6c83bddc5856e5e6e2321",
+      "reason": "Move generic tabular readers, path validation, field lookups and primitive coercion into Bhandara Common; preserve source aliases, explicit value_map, rejects, issues and lineage in Payroll mapping module.",
+      "new_common_modules": [
+        "bhandara/common/io/tabular.py",
+        "bhandara/common/validation/scalars.py"
+      ],
+      "compatibility_gate": [
+        "bhandara/tests/test_common_tabular_normalization.py",
+        "bhandara/tests/test_payroll_migration.py",
+        "bhandara/tests/test_module_isolation.py"
+      ]
+    }
+  ]
+}

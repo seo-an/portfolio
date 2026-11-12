@@ -1,0 +1,36 @@
+name: Bhandara Common tabular normalization (unittest)
+
+on:
+  pull_request:
+    paths:
+      - "bhandara/common/io/tabular.py"
+      - "bhandara/common/validation/scalars.py"
+      - "bhandara/payroll-calculator/functions/source_mapping.py"
+      - "bhandara/payroll-calculator/post-migration-refactors.json"
+      - "bhandara/tests/test_common_tabular_normalization.py"
+      - "bhandara/tests/test_payroll_migration.py"
+      - ".github/workflows/bhandara-common-tabular-unittest.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tabular-normalization:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install pinned public dependencies
+        run: python -m pip install openpyxl==3.1.5 korean-lunar-calendar==0.4.0
+      - name: Generic Common input and Payroll source mapping
+        run: python -m unittest discover -s bhandara/tests -p "test_common_tabular_normalization.py" -v
+      - name: Historic migration provenance and explicit post-migration refactor SHA
+        run: python -m unittest discover -s bhandara/tests -p "test_payroll_migration.py" -v
+      - name: Base with only the requested calculator
+        run: python -m unittest discover -s bhandara/tests -p "test_module_isolation.py" -v
+      - name: Entire public Bhandara regression suite
+        run: python -m unittest discover -s bhandara/tests -p "test_*.py" -v
