@@ -249,11 +249,12 @@ class PayrollMigrationTests(unittest.TestCase):
                         json.loads((root / "portfolio" / filename).read_text()),
                     )
 
-    def test_missing_payroll_args_are_blocked(self):
+    def test_no_json_default_requires_real_excel_input(self):
         out = _run(str(ROOT / "run.py"), "bhandara", "payroll-calculator",
                    cwd=ROOT)
         self.assertEqual(out.returncode, 2)
-        self.assertIn("PAYROLL_INVALID", out.stderr)
+        self.assertIn("PAYROLL_INPUT_INVALID", out.stderr)
+        self.assertIn("Missing required input", out.stderr)
 
 
 if __name__ == "__main__":
