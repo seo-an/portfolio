@@ -11,7 +11,7 @@ import json
 from pathlib import Path
 from typing import Any, Mapping
 
-from openpyxl import load_workbook
+from .xlsx_stream import XlsxStreamError, open_xlsx_rows
 
 
 class TabularInputError(ValueError):
@@ -100,28 +100,25 @@ def read_xlsx_rows(path: Path, spec: Mapping[str, Any]) -> list[tuple[int, dict[
     header_row = spec.get("header_row", 1)
     if type(header_row) is not int or header_row < 1:
         raise TabularInputError("header_row must be a positive integer")
-    workbook = load_workbook(path, read_only=True, data_only=True)
     try:
-        sheet_name = spec.get("sheet")
-        if sheet_name is not None and sheet_name not in workbook.sheetnames:
-            raise TabularInputError(f"worksheet not found: {sheet_name}")
-        sheet = workbook[sheet_name] if sheet_name is not None else workbook.active
-        iterator = sheet.iter_rows(min_row=header_row, values_only=True)
-        try:
-            columns = column_names(list(next(iterator)))
-        except StopIteration as exc:
-            raise TabularInputError("XLSX source has no header row") from exc
-        rows: list[tuple[int, dict[str, Any]]] = []
-        for number, values in enumerate(iterator, start=header_row + 1):
-            if all(is_blank_value(value) for value in values):
-                continue
-            if any(not is_blank_value(value) for value in values[len(columns):]):
-                raise TabularInputError(f"XLSX row {number}: unexpected extra columns")
-            rows.append((number, dict(zip(columns, values))))
-        return rows
-    finally:
-        workbook.close()
-
+        # Retain the original data_only=True contract for Payroll source mapping.
+        # Other consumers can reject formulas by using data_only=False instead.
+        with open_xlsx_rows(
+            path, sheet_name=spec.get("sheet"), header_row=header_row,
+            data_only=True,
+        ) as opened:
+            columns = column_names([cell.value for cell in opened.header_cells])
+            rows: list[tuple[int, dict[str, Any]]] = []
+            for number, cells in enumerate(opened.rows, start=header_row + 1):
+                values = [cell.value for cell in cells]
+                if all(is_blank_value(value) for value in values):
+                    continue
+                if any(not is_blank_value(value) for value in values[len(columns):]):
+                    raise TabularInputError(f"XLSX row {number}: unexpected extra columns")
+                rows.append((number, dict(zip(columns, values))))
+            return rows
+    except XlsxStreamError as exc:
+        raise TabularInputError(str(exc)) from exc
 
 def read_json_rows(path: Path, spec: Mapping[str, Any]) -> list[tuple[int, dict[str, Any]]]:
     """Select optional records_path; reject non-object array elements."""
