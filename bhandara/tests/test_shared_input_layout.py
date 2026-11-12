@@ -16,7 +16,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from bhandara.common.io.input_layout import (
-    InputLayoutError, choose_path, period_bounds, read_id_map,
+    InputLayoutError, choose_path, next_result_dir, period_bounds, read_id_map,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -75,6 +75,17 @@ class SharedLayoutFixtureTests(unittest.TestCase):
             with self.subTest(period=bad):
                 with self.assertRaises(InputLayoutError):
                     period_bounds(bad)
+
+    def test_default_output_never_overwrites_prior_result(self):
+        with tempfile.TemporaryDirectory() as dirname:
+            root = Path(dirname) / "input"
+            root.mkdir()
+            first = next_result_dir(root, "worktime-calculator")
+            self.assertEqual(first.name, "worktime-calculator")
+            first.mkdir(parents=True)
+            other = next_result_dir(root, "worktime-calculator")
+            self.assertEqual(other.name, "worktime-calculator-001")
+            self.assertFalse(other.exists())
 
     def test_conflicting_id_map_fails_before_calculation(self):
         with tempfile.TemporaryDirectory(prefix="bhandara-mapping-") as dirname:
