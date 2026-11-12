@@ -19,7 +19,8 @@ bhandara/data/input/
     ├── payroll-input.xlsx           성과급·월별 조정 (필수)
     ├── company-policy.json          회사별 계산 정책 (필수)
     ├── worktime-result.json         Worktime 계산결과 (필수)
-    └── service-contracts.xlsx       별도 용역계약 (선택)
+    ├── service-contracts.xlsx       별도 용역계약 (선택)
+    └── service-work-records.xlsx    용역 제공 시간·일수 (선택)
 ```
 
 기본 입력은 `pay-contract.xlsx`입니다. 예전의 `compensation.xlsx`는
