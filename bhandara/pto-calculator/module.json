@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "module_id": "pto-calculator",
-  "module_version": "0.1.0",
+  "module_version": "0.1.1",
   "status": "review_only",
   "requires_base": "0.1",
   "python": ">=3.12",
@@ -139,6 +139,9 @@
         "employee_id",
         "event_date",
         "event_type"
+      ],
+      "optional_headers": [
+        "reduced_hours"
       ]
     }
   ],

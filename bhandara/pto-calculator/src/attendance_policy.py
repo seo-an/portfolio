@@ -43,6 +43,16 @@ def resolve_event_attendance_policy(event: dict[str, Any]) -> dict[str, Any]:
     event_type = normalize_event_type(raw_event_type)
     status = str(event.get("status") or "").upper()
 
+    # Explicit verified absence; missing clock records are NOT absence.
+    if event_type == "CONFIRMED_ABSENCE" and status == "CONFIRMED":
+        return {
+            "denominator": DENOMINATOR_INCLUDED,
+            "credit": CREDIT_NOT_PRESENT,
+            "basis_type": BASIS_OBSERVED_ATTENDANCE,
+            "reason": "CONFIRMED_ABSENCE",
+            "requires_review": False,
+        }
+
     if status != "APPROVED":
         return {
             "denominator": DENOMINATOR_REVIEW,
@@ -115,6 +125,17 @@ def resolve_daily_attendance_policy(
 
     if event is not None:
         event_policy = resolve_event_attendance_policy(event)
+        if (
+            event_policy["reason"] == "CONFIRMED_ABSENCE"
+            and attendance_status == "PRESENT"
+        ):
+            return {
+                "denominator": DENOMINATOR_INCLUDED,
+                "credit": CREDIT_REVIEW,
+                "basis_type": BASIS_REVIEW,
+                "reason": "ATTENDANCE_CONFLICTS_WITH_ABSENCE",
+                "requires_review": True,
+            }
         if not event_policy["requires_review"]:
             return event_policy
 

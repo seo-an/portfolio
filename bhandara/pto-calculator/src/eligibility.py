@@ -29,16 +29,35 @@ def records_for_period(
     ]
 
 
+def has_complete_calendar_coverage(
+    daily_records: Iterable[dict],
+    period_start: date,
+    period_end: date,
+) -> bool:
+    """Reject absent or duplicated daily facts, including all-nonworkday periods."""
+    records = list(daily_records)
+    days = [row.get("work_date") for row in records]
+    expected = (period_end - period_start).days + 1
+    return (
+        expected > 0
+        and len(days) == expected
+        and len(set(days)) == expected
+        and all(isinstance(day, date) and period_start <= day <= period_end
+                for day in days)
+    )
+
+
 def evaluate_monthly_full_attendance(
     daily_records: Iterable[dict],
     period_start: date,
     period_end: date,
 ) -> str:
     """Return ELIGIBLE, NOT_ELIGIBLE, or UNDETERMINED for one month."""
-    summary = aggregate_attendance_period(
-        records_for_period(daily_records, period_start, period_end)
-    )
-    if summary["status"] != FINAL:
+    records = records_for_period(daily_records, period_start, period_end)
+    if not has_complete_calendar_coverage(records, period_start, period_end):
+        return UNDETERMINED
+    summary = aggregate_attendance_period(records)
+    if summary["status"] != FINAL or summary["denominator_included_days"] == 0:
         return UNDETERMINED
     return ELIGIBLE if summary["not_present_days"] == 0 else NOT_ELIGIBLE
 
@@ -49,9 +68,10 @@ def evaluate_annual_attendance_80(
     period_end: date,
 ) -> str:
     """Return ELIGIBLE, NOT_ELIGIBLE, or UNDETERMINED for annual attendance."""
-    summary = aggregate_attendance_period(
-        records_for_period(daily_records, period_start, period_end)
-    )
+    records = records_for_period(daily_records, period_start, period_end)
+    if not has_complete_calendar_coverage(records, period_start, period_end):
+        return UNDETERMINED
+    summary = aggregate_attendance_period(records)
     if summary["status"] != FINAL or summary["attendance_rate"] is None:
         return UNDETERMINED
     return (

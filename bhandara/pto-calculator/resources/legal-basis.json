@@ -1,0 +1,51 @@
+{
+  "schema_version": "1.0",
+  "basis_id": "KR-LSA-PTO",
+  "basis_version": "2026-11-11-review-01",
+  "reviewed_at": "2026-11-11",
+  "jurisdiction": "Republic of Korea",
+  "status": "review_only",
+  "statute_edition": {
+    "title": "근로기준법",
+    "law_number": "21533",
+    "promulgated_at": "2026-04-07",
+    "effective_from": "2026-10-08",
+    "article": "제60조",
+    "paragraph_2_amended_at": "2012-02-01",
+    "note": "These dates identify the checked statute edition. Historic periods require their applicable edition; this registry does not certify every past interval.",
+    "source_url": "https://law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1012792285"
+  },
+  "interpretations": [
+    {
+      "id": "MOLEG-24-0114",
+      "issued_at": "2024-06-03",
+      "topic": "Under-80-percent service year: fully attended months generate leave",
+      "source_url": "https://law.go.kr/expcInfoP.do?expcSeq=338795"
+    },
+    {
+      "id": "MOLEG-24-0674",
+      "issued_at": "2024-11-04",
+      "topic": "Under-80-percent service year: leave provided in following year",
+      "source_url": "https://www.law.go.kr/expcInfoP.do?expcSeq=340221"
+    },
+    {
+      "id": "MOEL-1350-2026-09-29",
+      "issued_at": "2026-09-29",
+      "topic": "Monthly paid leave arises the day following a fully completed month while employment continues",
+      "source_url": "https://1350.moel.go.kr/rtmview.do?id=1000320464"
+    }
+  ],
+  "implementation_scope": [
+    "Hire-date anniversary-based grant review only",
+    "Missing daily source coverage and unresolved attendance block final eligibility",
+    "Employment must continue through grant date",
+    "Under-80 attendance: monthly fallback for completed service year with anti-double-counting",
+    "Under-15-hour and establishment-size eligibility are NOT automatically determined without employer inputs",
+    "Policy-dependent employer leave and historical exceptions require human review"
+  ],
+  "historical_policy_note": "This is an indexed reference, not a legal truth table. Human reviewers must check law in force on the calculation dates.",
+  "finalization": {
+    "approved": false,
+    "finalizable": false
+  }
+}

@@ -37,7 +37,7 @@ def calculate_employee(employee: dict, inputs: dict, *, start_date: date, end_da
 
     accrual = calculate_anniversary_accrual(
         hire_date=employee["hire_date"],
-        as_of_date=end_date,
+        as_of_date=effective_end,
         daily_records=daily_records,
     )
     return {

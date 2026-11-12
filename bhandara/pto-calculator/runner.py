@@ -18,9 +18,23 @@ from .src.input_adapter import PTOInputError, load_pto_inputs
 
 
 MODULE_ID = "pto-calculator"
-MODULE_VERSION = "0.1.0"
+MODULE_VERSION = "0.1.1"
 MODULE_DIR = Path(__file__).resolve().parent
 LOCAL_DATA_DIR = MODULE_DIR.parent / "data" / MODULE_ID
+LEGAL_BASIS_FILE = MODULE_DIR / "resources" / "legal-basis.json"
+
+
+def legal_basis_reference() -> dict[str, str]:
+    """Bind every result to the reviewed sources without claiming legal finality."""
+    with LEGAL_BASIS_FILE.open("r", encoding="utf-8") as stream:
+        source = json.load(stream)
+    return {
+        "basis_id": source["basis_id"],
+        "basis_version": source["basis_version"],
+        "reviewed_at": source["reviewed_at"],
+        "source_sha256": sha256_file(LEGAL_BASIS_FILE),
+        "status": "review_only",
+    }
 
 
 class PTORunError(ValueError):
@@ -95,6 +109,8 @@ def make_workbook(payload: dict[str, Any], findings: list[Finding]) -> bytes:
         _append_rows(sheet, ("field", "value"), [
             {"field": "Module", "value": MODULE_ID},
             {"field": "Status", "value": payload["status"]},
+            {"field": "Legal basis version", "value": payload["legal_basis"]["basis_version"]},
+            {"field": "Legal basis checked at", "value": payload["legal_basis"]["reviewed_at"]},
             {"field": "Period start", "value": payload["period"]["from"]},
             {"field": "Period end", "value": payload["period"]["to"]},
             {"field": "Calculated employees", "value": len(payload["results"])},
@@ -214,6 +230,7 @@ def run_pto(*, config_path: Path, input_dir: Path,
         "module_id": MODULE_ID,
         "module_version": MODULE_VERSION,
         "legacy_engine_source_commit": "296f909dd84bbdb6196be84568bd0e60775c7dbd",
+        "legal_basis": legal_basis_reference(),
         "period": {"from": start.isoformat(), "to": end.isoformat()},
         "status": status.value,
         "finalizable": False,
@@ -234,7 +251,11 @@ def run_pto(*, config_path: Path, input_dir: Path,
     for label, file_path in bundle.sources.items():
         if sha256_file(file_path) != bundle.source_hashes[label]:
             raise PTORunError("source file changed during PTO calculation")
-    input_files = {"config": config_path, **bundle.sources}
+    input_files = {
+        "config": config_path,
+        "legal_basis": LEGAL_BASIS_FILE,
+        **bundle.sources,
+    }
     names = ("pto-result.json", "pto-review.json", "pto-result.xlsx", "pto-run.json")
     with ArtifactBatch(output_dir, names) as batch:
         batch.write_json("pto-result.json", payload)
