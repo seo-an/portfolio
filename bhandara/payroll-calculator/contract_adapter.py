@@ -254,7 +254,16 @@ def build_contract_compensation(
 
     contract_path = role(root, "payroll", "contracts", overrides)
     component_path = role(root, "payroll", "contract_components", overrides)
-    service_path = role(root, "payroll", "service_contracts", overrides)
+    # A company with no service contractors must not need a dummy workbook.
+    service_override = (
+        (overrides or {}).get("payroll", {}).get("service_contracts")
+    )
+    optional_service_file = root / "payroll/service-contracts.xlsx"
+    service_path = (
+        role(root, "payroll", "service_contracts", overrides)
+        if service_override is not None or optional_service_file.is_file()
+        else None
+    )
     contracts, _ = _load_employee_contracts(contract_path, identities, period)
     contract_map = {x["contract_id"]: x for x in contracts}
     components = _load_components(component_path, contract_map)
@@ -268,7 +277,7 @@ def build_contract_compensation(
     source_hashes = {
         "pay_contract": hash_file(contract_path),
         "contract_components": hash_file(component_path),
-        "service_contracts": hash_file(service_path),
+        "service_contracts": hash_file(service_path) if service_path else "NO_SERVICES",
         "worktime_result": hash_file(worktime_path),
     }
     fingerprint = hashlib.sha256(
@@ -280,7 +289,6 @@ def build_contract_compensation(
     handoff_path = generated_dir / f"contract-worktime-salary-{period}-{fingerprint}.json"
     review_path = generated_dir / f"contract-basis-review-{period}-{fingerprint}.json"
 
-    employee_by_worker = {x["worker_id"]: x for x in identities.values()}
     results = []
     source_comp = []
     time_workers = set()
@@ -487,6 +495,7 @@ def export_review_workbook(review_path: Path, destination: Path) -> None:
                 contract.get("ordinary_hours"),
                 contract.get("qualified_days"),
                 json.dumps(contract.get("included_fixed_allowances", {}), ensure_ascii=False),
+                contract.get("calculation"),
                 ", ".join(employee["review_codes"]),
             ])
     work = Workbook()
@@ -497,7 +506,7 @@ def export_review_workbook(review_path: Path, destination: Path) -> None:
             "employee_id", "worker_id", "contract_id", "pay_basis",
             "contract_amount", "monthly_gross", "calculated_base_salary",
             "ordinary_hours", "qualified_days", "included_allowances",
-            "review_codes",
+            "calculation_rule", "review_codes",
         ])
         for row in employee_rows:
             first.append(row)
