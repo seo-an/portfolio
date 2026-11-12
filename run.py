@@ -63,10 +63,17 @@ def main(argv: list[str] | None = None) -> int:
             from pathlib import Path
             import json
             from bhandara.common.io.input_layout import (
-                DEFAULT_INPUT_ROOT, InputLayoutError, period_bounds,
+                DEFAULT_INPUT_ROOT, InputLayoutError, ROLE_PATHS, period_bounds,
             )
             try:
                 period_bounds(args.period)
+                if args.config or args.normalized or args.manifest:
+                    raise InputLayoutError(
+                        "--period cannot be combined with legacy --config, "
+                        "--normalized or --manifest; use one input mode"
+                    )
+                if args.operation == "normalize":
+                    raise InputLayoutError("Payroll normalize uses --input-dir without --period")
                 shared_root = Path(args.input_dir).resolve() if args.input_dir else DEFAULT_INPUT_ROOT
                 if args.paths_config:
                     with open(args.paths_config, encoding="utf-8") as stream:
@@ -74,6 +81,14 @@ def main(argv: list[str] | None = None) -> int:
                     if not isinstance(data, dict) or not isinstance(data.get("files"), dict):
                         raise InputLayoutError("paths config requires {files: {module: {role: path}}}")
                     overrides = data["files"]
+                    for section, values in overrides.items():
+                        if section not in ROLE_PATHS or not isinstance(values, dict):
+                            raise InputLayoutError(f"unknown input override section: {section}")
+                        for key, filename in values.items():
+                            if key not in ROLE_PATHS[section] or not isinstance(filename, str):
+                                raise InputLayoutError(
+                                    f"unknown input role or invalid path: {section}.{key}"
+                                )
             except (InputLayoutError, OSError, ValueError, TypeError) as exc:
                 print(f"INPUT_INVALID: {exc}", file=sys.stderr)
                 return 2
