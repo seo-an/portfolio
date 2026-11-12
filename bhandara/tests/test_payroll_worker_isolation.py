@@ -131,6 +131,7 @@ class PublicPayrollWorkerIsolationTests(unittest.TestCase):
         isolate = importlib.import_module("bhandara.payroll-calculator.isolation_cli")
         expected = object()
         with patch.object(isolate, "load_standalone_inputs", return_value={}), \
+             patch.object(isolate, "validate_roster_sources"), \
              patch.object(isolate, "run_standalone_payroll", return_value=expected), \
              patch.object(isolate, "recover_employee_payroll") as retry:
             result = isolate._calculate_with_optional_recovery(
