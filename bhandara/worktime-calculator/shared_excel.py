@@ -85,8 +85,9 @@ def _schedule_source(input_root: Path, identities: Mapping, overrides: Mapping |
             "break_min": x["break_min"] or 0,
             "scheduled_work_hours": x.get("scheduled_work_hours"),
         })
-    _unique([{"_row_number": x["_row_number"], **item}
-             for x, item in zip(rows, output)], "schedule", ("employee_id", "work_date"))
+    # Preserve duplicated employee/date rows as evidence. The existing
+    # Worktime batch engine flags only the conflicting day and continues
+    # computing independent employee/days instead of blocking the whole file.
     return _source("schedule", path, rows, output)
 
 
@@ -108,8 +109,8 @@ def _attendance_source(input_root: Path, identities: Mapping, overrides: Mapping
             "break_min": x["break_min"] or 0,
             "source": str(x.get("source") or "").strip(),
         })
-    _unique([{"_row_number": x["_row_number"], **item}
-             for x, item in zip(rows, output)], "attendance", ("employee_id", "work_date"))
+    # Duplicate attendance is not silently dropped or globally rejected;
+    # the existing per-day engine records both row sources for review.
     return _source("attendance", path, rows, output)
 
 
