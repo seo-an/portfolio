@@ -176,28 +176,22 @@ def run_shared_excel(input_root: str | Path, period: str,
         Path(input_root), period, overrides=overrides
     )
     target = Path(output_dir)
-    target.mkdir(parents=True, exist_ok=True)
-    # Verify existing normalization artifacts BEFORE producing calculator files.
-    # Repeated inputs can produce suffixed result workbooks without stale handoffs.
-    artifacts = (
-        ("normalized-input.json", normalized),
-        ("worktime-config.json", config),
-    )
-    for name, payload in artifacts:
-        path = target / name
-        if path.exists() and json.loads(path.read_text(encoding="utf-8")) != payload:
-            raise InputLayoutError(
-                f"existing {name} differs from current inputs; use a new output directory"
-            )
+    # The original Worktime reporter intentionally requires a NEW output
+    # directory. Never pre-create it: that would break its safety contract.
+    if target.exists():
+        raise InputLayoutError(
+            f"output directory already exists: {target}; choose a new path"
+        )
     result = calculate_worktime_batch(normalized, config)
     output = write_worktime_outputs(target, result)
-    for name, payload in artifacts:
-        path = target / name
-        if not path.exists():
-            path.write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2, default=str) + "\n",
-                encoding="utf-8",
-            )
+    for name, payload in (
+        ("normalized-input.json", normalized),
+        ("worktime-config.json", config),
+    ):
+        (target / name).write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2, default=str) + "\n",
+            encoding="utf-8",
+        )
     print(f"Worktime shared Excel: {result['status']} ({len(result['rows'])} daily rows)")
     for key, filepath in output.items():
         print(f"{key}: {filepath}")
