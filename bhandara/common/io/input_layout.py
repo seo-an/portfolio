@@ -13,7 +13,7 @@ from datetime import date, datetime, time
 from pathlib import Path
 from typing import Any, Iterable, Mapping
 
-from openpyxl import load_workbook
+from .xlsx_stream import XlsxStreamError, open_xlsx_rows
 
 
 class InputLayoutError(ValueError):
@@ -102,35 +102,38 @@ def read_sheet(path: Path, required: Iterable[str], *,
     An optional extra column such as case_id is deliberately ignored by the
     consumer, while unknown columns remain visible for source lineage.
     """
-    book = load_workbook(path, read_only=True, data_only=False)
     try:
-        if sheet_name is not None and sheet_name not in book.sheetnames:
-            raise InputLayoutError(f"{path.name}: missing sheet {sheet_name}")
-        sheet = book[sheet_name] if sheet_name else book.active
-        iterator = sheet.iter_rows(values_only=False)
-        try:
-            header_cells = next(iterator)
-        except StopIteration as exc:
+        # This shared-layout contract rejects every formula, unlike Payroll's
+        # generic source mapper, which reads cached cell values.
+        with open_xlsx_rows(
+            path, sheet_name=sheet_name, data_only=False,
+        ) as opened:
+            header_cells = opened.header_cells
+            headers = [
+                str(c.value).strip() if c.value is not None else ""
+                for c in header_cells
+            ]
+            if not headers or any(not h for h in headers) or len(headers) != len(set(headers)):
+                raise InputLayoutError(f"{path.name}: headers must be unique and nonempty")
+            missing = set(required) - set(headers)
+            if missing:
+                raise InputLayoutError(f"{path.name}: missing columns {sorted(missing)}")
+            result = []
+            for number, cells in enumerate(opened.rows, start=2):
+                if all(c.value is None for c in cells):
+                    continue
+                if any(c.data_type == "f" for c in cells):
+                    raise InputLayoutError(f"{path.name}: formula at row {number} is unsupported")
+                item = dict(zip(headers, (c.value for c in cells)))
+                item["_row_number"] = number
+                result.append(item)
+            return result
+    except XlsxStreamError as exc:
+        if sheet_name is not None and str(exc) == f"worksheet not found: {sheet_name}":
+            raise InputLayoutError(f"{path.name}: missing sheet {sheet_name}") from exc
+        if str(exc) == "XLSX source has no header row":
             raise InputLayoutError(f"{path.name}: workbook has no header") from exc
-        headers = [str(c.value).strip() if c.value is not None else "" for c in header_cells]
-        if not headers or any(not h for h in headers) or len(headers) != len(set(headers)):
-            raise InputLayoutError(f"{path.name}: headers must be unique and nonempty")
-        missing = set(required) - set(headers)
-        if missing:
-            raise InputLayoutError(f"{path.name}: missing columns {sorted(missing)}")
-        result = []
-        for number, cells in enumerate(iterator, start=2):
-            if all(c.value is None for c in cells):
-                continue
-            if any(c.data_type == "f" for c in cells):
-                raise InputLayoutError(f"{path.name}: formula at row {number} is unsupported")
-            item = dict(zip(headers, (c.value for c in cells)))
-            item["_row_number"] = number
-            result.append(item)
-        return result
-    finally:
-        book.close()
-
+        raise InputLayoutError(str(exc)) from exc
 
 def read_id_map(root: Path, *,
                 overrides: Mapping[str, Mapping[str, str]] | None = None
