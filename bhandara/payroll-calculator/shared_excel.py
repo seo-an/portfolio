@@ -78,7 +78,33 @@ def prepare_shared_payroll(root: Path, period: str, *,
     period_bounds(period)
     root = root.resolve()
     identities = read_id_map(root, overrides=overrides)
-    compensation, payroll_input = _check_workers(root, identities, overrides)
+    contract_default = str(
+        ((overrides or {}).get("payroll") or {}).get(
+            "contracts", "payroll/pay-contract.xlsx"
+        )
+    )
+    from bhandara.common.io.input_layout import choose_path
+    contract_candidate = (root / contract_default).resolve()
+    if not contract_candidate.is_relative_to(root):
+        raise InputLayoutError("contract input escapes shared input directory")
+    contract_mode = contract_candidate.is_file()
+    if not contract_mode and (overrides or {}).get("payroll", {}).get("contracts"):
+        choose_path(root, contract_default)
+    if contract_mode:
+        payroll_input = role(root, "payroll", "payroll_input", overrides)
+        for row in read_sheet(
+            payroll_input, ("worker_id", "pay_item_code", "amount", "quantity",
+                            "origin_pay_item_code", "origin_from", "origin_to", "note")
+        ):
+            if str(row.get("worker_id") or "").strip() not in {
+                item["worker_id"] for item in identities.values()
+            }:
+                raise InputLayoutError(
+                    f"payroll-input.xlsx row {row['_row_number']}: unmapped worker_id"
+                )
+        compensation = None
+    else:
+        compensation, payroll_input = _check_workers(root, identities, overrides)
     company_policy = role(root, "payroll", "company_policy", overrides)
     # No implicit lookup for "latest" Worktime results, which may be stale.
     handoff = (
@@ -115,6 +141,22 @@ def prepare_shared_payroll(root: Path, period: str, *,
                         f"Stale Worktime handoff: {key} Excel changed. "
                         "Recalculate Worktime and specify --worktime-result."
                     )
+    contract_artifacts = None
+    if contract_mode:
+        from importlib import import_module
+        contract_adapter = import_module(
+            "bhandara.payroll-calculator.contract_adapter"
+        )
+        base = (
+            Path(generated_dir).resolve()
+            if generated_dir is not None else root.parent / "config"
+        )
+        contract_artifacts = contract_adapter.build_contract_compensation(
+            root, period, identities, worktime_path=handoff,
+            generated_dir=base, overrides=overrides,
+        )
+        compensation = contract_artifacts["compensation_path"]
+        handoff = contract_artifacts["worktime_result_path"]
     module_root = Path(__file__).resolve().parent
     # The entire sample input tree may be a read-only bind mount.
     # Always put generated employment facts with the calculated run settings.
@@ -144,6 +186,16 @@ def prepare_shared_payroll(root: Path, period: str, *,
         "employment_facts_path": str(facts_path),
         "recurring_pay_item_codes": ["base_salary"],
     }
+    if contract_artifacts is not None:
+        config["contract_review_path"] = str(
+            contract_artifacts["review_path"]
+        )
+        config["contract_compensation_path"] = str(
+            contract_artifacts["compensation_path"]
+        )
+        config["contract_worktime_original_path"] = str(
+            contract_artifacts["worktime_input_path"]
+        )
     return write_auto_config(
         root, f"payroll-auto-{period}.json", config,
         generated_dir=config_root,
