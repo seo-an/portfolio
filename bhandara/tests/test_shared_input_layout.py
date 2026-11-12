@@ -40,12 +40,33 @@ class SharedLayoutFixtureTests(unittest.TestCase):
             "pto/work-records/2026/2026-07-attendance.xlsx",
             "pto/employee-events.xlsx",
             "worktime/work-schedule.xlsx", "worktime/attendance.xlsx",
-            "payroll/compensation.xlsx", "payroll/payroll-input.xlsx",
+            "payroll/pay-contract.xlsx", "payroll/pay-contract-components.xlsx",
+            "payroll/service-contracts.xlsx", "payroll/payroll-input.xlsx",
         )
         for relative in necessary:
             with self.subTest(filename=relative):
                 self.assertGreater(choose_path(SAMPLE, relative).stat().st_size, 500)
         self.assertTrue((SAMPLE / "payroll/worktime-result.json").is_file())
+
+    def test_contract_examples_cover_all_payment_bases(self):
+        contract = SAMPLE / "payroll/pay-contract.xlsx"
+        book = load_workbook(contract, read_only=True)
+        try:
+            rows = list(book.active.values)
+        finally:
+            book.close()
+        self.assertEqual(len(rows) - 1, 80)
+        self.assertEqual(
+            {row[2] for row in rows[1:]},
+            {"ANNUAL", "MONTHLY", "HOURLY", "DAILY"},
+        )
+        service = load_workbook(
+            SAMPLE / "payroll/service-contracts.xlsx", read_only=True
+        )
+        try:
+            self.assertEqual(service.active.max_row - 1, 8)
+        finally:
+            service.close()
 
     def test_mapping_is_readable_80_unique_one_to_one(self):
         mapping = read_id_map(SAMPLE)
@@ -152,7 +173,8 @@ class SharedLayoutFixtureTests(unittest.TestCase):
             for relative in (
                 "common/id-map.xlsx", "common/employee.xlsx",
                 "worktime/work-schedule.xlsx", "worktime/attendance.xlsx",
-                "payroll/compensation.xlsx", "payroll/payroll-input.xlsx",
+                "payroll/pay-contract.xlsx", "payroll/pay-contract-components.xlsx",
+            "payroll/service-contracts.xlsx", "payroll/payroll-input.xlsx",
                 "payroll/company-policy.json", "payroll/worktime-result.json",
             ):
                 target = root / relative
@@ -238,6 +260,37 @@ class SharedLayoutThreeModulesTests(unittest.TestCase):
         self.assertEqual(len(data["composition"]["worker_runs"]), 80)
         self.assertFalse(data["finalizable"])
         self.assertFalse(data["ledger_committed"])
+        report_path = output / "contract-basis-review.json"
+        self.assertTrue(report_path.is_file(), run.stderr + run.stdout)
+        report = json.loads(report_path.read_text(encoding="utf-8"))
+        self.assertEqual(report["employee_count"], 80)
+        self.assertEqual(report["salary_based_worker_count"], 40)
+        self.assertEqual(report["time_based_worker_count"], 40)
+        self.assertEqual(len(report["service_contracts"]), 8)
+        self.assertFalse(report["service_contracts_in_employee_payroll"])
+        self.assertTrue(
+            all(not worker["approved"] and not worker["finalizable"]
+                for worker in report["employees"])
+        )
+        self.assertTrue(
+            (output / "contract-basis-review.xlsx").is_file()
+        )
+        employees = {row["employee_id"]: row for row in report["employees"]}
+        self.assertEqual(
+            employees["E001"]["contract_details"][0]["pay_basis"], "ANNUAL"
+        )
+        self.assertEqual(
+            employees["E003"]["contract_details"][0]["pay_basis"], "HOURLY"
+        )
+        self.assertIn(
+            "NONMONTHLY_PREMIUM_NOT_CALCULATED", employees["E003"]["review_codes"]
+        )
+        self.assertEqual(
+            employees["E004"]["contract_details"][0]["pay_basis"], "DAILY"
+        )
+        self.assertIn(
+            "WEEKLY_PAID_HOLIDAY_NOT_RESOLVED", employees["E004"]["review_codes"]
+        )
 
 
 if __name__ == "__main__":
