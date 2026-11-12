@@ -405,8 +405,13 @@ def build_contract_compensation(
                 if base <= 0:
                     raise InputLayoutError(f"{employee_id}: contract fixed components exceed gross")
                 salary_workers.add(worker_id)
-                if basis == "ANNUAL" and (monthly_gross * 12 != rate):
-                    review_codes.add("ANNUAL_DIVISION_PRECISION_REVIEW")
+                if basis == "ANNUAL":
+                    # The basic adapter supports twelve equal monthly wage
+                    # installments only. Other payout schedules require an
+                    # explicit contract-specific policy before calculating.
+                    review_codes.add("ANNUAL_12_EQUAL_INSTALLMENTS_ASSUMED")
+                    if monthly_gross * 12 != rate:
+                        review_codes.add("ANNUAL_DIVISION_PRECISION_REVIEW")
                 source_comp.append({
                     "worker_id": worker_id,
                     "effective_from": c["effective_from"],
