@@ -62,6 +62,11 @@ class ContractBasisTests(unittest.TestCase):
         result = json.loads(paths["review_path"].read_text(encoding="utf-8"))
         self.assertFalse(result["finalizable"])
         self.assertFalse(result["time_based_premiums_calculated"])
+        by_id = {r["employee_id"]: r for r in result["employees"]}
+        self.assertIn(
+            "ANNUAL_12_EQUAL_INSTALLMENTS_ASSUMED",
+            by_id["E001"]["review_codes"],
+        )
         self.assertEqual(result["employee_count"], 80)
         self.assertEqual(result["salary_based_worker_count"], 40)
         self.assertEqual(result["time_based_worker_count"], 40)
@@ -127,7 +132,7 @@ class ContractBasisTests(unittest.TestCase):
         with self.assertRaisesRegex(InputLayoutError, "overlapping contracts"):
             adapter._load_employee_contracts(patched, read_id_map(INPUT), "2026-07")
 
-    def test_components_cannot_exceed_contract_gross(self):
+    def test_duplicate_contract_components_are_rejected(self):
         root = self.directory / "input"
         (root / "payroll").mkdir(parents=True)
         for name in ("pay-contract.xlsx", "pay-contract-components.xlsx"):
@@ -139,6 +144,43 @@ class ContractBasisTests(unittest.TestCase):
         book.save(root / "payroll/pay-contract-components.xlsx")
         book.close()
         with self.assertRaisesRegex(InputLayoutError, "duplicate contract/item"):
+            adapter.build_contract_compensation(
+                root, "2026-07", read_id_map(INPUT),
+                worktime_path=INPUT / "payroll/worktime-result.json",
+                generated_dir=self.directory / "config",
+            )
+
+
+    def test_contract_components_exceeding_total_are_rejected(self):
+        root = self.directory / "input"
+        (root / "payroll").mkdir(parents=True)
+        for name in ("pay-contract.xlsx", "pay-contract-components.xlsx"):
+            shutil.copy2(INPUT / "payroll" / name, root / "payroll" / name)
+        book = load_workbook(root / "payroll/pay-contract-components.xlsx")
+        book.active["C2"] = 99999999
+        book.save(root / "payroll/pay-contract-components.xlsx")
+        book.close()
+        with self.assertRaisesRegex(InputLayoutError, "fixed components exceed gross"):
+            adapter.build_contract_compensation(
+                root, "2026-07", read_id_map(INPUT),
+                worktime_path=INPUT / "payroll/worktime-result.json",
+                generated_dir=self.directory / "config",
+            )
+
+    def test_service_records_cannot_duplicate_evidence(self):
+        root = self.directory / "input"
+        (root / "payroll").mkdir(parents=True)
+        for name in (
+            "pay-contract.xlsx", "pay-contract-components.xlsx",
+            "service-contracts.xlsx", "service-work-records.xlsx",
+        ):
+            shutil.copy2(INPUT / "payroll" / name, root / "payroll" / name)
+        book = load_workbook(root / "payroll/service-work-records.xlsx")
+        sheet = book.active
+        sheet.append([cell.value for cell in sheet[2]])
+        book.save(root / "payroll/service-work-records.xlsx")
+        book.close()
+        with self.assertRaisesRegex(InputLayoutError, "duplicate source evidence"):
             adapter.build_contract_compensation(
                 root, "2026-07", read_id_map(INPUT),
                 worktime_path=INPUT / "payroll/worktime-result.json",
