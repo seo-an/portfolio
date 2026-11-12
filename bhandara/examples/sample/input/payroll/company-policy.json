@@ -2,11 +2,20 @@
   "proration": {
     "base_salary": {
       "method": "역일수"
+    },
+    "position_allowance": {
+      "method": "역일수"
+    },
+    "meal_allowance": {
+      "method": "역일수"
     }
   },
   "ordinary_wage": {
     "monthly_basis_hours": 200,
-    "pay_items": {}
+    "pay_items": {
+      "position_allowance": "산입",
+      "meal_allowance": "미산입"
+    }
   },
   "worktime_pay": {
     "base_component_policy": {}

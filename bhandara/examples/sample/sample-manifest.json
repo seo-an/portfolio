@@ -13,6 +13,8 @@
     "worktime_schedule": 2400,
     "worktime_attendance": 1760,
     "raw_security_events": 1201,
-    "compensation": 80
+    "contracts": 80,
+    "contract_components": 20,
+    "service_contracts_excluded": 8
   }
 }
