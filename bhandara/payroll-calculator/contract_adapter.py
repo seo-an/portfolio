@@ -466,3 +466,66 @@ def build_contract_compensation(
         "time_workers": time_workers,
         "salary_workers": salary_workers,
     }
+
+
+
+def export_review_workbook(review_path: Path, destination: Path) -> None:
+    """Human-readable derived-base audit workbook; source JSON stays authoritative."""
+    with Path(review_path).open("r", encoding="utf-8") as stream:
+        report = json.load(stream)
+    employee_rows = []
+    for employee in report["employees"]:
+        for contract in employee["contract_details"]:
+            employee_rows.append([
+                employee["employee_id"],
+                employee["worker_id"],
+                contract["contract_id"],
+                contract["pay_basis"],
+                contract["contract_amount"],
+                contract.get("monthly_contract_amount"),
+                contract.get("monthly_base_salary", contract.get("calculated_base_salary")),
+                contract.get("ordinary_hours"),
+                contract.get("qualified_days"),
+                json.dumps(contract.get("included_fixed_allowances", {}), ensure_ascii=False),
+                ", ".join(employee["review_codes"]),
+            ])
+    work = Workbook()
+    try:
+        first = work.active
+        first.title = "Contract Base"
+        first.append([
+            "employee_id", "worker_id", "contract_id", "pay_basis",
+            "contract_amount", "monthly_gross", "calculated_base_salary",
+            "ordinary_hours", "qualified_days", "included_allowances",
+            "review_codes",
+        ])
+        for row in employee_rows:
+            first.append(row)
+        first.freeze_panes = "A2"
+        first.auto_filter.ref = first.dimensions
+        service = work.create_sheet("Service Review Only")
+        service.append([
+            "service_contract_id", "external_vendor_id", "pay_basis",
+            "contract_rate", "effective_from", "effective_to", "reason",
+        ])
+        for item in report["service_contracts"]:
+            service.append([
+                item["service_contract_id"], item["external_vendor_id"],
+                item["pay_basis"], item["contract_rate"],
+                item["effective_from"], item["effective_to"], item["reason"],
+            ])
+        service.freeze_panes = "A2"
+        service.auto_filter.ref = service.dimensions
+        summary = work.create_sheet("Important")
+        summary.append(["status", "REVIEW_REQUIRED"])
+        summary.append(["finalizable", "FALSE"])
+        summary.append(["employee_count", report["employee_count"]])
+        summary.append(["salary_workers", report["salary_based_worker_count"]])
+        summary.append(["hourly_daily_workers", report["time_based_worker_count"]])
+        summary.append(["note", report["message"]])
+        if destination.exists():
+            raise InputLayoutError("refusing to overwrite prior contract review workbook")
+        work.save(destination)
+        os.chmod(destination, 0o600)
+    finally:
+        work.close()
