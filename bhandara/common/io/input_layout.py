@@ -199,8 +199,12 @@ def write_auto_config(input_root: Path, name: str, payload: Mapping[str, Any]) -
         raise InputLayoutError("invalid generated config name")
     base = input_root.resolve().parent / "config"
     base.mkdir(parents=True, exist_ok=True)
-    output = base / name
-    # Same content on repeated runs; never replace user-authored config.
+    fingerprint = hashlib.sha256(
+        json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
+    ).hexdigest()[:12]
+    output = base / f"{Path(name).stem}-{fingerprint}.json"
+    # Same content produces the same path; changed sources/configs create a
+    # separately traceable auto-config without overwriting prior run settings.
     if output.exists():
         old = json.loads(output.read_text(encoding="utf-8"))
         if old != payload:
