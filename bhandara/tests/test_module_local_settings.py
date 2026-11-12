@@ -37,7 +37,7 @@ class ModuleLocalSettingsTests(unittest.TestCase):
         for module in ("pto-calculator", "worktime-calculator", "payroll-calculator"):
             with self.subTest(module=module):
                 result = root_cli.local_cli_config(module)
-                self.assertEqual(result["period"], "2026-07")
+                self.assertEqual(result["period"], "2026-06" if module == "worktime-calculator" else "2026-07")
                 self.assertIn("common", result["files"])
                 self.assertEqual(
                     json.loads(json.dumps(result, ensure_ascii=False)), result
@@ -70,7 +70,7 @@ class ModuleLocalSettingsTests(unittest.TestCase):
             )
             self.assertEqual(
                 root_cli.local_cli_config("worktime-calculator")["period"],
-                "2026-07",
+                "2026-06",
             )
 
     def test_bad_local_month_and_path_rejected_without_fallback(self):
