@@ -1,0 +1,37 @@
+name: Bhandara module-local settings (unittest)
+
+on:
+  pull_request:
+    paths:
+      - "run.py"
+      - "bhandara/common/config/**"
+      - "bhandara/*-calculator/user_settings.py"
+      - "bhandara/tests/test_module_local_settings.py"
+      - ".github/workflows/bhandara-module-local-settings.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  module-local-config:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install public Python dependencies
+        run: python -m pip install openpyxl==3.1.5 korean-lunar-calendar==0.4.0
+      - name: Validate module-only settings and complete external JSON precedence
+        run: python -m unittest discover -s bhandara/tests -p "test_module_local_settings.py" -v
+      - name: Verify base plus single calculator installations
+        run: python -m unittest discover -s bhandara/tests -p "test_module_isolation.py" -v
+      - name: Regression existing explicit period layout
+        run: python -m unittest discover -s bhandara/tests -p "test_shared_input_layout.py" -v
+      - name: Regression existing Payroll and PTO output contracts
+        run: |
+          python -m unittest discover -s bhandara/tests -p "test_payroll_worker_isolation.py" -v
+          python -m unittest discover -s bhandara/tests -p "test_pto_standalone.py" -v
+          python -m unittest discover -s bhandara/tests -p "test_worktime_migration.py" -v
