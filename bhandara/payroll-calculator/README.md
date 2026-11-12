@@ -31,7 +31,7 @@ python run.py bhandara payroll-calculator --period 2026-07
 - `MONTHLY`: 월 총액 − 계약에 포함된 월 고정수당.
 - `HOURLY`: 계약 시급 × 검토 대상 Worktime 일반 근로시간.
 - `DAILY`: 계약 일급 × 계약상 기준 근무시간을 충족한 일수.
-- `SERVICE`: 별도 검토 기록만 생성하며 **직원 Payroll 계산에는 포함하지 않음**.
+- `SERVICE`: 별도 `service-work-records.xlsx`의 시급×시간 또는 일급×일수로 **용역대가 추정액을 검토용으로 계산**하며 **직원 Payroll 계산에는 포함하지 않음**.
 
 시급·일급의 **연장·야간·휴일 가산수당과 유급주휴는 아직 이 어댑터에서 미계산**입니다.
 이들을 월 고정급 통상시급 환산에 임의로 넣지 않도록 별도 Worktime 입력 경로로 제외하고,
