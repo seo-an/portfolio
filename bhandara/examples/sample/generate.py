@@ -248,15 +248,72 @@ def build_shared_input(root: Path) -> dict[str, int]:
                   ("source_person_id", "event_date", "event_time", "raw_event",
                    "device_id"), raw[vendor])
 
-    compensation = []
+    # Employee contracts are not monthly base_salary cells. They encode
+    # actual annual/monthly wage totals or hourly/daily rates; the new
+    # contract adapter derives basic pay using worktime facts and component
+    # splits, leaving a traceable audit for every worker.
+    contracts, components = [], []
+    bases = ("ANNUAL", "MONTHLY", "HOURLY", "DAILY")
     for i, person in enumerate(people, start=1):
-        compensation.append((
-            person["worker_id"], "2026-01-01", None, 2800000 + (i % 13) * 100000,
+        basis = bases[(i - 1) % len(bases)]
+        contract_id = f"CTR-{i:04d}"
+        if basis == "ANNUAL":
+            amount = (3600 + (i % 17) * 120) * 10000
+        elif basis == "MONTHLY":
+            amount = (260 + (i % 13) * 15) * 10000
+        elif basis == "HOURLY":
+            amount = 11500 + (i % 16) * 650
+        else:
+            amount = 110000 + (i % 14) * 6500
+        contracts.append((
+            contract_id, person["employee_id"], basis, amount,
+            "2026-01-01", None, 8 if basis in ("HOURLY", "DAILY") else None,
+            "Synthetic employment contract; not signed or approved",
         ))
-    rng.shuffle(compensation)
-    save_xlsx(input_dir / "payroll/compensation.xlsx",
-              ("worker_id", "effective_from", "effective_to", "base_salary"),
-              compensation)
+        if basis in ("ANNUAL", "MONTHLY") and i % 3 == 0:
+            components.append((contract_id, "position_allowance", 150000))
+            if i % 6 == 0:
+                components.append((contract_id, "meal_allowance", 100000))
+    rng.shuffle(contracts)
+    rng.shuffle(components)
+    save_xlsx(input_dir / "payroll/pay-contract.xlsx",
+              ("contract_id", "employee_id", "pay_basis", "contract_amount",
+               "effective_from", "effective_to", "standard_day_hours", "note"),
+              contracts)
+    save_xlsx(input_dir / "payroll/pay-contract-components.xlsx",
+              ("contract_id", "pay_item_code", "monthly_amount"), components)
+    services = [
+        (f"SVC-{n:03d}", f"VENDOR-{n:03d}",
+         "DAILY" if n % 2 else "HOURLY",
+         220000 + n * 10000 if n % 2 else 35000 + n * 1000,
+         "2026-06-01", None, "Synthetic independent service contract: payroll EXCLUDED")
+        for n in range(1, 9)
+    ]
+    save_xlsx(input_dir / "payroll/service-contracts.xlsx",
+              ("service_contract_id", "external_vendor_id", "pay_basis",
+               "contract_amount", "effective_from", "effective_to", "note"),
+              services)
+    service_records = []
+    for n in range(1, 9):
+        sid = f"SVC-{n:03d}"
+        if n % 2:
+            service_records.extend([
+                (sid, f"2026-07-{n+1:02d}", None, 1,
+                 f"SYNTHETIC-SERVICE-{n:03d}-A"),
+                (sid, f"2026-07-{n+14:02d}", None, 2,
+                 f"SYNTHETIC-SERVICE-{n:03d}-B"),
+            ])
+        else:
+            service_records.extend([
+                (sid, f"2026-07-{n+1:02d}", 8, None,
+                 f"SYNTHETIC-SERVICE-{n:03d}-A"),
+                (sid, f"2026-07-{n+14:02d}", 14, None,
+                 f"SYNTHETIC-SERVICE-{n:03d}-B"),
+            ])
+    rng.shuffle(service_records)
+    save_xlsx(input_dir / "payroll/service-work-records.xlsx",
+              ("service_contract_id", "service_date", "billable_hours",
+               "billable_days", "source_reference"), service_records)
     variable = [
         (x["worker_id"], "performance_bonus", 100000, None,
          None, None, None, "Synthetic one-off bonus")
@@ -268,8 +325,15 @@ def build_shared_input(root: Path) -> dict[str, int]:
                "origin_pay_item_code", "origin_from", "origin_to", "note"),
               variable)
     write_json(input_dir / "payroll/company-policy.json", {
-        "proration": {"base_salary": {"method": "역일수"}},
-        "ordinary_wage": {"monthly_basis_hours": 200, "pay_items": {}},
+        "proration": {
+            "base_salary": {"method": "역일수"},
+            "position_allowance": {"method": "역일수"},
+            "meal_allowance": {"method": "역일수"},
+        },
+        "ordinary_wage": {
+            "monthly_basis_hours": 200,
+            "pay_items": {"position_allowance": "산입", "meal_allowance": "미산입"},
+        },
         "worktime_pay": {"base_component_policy": {}},
         "amount_processing": {
             "unit": 10, "method": "절사", "apply_at": "최종지급액",
@@ -292,7 +356,10 @@ def build_shared_input(root: Path) -> dict[str, int]:
             "worktime_schedule": len(work_schedule),
             "worktime_attendance": len(work_attendance),
             "raw_security_events": sum(len(v) for v in raw.values()),
-            "compensation": len(compensation),
+            "contracts": len(contracts),
+            "contract_components": len(components),
+            "service_contracts_excluded": len(services),
+            "service_delivery_records": len(service_records),
         },
     })
     return {"employees": EMPLOYEES, "worktime_days": len(work_attendance),

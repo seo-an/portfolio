@@ -1,9 +1,9 @@
-# 급여 계산기(Payroll Calculator) — 독립 실행 모듈 v0.1.0
+# 급여 계산기(Payroll Calculator) — 독립 실행 모듈 v0.3.0
 
 ## 공통 Excel 고정 경로 자동 입력
 
-`bhandara/data/input/{common,payroll}`의 직원·매핑·보상·
-급여 입력 Excel을 검증해 CLI용 설정·고용 사실 파일을 자동 생성합니다.
+`bhandara/data/input/{common,payroll}`의 직원·ID 매핑·연봉/월급/시급/일급 **계약금액 Excel**을 검증하고
+포함된 월 고정수당을 분리해 기본급을 산정합니다. 기존 Payroll 계산식은 유지합니다.
 
 ```bash
 python run.py bhandara payroll-calculator --period 2026-07
@@ -14,7 +14,7 @@ python run.py bhandara payroll-calculator --period 2026-07
 원본이 바뀌면 재계산을 요구합니다.
 [80명 실물 샘플](../examples/sample/input/).
 
-> **실제 사용하려는 분:** [급여 계산기 RUNBOOK](RUNBOOK.md)에 `compensation.xlsx`·`payroll-input.xlsx` 작성법, 활성 시트, 정확한 헤더, 폴더 구성 및 JSON에서 바꿀 항목을 모아 뒀습니다. [바로 수정할 수 있는 급여 설정 JSON 틀](examples/payroll-config.user-template.json)도 제공하며, **이 README는 개발자·설치 담당자용 기술·코드 계약·검증 문서**입니다.
+> **실제 사용하려는 분:** [급여 계산기 RUNBOOK](RUNBOOK.md)에 `pay-contract.xlsx`·`pay-contract-components.xlsx`·`payroll-input.xlsx` 작성법, 활성 시트, 정확한 헤더, 폴더 구성 및 JSON에서 바꿀 항목을 모아 뒀습니다. [바로 수정할 수 있는 급여 설정 JSON 틀](examples/payroll-config.user-template.json)도 제공하며, **이 README는 개발자·설치 담당자용 기술·코드 계약·검증 문서**입니다.
 
 
 **기존 Gearbox 급여 계산기를 공개 저장소에서 독립 실행하도록 이전한 모듈**이다. 보상 정보, 월별 급여 입력, 근무시간 결과, 급여항목·회사 정책을 이용해 **검토용 급여 계산 결과**를 만든다.
@@ -22,6 +22,25 @@ python run.py bhandara payroll-calculator --period 2026-07
 > **2026-11-10 이전·검증 완료.** 원본 Payroll 파일 85개를 보존했고, 경로 변경은 원본 해시로 역검증했다. 합성 데이터를 이용한 계산·정규화 진입점 검증, Gearbox 원본 회귀, **Base + Payroll만 설치한 상호배타 테스트**, 다른 위치의 Worktime JSON 인계를 모두 통과했다. 기존 급여 계산식, 지급·공제 정책, 예외처리 기능은 수정하지 않았다.
 
 이 모듈은 **사회보험료·원천세 확정, 급여 지급 승인, 회계 장부 확정, 실제 송금**을 수행하지 않는다. 결과에 금액이 계산되더라도 `finalizable=false`, `ledger_committed=false`이다. 기존 운영 Gearbox Payroll Workflow를 교체하지 않는다.
+
+## 계약금액 기본급 어댑터의 정확한 범위
+
+신규 `contract_adapter.py`는 기존 Payroll 계산 엔진 **앞단**에서 다음 데이터를 만듭니다.
+
+- `ANNUAL`: 연 총액 / 12 − 계약에 포함된 월 고정수당. **12회 균등분할 전제**를 검토 코드로 남기며 다른 지급구조는 미지원.
+- `MONTHLY`: 월 총액 − 계약에 포함된 월 고정수당.
+- `HOURLY`: 계약 시급 × 검토 대상 Worktime 일반 근로시간.
+- `DAILY`: 계약 일급 × 계약상 기준 근무시간을 충족한 일수.
+- `SERVICE`: 별도 `service-work-records.xlsx`의 시급×시간 또는 일급×일수로 **용역대가 추정액을 검토용으로 계산**하며 **직원 Payroll 계산에는 포함하지 않음**.
+
+시급·일급의 **연장·야간·휴일 가산수당과 유급주휴는 아직 이 어댑터에서 미계산**입니다.
+이들을 월 고정급 통상시급 환산에 임의로 넣지 않도록 별도 Worktime 입력 경로로 제외하고,
+`contract-basis-review.json`에 `NONMONTHLY_PREMIUM_NOT_CALCULATED`,
+`WEEKLY_PAID_HOLIDAY_NOT_RESOLVED`를 기록합니다. 실제 지급액을 의미하지 않습니다.
+
+새 계약 입력이 있으면 `contract-derived-compensation.xlsx`를 생성해 기존 엔진에 전달합니다.
+새 계약 파일이 없으면 기존 `compensation.xlsx`와 수동 JSON 방식으로 실행합니다.
+[실물 80명 샘플](../examples/sample/input/) 및 [쉬운 사용 안내](RUNBOOK.md)를 참고하세요.
 
 ## 1. Payroll 모듈 하나만 설치하기
 

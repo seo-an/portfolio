@@ -20,7 +20,7 @@ cp -R bhandara/examples/sample/input/. bhandara/data/input/
 `payroll/`로 구분합니다. 설정 JSON의 파일 경로 수정은
 **고급 사용자에게만 선택 사항**입니다. 기본 모드에서는 파일명이나 ID가
 맞지 않으면 오류로 알려주며 비슷한 이름을 임의 추측하지 않습니다.
-출입 인증 기록은 자동 확정 근태가 아니며 급여도 검토용입니다.
+출입 인증 기록은 자동 확정 근태가 아니며 급여도 검토용입니다. 급여 기본 입력은 `payroll/pay-contract.xlsx`와 `pay-contract-components.xlsx`이며, 시급·일급의 가산수당과 주휴는 별도 검토 대상입니다.
 
 > **처음 사용하는 인사·총무·급여 담당자라면:** 먼저 [쉬운 사용 안내서](bhandara/RUNBOOK.md)를 읽으세요. **Excel 파일 위치·확장자·활성 시트·1행 열 제목·JSON 설정 수정 위치**를 계산기별로 설명합니다.
 >
@@ -41,7 +41,7 @@ cp -R bhandara/examples/sample/input/. bhandara/data/input/
 |---|---|---|---|---|
 | [PTO Calculator](bhandara/pto-calculator/README.md) | 입사일 기준 연차 **발생 내역** 계산·검토 | 직원·근무표·근태 등의 Excel, 설정 JSON | 연차 결과·검토 JSON/XLSX·실행 기록 | 독립 실행 검증 완료 |
 | [Worktime Calculator](bhandara/worktime-calculator/README.md) | 정규화된 근무표·근태로 일별 근무시간 계산 | 고정 경로 Excel 자동 입력 또는 정규화 JSON(고급) | 근무시간 결과·검토 JSON/XLSX | 독립 실행 검증 완료 |
-| [Payroll Calculator](bhandara/payroll-calculator/README.md) | 보상·월별 급여 입력·근무시간 사실값·정책으로 **검토용** 급여 계산 | 고정 경로 보상·급여 Excel 또는 설정 JSON(고급) | 급여 계산·검토 JSON/XLSX | 독립 실행 검증 완료 |
+| [Payroll Calculator](bhandara/payroll-calculator/README.md) | 연봉·월급·시급·일급 계약·근태를 이용한 **검토용** 기본급·급여 계산 | 계약·고정수당·변동급여 Excel 또는 기존 설정 JSON | 급여 계산·검토 JSON/XLSX | 독립 실행 검증 완료 |
 | [공통 Base](bhandara/BASE-CONTRACT.md) | Excel 읽기·진단·해시·결과 저장·검토 계약 | 각 계산기가 호출 | 공통 함수 | **모든 계산기에 필수** |
 
 세 모듈은 서로를 직접 설치하지 않고 실행할 수 있습니다. 다만 **계산기 폴더 하나만 복사해서는 안 됩니다.** 공통 Base와 최상위 실행 파일도 함께 필요합니다. 구체적인 검증 기준은 [상호배타 검증 문서](bhandara/MODULE-ISOLATION.md)를 참고하세요.

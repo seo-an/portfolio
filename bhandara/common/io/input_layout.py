@@ -37,6 +37,10 @@ ROLE_PATHS = {
         "attendance": "worktime/attendance.xlsx",
     },
     "payroll": {
+        "contracts": "payroll/pay-contract.xlsx",
+        "contract_components": "payroll/pay-contract-components.xlsx",
+        "service_contracts": "payroll/service-contracts.xlsx",
+        "service_records": "payroll/service-work-records.xlsx",
         "compensation": "payroll/compensation.xlsx",
         "payroll_input": "payroll/payroll-input.xlsx",
         "company_policy": "payroll/company-policy.json",
