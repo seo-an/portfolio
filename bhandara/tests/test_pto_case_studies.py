@@ -147,6 +147,45 @@ class PTOReviewRuleTests(unittest.TestCase):
                 )
 
 
+class PTOPublishedSampleTests(unittest.TestCase):
+    def test_checked_in_sample_is_a_real_usable_set(self):
+        sample = ROOT / "bhandara/pto-calculator/examples/sample"
+        required = (
+            "config.json",
+            "case-index.json",
+            "case-index.xlsx",
+            "input/employee.xlsx",
+            "input/work-schedule.xlsx",
+            "input/work-schedule-assignment.xlsx",
+            "input/work-records/2025-2026-schedule.xlsx",
+            "input/work-records/2025-2026-attendance.xlsx",
+            "input/employee-events.xlsx",
+        )
+        for name in required:
+            with self.subTest(filename=name):
+                path = sample / name
+                self.assertTrue(path.is_file(), f"missing published sample: {path}")
+                self.assertGreater(path.stat().st_size, 0)
+
+        config = json.loads((sample / "config.json").read_text(encoding="utf-8"))
+        self.assertEqual(config["schema_version"], "1.0")
+        for key in ("employees", "schedule", "assignments", "events"):
+            self.assertTrue((sample / "input" / config["files"][key]).is_file())
+        for key in ("monthly_schedule", "attendance"):
+            for name in config["files"][key]:
+                self.assertTrue((sample / "input" / name).is_file())
+
+        wb = load_workbook(sample / "input/employee.xlsx", read_only=True)
+        try:
+            rows = list(wb.active.values)
+        finally:
+            wb.close()
+        self.assertEqual(rows[0][-1], "case_id")
+        self.assertEqual(len(rows) - 1, 14)
+        ids = [r[0] for r in rows[1:]]
+        self.assertNotEqual(ids, sorted(ids))
+
+
 class PTOMixedExcelTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
