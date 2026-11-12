@@ -78,7 +78,16 @@ def role(root: Path, module: str, key: str,
     override = (overrides or {}).get(module, {})
     if not isinstance(override, Mapping):
         raise InputLayoutError(f"files.{module} must be a role-name mapping")
-    filename = override.get(key, ROLE_PATHS[module][key])
+    default = ROLE_PATHS[module][key]
+    if module != "common":
+        manifest = ROOT / f"{module}-calculator" / "module.json"
+        if manifest.is_file():
+            with manifest.open("r", encoding="utf-8") as stream:
+                module_contract = json.load(stream)
+            declared = module_contract.get("shared_excel_input", {}).get("roles", {})
+            if key in declared:
+                default = declared[key]
+    filename = override.get(key, default)
     return choose_path(root, filename)
 
 
