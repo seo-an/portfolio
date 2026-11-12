@@ -168,11 +168,12 @@ def main(argv: list[str] | None = None) -> int:
                 from importlib import import_module
                 from bhandara.common.io.input_layout import InputLayoutError
                 worktime = import_module("bhandara.worktime-calculator.shared_excel")
+                from bhandara.common.io.input_layout import next_result_dir
                 try:
                     return worktime.run_shared_excel(
                         shared_root, args.period,
                         args.output_dir or str(
-                            shared_root.parent / "output" / "worktime-calculator"),
+                            next_result_dir(shared_root, "worktime-calculator")),
                         overrides=overrides,
                     )
                 except (InputLayoutError, ValueError, OSError) as exc:
@@ -210,11 +211,11 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"PAYROLL_INPUT_INVALID: {type(exc).__name__}: {exc}",
                           file=sys.stderr)
                     return 2
+                from bhandara.common.io.input_layout import next_result_dir
                 return payroll.main([
                     "calculate", "--config", str(config), "--output-dir",
-                    str(args.output_dir or (
-                        shared_root.parent / "output" / "payroll-calculator"
-                    )),
+                    str(args.output_dir or
+                        next_result_dir(shared_root, "payroll-calculator")),
                 ])
             if args.operation == "normalize":
                 if not all((args.input_dir, args.output_dir)):
