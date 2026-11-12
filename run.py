@@ -237,6 +237,10 @@ def main(argv: list[str] | None = None) -> int:
                     from importlib import import_module
                     report = Path(generated["contract_review_path"])
                     shutil.copy2(report, output / "contract-basis-review.json")
+                    shutil.copy2(
+                        generated["contract_compensation_path"],
+                        output / "contract-derived-compensation.xlsx",
+                    )
                     contract = import_module("bhandara.payroll-calculator.contract_adapter")
                     contract.export_review_workbook(
                         report, output / "contract-basis-review.xlsx"
