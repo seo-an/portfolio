@@ -37,38 +37,6 @@ def calculate_command(args: argparse.Namespace) -> int:
     return 0 if result["status"] == "CALCULATED_UNCLOSED" else 2
 
 
-def run_shared_excel(input_root: str | Path, period: str,
-                     output_dir: str | Path, *,
-                     overrides: dict | None = None) -> int:
-    """Accept fixed-name Excel input without a separate normalized JSON step."""
-    from .shared_excel import read_shared_worktime
-
-    normalized, config = read_shared_worktime(
-        Path(input_root), period, overrides=overrides
-    )
-    result = calculate_worktime_batch(normalized, config)
-    output = write_worktime_outputs(output_dir, result)
-    target = Path(output_dir)
-    target.mkdir(parents=True, exist_ok=True)
-    # Unlike an in-memory smoke test, leave the normalized source and mapping
-    # configuration as reproducible handoff artifacts.
-    for name, payload in (
-        ("normalized-input.json", normalized),
-        ("worktime-config.json", config),
-    ):
-        filepath = target / name
-        if filepath.exists():
-            raise WorktimeBatchError(f"refusing to overwrite existing artifact: {filepath}")
-        filepath.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2, default=str) + "\n",
-            encoding="utf-8",
-        )
-    print(f"Worktime shared Excel: {result['status']} ({len(result['rows'])} daily rows)")
-    for key, filepath in output.items():
-        print(f"{key}: {filepath}")
-    return 0 if result["status"] == "CALCULATED_UNCLOSED" else 2
-
-
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Calculate independent Worktime daily facts; never approve or close a period")
