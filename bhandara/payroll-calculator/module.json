@@ -62,7 +62,8 @@
       "compensation": "payroll/compensation.xlsx",
       "payroll_input": "payroll/payroll-input.xlsx",
       "company_policy": "payroll/company-policy.json",
-      "worktime_result": "payroll/worktime-result.json"
+      "worktime_result": "payroll/worktime-result.json",
+      "service_records": "payroll/service-work-records.xlsx"
     },
     "monthly_files": [],
     "default_period_option": "--period YYYY-MM",
@@ -85,7 +86,9 @@
         "weekly_paid_holiday",
         "service_contract_settlement",
         "statutory_tax_and_insurance"
-      ]
+      ],
+      "service_records_optional": true,
+      "service_estimates": "hourly/daily contract rate multiplied by separately evidenced quantity, review only"
     }
   }
 }
