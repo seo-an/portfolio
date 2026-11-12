@@ -162,3 +162,43 @@ def read_shared_worktime(input_root: Path, period: str, *,
         "approvals": [],  # Never manufacture real approvals for raw Excel facts.
     }
     return bundle, config
+
+
+def run_shared_excel(input_root: str | Path, period: str,
+                     output_dir: str | Path, *,
+                     overrides: dict | None = None) -> int:
+    """Run the untouched legacy Worktime engine with a new Excel adapter."""
+    from .functions.worktime_batch import calculate_worktime_batch
+    from .functions.worktime_report import write_worktime_outputs
+    import json
+
+    normalized, config = read_shared_worktime(
+        Path(input_root), period, overrides=overrides
+    )
+    target = Path(output_dir)
+    target.mkdir(parents=True, exist_ok=True)
+    # Verify existing normalization artifacts BEFORE producing calculator files.
+    # Repeated inputs can produce suffixed result workbooks without stale handoffs.
+    artifacts = (
+        ("normalized-input.json", normalized),
+        ("worktime-config.json", config),
+    )
+    for name, payload in artifacts:
+        path = target / name
+        if path.exists() and json.loads(path.read_text(encoding="utf-8")) != payload:
+            raise InputLayoutError(
+                f"existing {name} differs from current inputs; use a new output directory"
+            )
+    result = calculate_worktime_batch(normalized, config)
+    output = write_worktime_outputs(target, result)
+    for name, payload in artifacts:
+        path = target / name
+        if not path.exists():
+            path.write_text(
+                json.dumps(payload, ensure_ascii=False, indent=2, default=str) + "\n",
+                encoding="utf-8",
+            )
+    print(f"Worktime shared Excel: {result['status']} ({len(result['rows'])} daily rows)")
+    for key, filepath in output.items():
+        print(f"{key}: {filepath}")
+    return 0 if result["status"] == "CALCULATED_UNCLOSED" else 2
