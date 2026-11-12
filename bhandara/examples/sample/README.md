@@ -36,7 +36,26 @@ Worktime을 다시 실행하고 그 결과를 급여 계산에 사용하려면
 | 공통 | `common/employee.xlsx`, `common/id-map.xlsx` (`ID_MAP` 시트) |
 | PTO | `pto/work-schedule.xlsx`, `pto/work-schedule-assignment.xlsx`, `pto/work-records/2026/2026-07-schedule.xlsx`, `pto/work-records/2026/2026-07-attendance.xlsx`, `pto/employee-events.xlsx` |
 | Worktime | `worktime/work-schedule.xlsx`, `worktime/attendance.xlsx` |
-| Payroll | `payroll/compensation.xlsx`, `payroll/payroll-input.xlsx`, `payroll/company-policy.json`, `payroll/worktime-result.json` |
+| Payroll | `payroll/pay-contract.xlsx`, `payroll/pay-contract-components.xlsx`, `payroll/payroll-input.xlsx`, `payroll/company-policy.json`, `payroll/worktime-result.json` 및 선택 `payroll/service-contracts.xlsx` |
+
+## 계약 유형이 섞인 급여 샘플
+
+`payroll/pay-contract.xlsx`에는 가상 직원 80명의 원 계약금액이 있습니다:
+**연봉 20명, 월급 20명, 시급 20명, 일급 20명**.
+이는 이미 계산된 월 기본급이 아니라 **연/월/시간/일 단위 계약금액**입니다.
+
+`payroll/pay-contract-components.xlsx`에는 연봉·월급 계약에 **포함된 월 고정수당**을 따로 기록했습니다.
+급여 계산기는 이 금액을 계약 총액에서 빼서 기본급을 도출하고, 수당을 별도 항목으로 전달합니다.
+
+`payroll/service-contracts.xlsx`의 가상 프리랜서 8건은 직원 80명과 **별개**이며
+직원 급여대장에 합산되지 않습니다. 이 파일은 없으면 생략할 수 있습니다.
+계약 구성 수당이 없는 회사도 `pay-contract-components.xlsx`의 헤더는 남겨 두어야 합니다.
+
+급여 결과의 `contract-basis-review.xlsx`에는 계약 단가·시간/일수·기본급·계산 규칙이,
+`contract-derived-compensation.xlsx`에는 기존 Payroll 엔진에 실제로 넘긴 월 기준 보상액이 남습니다.
+**시급·일급의 가산수당과 유급주휴는 아직 자동 계산하지 않습니다.**
+검토 결과가 나왔다고 실지급액이 확정된 것은 아닙니다.
+[급여 Excel 사용 안내](../../payroll-calculator/RUNBOOK.md)를 참고하세요.
 
 `common/id-map.xlsx`는 사내 직원번호, 출입기 식별자, 계산용
 `worker_id`, 급여 시스템별 ID를 눈에 보이게 연결합니다.

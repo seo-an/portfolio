@@ -21,7 +21,10 @@
       "payroll-calculation.xlsx",
       "payroll-review.json",
       "payroll-review.xlsx",
-      "policy-resolution.json"
+      "policy-resolution.json",
+      "contract-basis-review.json",
+      "contract-basis-review.xlsx",
+      "contract-derived-compensation.xlsx"
     ],
     "calculate_blocked": [
       "payroll-review.json",
@@ -64,6 +67,25 @@
     "monthly_files": [],
     "default_period_option": "--period YYYY-MM",
     "advanced_overrides": "--paths-config JSON role map",
-    "note": "New pay-contract.xlsx mode derives base salary and produces audited REVIEW_REQUIRED results; legacy compensation.xlsx remains a fallback if no contract file is present."
+    "note": "New pay-contract.xlsx mode derives base salary and produces audited REVIEW_REQUIRED results; legacy compensation.xlsx remains a fallback if no contract file is present.",
+    "contract_semantics": {
+      "basis": [
+        "ANNUAL",
+        "MONTHLY",
+        "HOURLY",
+        "DAILY"
+      ],
+      "included_components": [
+        "position_allowance",
+        "meal_allowance"
+      ],
+      "service_optional": true,
+      "not_calculated": [
+        "hourly_daily_premium",
+        "weekly_paid_holiday",
+        "service_contract_settlement",
+        "statutory_tax_and_insurance"
+      ]
+    }
   }
 }

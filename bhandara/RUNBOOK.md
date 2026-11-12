@@ -14,7 +14,7 @@ python run.py bhandara pto-calculator --period 2026-07
 python run.py bhandara payroll-calculator --period 2026-07
 ```
 
-**일반 사용자는 JSON 경로를 수정하지 않습니다.** 아래 설명의
+**일반 사용자는 JSON 경로를 수정하지 않습니다.** 급여는 연봉·월급·시급·일급 계약금액과 포함 수당을 읽고 기본급을 산정하며, 시급·일급의 가산수당·주휴는 미산정 검토 대상입니다. 아래 설명의
 수동 설정·정규화 JSON은 기존의 고급 사용자용 실행 방식입니다.
 출입 인증을 출퇴근 승인으로 추정하지 않으며 실제 급여 지급도 하지 않습니다.
 
@@ -30,7 +30,7 @@ python run.py bhandara payroll-calculator --period 2026-07
 |---|---|---|---|
 | 직원별 연차 **발생 내역** 확인 | PTO(연차) | `.xlsx` 직원명부·근무표 등과 `config.json` | [연차 사용 안내](pto-calculator/RUNBOOK.md) |
 | 근태로 일별 **근무시간** 계산 | Worktime(근무시간) | 공통 Excel 파일과 ID_MAP (고급: 정규화 JSON) | [근무시간 사용 안내](worktime-calculator/RUNBOOK.md) |
-| 직원별 **급여 계산 초안** 확인 | Payroll(급여) | 공통 Excel과 ID_MAP (고급: 별도 정책·JSON) | [급여 사용 안내](payroll-calculator/RUNBOOK.md) |
+| 직원별 **급여 계산 초안** 확인 | Payroll(급여) | 계약금액 Excel과 ID_MAP (고급: 기존 월 보상 JSON) | [급여 사용 안내](payroll-calculator/RUNBOOK.md) |
 
 **중요:** 계산기는 각각 독립적으로 사용할 수 있습니다. 다른 계산기까지 내려받을 필요는 없지만, 프로그램 실행에 필요한 **공통 Base** 파일은 함께 있어야 합니다. 설치를 맡기는 경우 “반다라 Base와 사용할 계산기 하나만 필요하다”고 전달하면 됩니다.
 
