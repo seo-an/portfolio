@@ -8,7 +8,7 @@
 
 | 변수 | 기본값 | 입력 가능한 값 |
 |---|---|---|
-| `PERIOD` | `"2026-07"` | `"YYYY-MM"` 형식의 월 |
+| `PERIOD` | `"2026-06"` | `"YYYY-MM"` 형식의 월 |
 | `EMPLOYEES_FILE` | `"common/employee.xlsx"` | 직원명부 Excel 상대 경로 |
 | `IDENTITY_FILE` | `"common/id-map.xlsx"` | ID_MAP 시트가 있는 Excel 상대 경로 |
 | `SCHEDULE_FILE` | `"worktime/work-schedule.xlsx"` | 예정근무 Excel 상대 경로 |
