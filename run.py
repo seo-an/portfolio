@@ -39,11 +39,13 @@ def local_cli_config(module_id: str) -> dict:
 
     fields = _LOCAL_ROLE_FIELDS[module_id]
     values = load_local_settings(
-        module_id, {"PERIOD": "month", **{name: "file" for name in fields}}
+        module_id, {"PERIOD": "month", **{name: ("optional_file" if name == "EVENTS_FILE" else "file") for name in fields}}
     )
     def build():
         files = {}
         for variable, (section, role) in fields.items():
+            if variable == "EVENTS_FILE" and not values[variable]:
+                continue
             files.setdefault(section, {})[role] = values[variable]
         return {"period": values["PERIOD"], "files": files}
     return resolve_config(None, build)
