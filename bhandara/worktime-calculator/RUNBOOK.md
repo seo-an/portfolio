@@ -1,5 +1,36 @@
 # 근무시간 계산기 사용 안내서 — Excel 준비부터 결과 확인까지
 
+
+## 내 설정 파일 하나만 수정하는 독립 실행
+
+`bhandara/worktime-calculator/user_settings.py`의 문자열만 변경하세요.
+`PERIOD` 기본값은 예시이므로 실제 분석 월로 수정해야 합니다.
+
+| 변수 | 기본값 | 입력 가능한 값 |
+|---|---|---|
+| `PERIOD` | `"2026-07"` | `"YYYY-MM"` 형식의 월 |
+| `EMPLOYEES_FILE` | `"common/employee.xlsx"` | 직원명부 Excel 상대 경로 |
+| `IDENTITY_FILE` | `"common/id-map.xlsx"` | ID_MAP 시트가 있는 Excel 상대 경로 |
+| `SCHEDULE_FILE` | `"worktime/work-schedule.xlsx"` | 예정근무 Excel 상대 경로 |
+| `ATTENDANCE_FILE` | `"worktime/attendance.xlsx"` | 출퇴근 Excel 상대 경로 |
+
+모든 파일을 `bhandara/data/input/` 아래에 준비하고 프로젝트 루트에서 실행합니다.
+
+```bash
+python run.py bhandara worktime-calculator
+```
+
+필요하면 `--input-dir`와 `--output-dir`로 별도 입출력 폴더를 지정합니다.
+기존 `--normalized` + `--config`의 외부 전체 설정 방식은 그대로 유지되고
+`user_settings.py` 값과 섞지 않습니다. `--period`를 명시하면
+기존 고정 Excel 역할 경로 방식입니다.
+
+설정이 잘못되면 `SETTINGS_INVALID`로 차단합니다. 계산 결과는
+근태 승인·기간 마감이 아니라 **검토용**이며, 비표준 근무형태를
+임의로 표준근로시간제 승인 처리하지 않습니다.
+
+---
+
 ## 간편 모드: Excel 직접 읽기
 
 [80명 공통 샘플](../examples/sample/input/)의
