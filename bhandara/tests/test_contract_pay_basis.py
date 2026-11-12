@@ -74,6 +74,19 @@ class ContractBasisTests(unittest.TestCase):
             record["status"] == "REVIEW_REQUIRED"
             for record in result["service_contracts"]
         ))
+        services = {
+            item["service_contract_id"]: item
+            for item in result["service_contracts"]
+        }
+        self.assertEqual(services["SVC-001"]["billable_quantity"], "3")
+        self.assertEqual(
+            services["SVC-001"]["estimated_service_amount"], "690000"
+        )
+        self.assertEqual(services["SVC-002"]["billable_quantity"], "22")
+        self.assertEqual(
+            services["SVC-002"]["estimated_service_amount"], "814000"
+        )
+        self.assertFalse(any(item["approved"] for item in services.values()))
         filtered = json.loads(
             paths["worktime_result_path"].read_text(encoding="utf-8")
         )
