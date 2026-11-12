@@ -218,3 +218,18 @@ def write_auto_config(input_root: Path, name: str, payload: Mapping[str, Any]) -
             encoding="utf-8",
         )
     return output
+
+
+def next_result_dir(input_root: Path, module_id: str) -> Path:
+    """Choose a new output directory without overwriting an earlier run."""
+    if module_id not in ("worktime-calculator", "payroll-calculator"):
+        raise InputLayoutError("unsupported calculator output directory")
+    base = input_root.resolve().parent / "output"
+    default = base / module_id
+    if not default.exists():
+        return default
+    for index in range(1, 10000):
+        candidate = base / f"{module_id}-{index:03d}"
+        if not candidate.exists():
+            return candidate
+    raise InputLayoutError("too many output versions; archive old runs")
