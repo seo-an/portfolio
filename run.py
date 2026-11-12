@@ -143,14 +143,21 @@ def main(argv: list[str] | None = None) -> int:
                         pto_files["events"] = events
                     elif pto_files["events"]:
                         choose_path(shared_root, events)
-                    config = write_auto_config(shared_root, f"pto-auto-{yyyy_mm}.json", {
-                        "schema_version": "1.0", "period": {"from": start, "to": end},
-                        "files": pto_files, "employee_allowlist": [],
-                    })
-                    inputs = shared_root
                     outputs = Path(args.output_dir) if args.output_dir else (
                         shared_root.parent / "output" / "pto-calculator"
                     )
+                    config = write_auto_config(
+                        shared_root,
+                        f"pto-auto-{yyyy_mm}.json",
+                        {
+                            "schema_version": "1.0",
+                            "period": {"from": start, "to": end},
+                            "files": pto_files,
+                            "employee_allowlist": [],
+                        },
+                        generated_dir=outputs.resolve().parent / "config",
+                    )
+                    inputs = shared_root
                 status, paths = module.run_pto(
                     config_path=config, input_dir=inputs, output_dir=outputs
                 )
@@ -200,22 +207,27 @@ def main(argv: list[str] | None = None) -> int:
             if shared_root is not None:
                 from bhandara.common.io.input_layout import InputLayoutError
                 builder = import_module("bhandara.payroll-calculator.shared_excel")
+                from bhandara.common.io.input_layout import next_result_dir
                 try:
+                    output = Path(args.output_dir) if args.output_dir else (
+                        next_result_dir(shared_root, "payroll-calculator")
+                    )
                     config = builder.prepare_shared_payroll(
-                        shared_root, args.period, overrides=overrides,
+                        shared_root,
+                        args.period,
+                        overrides=overrides,
                         worktime_result_path=(
                             Path(args.worktime_result) if args.worktime_result else None
                         ),
+                        generated_dir=output.resolve().parent / "config",
                     )
                 except (InputLayoutError, ValueError, OSError) as exc:
                     print(f"PAYROLL_INPUT_INVALID: {type(exc).__name__}: {exc}",
                           file=sys.stderr)
                     return 2
-                from bhandara.common.io.input_layout import next_result_dir
                 return payroll.main([
                     "calculate", "--config", str(config), "--output-dir",
-                    str(args.output_dir or
-                        next_result_dir(shared_root, "payroll-calculator")),
+                    str(output),
                 ])
             if args.operation == "normalize":
                 if not all((args.input_dir, args.output_dir)):
