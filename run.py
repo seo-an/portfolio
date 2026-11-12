@@ -6,6 +6,49 @@ import argparse
 import sys
 
 
+# The root dispatcher knows file ROLES, not any module-specific calculation
+# policy or values. Each installed calculator owns its editable defaults.
+_LOCAL_ROLE_FIELDS = {
+    "pto-calculator": {
+        "EMPLOYEES_FILE": ("common", "employees"),
+        "SCHEDULE_FILE": ("pto", "schedule"),
+        "ASSIGNMENTS_FILE": ("pto", "assignments"),
+        "EVENTS_FILE": ("pto", "events"),
+    },
+    "worktime-calculator": {
+        "EMPLOYEES_FILE": ("common", "employees"),
+        "IDENTITY_FILE": ("common", "identity"),
+        "SCHEDULE_FILE": ("worktime", "schedule"),
+        "ATTENDANCE_FILE": ("worktime", "attendance"),
+    },
+    "payroll-calculator": {
+        "EMPLOYEES_FILE": ("common", "employees"),
+        "IDENTITY_FILE": ("common", "identity"),
+        "CONTRACTS_FILE": ("payroll", "contracts"),
+        "COMPENSATION_FILE": ("payroll", "compensation"),
+        "PAYROLL_INPUT_FILE": ("payroll", "payroll_input"),
+        "COMPANY_POLICY_FILE": ("payroll", "company_policy"),
+        "WORKTIME_RESULT_FILE": ("payroll", "worktime_result"),
+    },
+}
+
+
+def local_cli_config(module_id: str) -> dict:
+    """Convert just this calculator\u0027s string variables into a JSON-ready config."""
+    from bhandara.common.config.resolver import load_local_settings, resolve_config
+
+    fields = _LOCAL_ROLE_FIELDS[module_id]
+    values = load_local_settings(
+        module_id, {"PERIOD": "month", **{name: "file" for name in fields}}
+    )
+    def build():
+        files = {}
+        for variable, (section, role) in fields.items():
+            files.setdefault(section, {})[role] = values[variable]
+        return {"period": values["PERIOD"], "files": files}
+    return resolve_config(None, build)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Public Portfolio CLI: PTO, Worktime, Payroll and Golden comparisons."
@@ -69,6 +112,23 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
         shared_root = None
         overrides = None
+        # No complete external JSON/CLI config supplied: use ONLY this module\u0027s
+        # local Python strings. External --config remains authoritative and never
+        # imports or silently mixes with user_settings.py.
+        if (args.module_id in _LOCAL_ROLE_FIELDS
+                and args.config is None and args.period is None
+                and args.normalized is None and args.operation is None
+                and args.manifest is None and args.scenario_id is None
+                and not args.paths_config and args.worktime_result is None
+                and not args.isolate_worker_failures):
+            from bhandara.common.config.resolver import SettingsContractError
+            try:
+                local = local_cli_config(args.module_id)
+            except (SettingsContractError, ImportError, ValueError) as exc:
+                print(f"SETTINGS_INVALID: {type(exc).__name__}: {exc}", file=sys.stderr)
+                return 2
+            args.period = local["period"]
+            overrides = local["files"]
         if args.period is not None:
             from pathlib import Path
             import json
