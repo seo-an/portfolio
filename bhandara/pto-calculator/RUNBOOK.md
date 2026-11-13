@@ -1,6 +1,48 @@
 # 연차 계산기 사용 안내서 — 엑셀 준비부터 결과 확인까지
 
 
+## 먼저 결과표부터 확인하세요 (v0.2.0)
+
+계산을 실행한 후 `pto-result.xlsx`의 **Summary**를 열어 보세요.
+
+| 열 | 의미 |
+|---|---|
+| `known_granted_days` | 계산기간과 제공된 근태를 바탕으로 확인된 연차 발생일 |
+| `known_used_days` | 입력된 승인 연차/반차 중 변환 가능한 사용일 |
+| `provisional_remaining_before_expiry_days` | 확인된 발생 - 확인된 사용. **소멸·이월·과거 사용 내역은 미검증** |
+| `confirmed_balance_days` | 아직 확정하지 않으므로 비어 있음 |
+| `status` | `REVIEW_REQUIRED`: 검토하지 않은 연차 잔액을 승인하지 않음 |
+
+실제 지급액, 연차수당, 승인 결과를 보려면 PTO 결과를 그대로 쓰면 안 됩니다. PTO에서는 돈을 계산하지 않습니다. `Grants`와 `Accruals`는 발생 내역, `Usage`는 사용 내역, `Balances`는 잠정 집계입니다. 법적 소멸·사용촉진·이월에 대한 회사 정책을 확인하지 않았으므로 숫자를 확정 잔여라고 부르면 안 됩니다.
+
+**이벤트 입력 예시:** 기존 `employee-events.xlsx` 7개 헤더(`request_id, employee_id, event_type, event_date, unit, status, note`) 그대로 사용할 수 있습니다.
+
+| event_type | unit | status | PTO 계산 |
+|---|---|---|---|
+| 연차 | DAY | APPROVED | 1일 사용 |
+| 오전 반차 | HALF_DAY | APPROVED | 0.5일 사용 |
+| 오후 반차 | HALF_DAY | APPROVED | 0.5일 사용 |
+| 조기퇴근 | HOURS | APPROVED | 연차 사용으로 자동 차감하지 않음 |
+| 육아기근로시간단축 | HOURS | APPROVED | 연차 사용과 별개, `reduced_hours` 추가 열 필요 |
+| 시간차 | HOURS | APPROVED | 시간 환산 정책 미확정이면 검토 |
+
+`request_id`는 중복되지 않게 작성하세요. 같은 날 오전 반차와 오후 반차를 각각 승인받았다면 별도 행으로 기록하고, 연차 전일과 반차가 동시에 입력되면 중복 차감하지 않고 검토합니다. 반차의 실제 출근 충족도는 Worktime 증빙이 없으면 자동 확정하지 않습니다.
+
+**`work-schedule-assignment.xlsx`를 생략하려면:** 별도 `--config` JSON을 지정하고 `files.assignments` 키를 삭제한 뒤, `files.monthly_schedule`에 직원·날짜별 근무표가 필요한 모든 날짜에 입력돼 있어야 합니다. 예정 근무표가 없는 날은 계산기가 임의로 평일근무라고 판단하지 않습니다. 기본 간편모드는 기존 배정표를 계속 사용합니다.
+
+**휴게시간:** 근무표상 예정된 60분과 실제 확인된 60분은 다릅니다. 근태 기록의 `break_min`이 없으면 0분으로 보거나 60분을 자동 차감하지 않습니다. 실제 휴게 확인과 근로시간 계산은 Worktime에서 처리합니다.
+
+**9가지 유형의 합성 사례 생성:**
+
+```bash
+python bhandara/pto-calculator/examples/generate_leave_usage_cases.py --output-dir /tmp/pto-usage-cases
+python run.py bhandara pto-calculator --config /tmp/pto-usage-cases/config.json --input-dir /tmp/pto-usage-cases/input --output-dir /tmp/pto-usage-cases/result
+```
+
+연차 2명·오전 반차 3명·오후 반차 2명·조기퇴근 1명·단축근무 1명이 들어 있으며, 모든 직원과 승인은 합성입니다.
+
+---
+
 ## 내 설정 파일 하나만 수정하는 독립 실행
 
 계산기 폴더의 `user_settings.py`를 열어 아래 **문자열**을 수정합니다.
@@ -48,7 +90,7 @@ python run.py bhandara pto-calculator --period 2026-07
 
 **이 문서는 개발자가 아니어도 연차 계산기에 넣을 Excel과 설정 파일을 준비할 수 있도록 작성했습니다.** 설치·Python 실행 명령·코드·테스트 결과는 [연차 계산기 README](README.md)를 참고하세요.
 
-> **계산 범위:** 입사일을 기준으로 발생하는 연차 내역을 검토합니다. 휴가 **사용 잔액, 회계연도 기준 전환·정산, 퇴직 시 수당, 최종 승인**을 처리하는 도구는 아닙니다.
+> **계산 범위:** 입사일을 기준으로 발생하는 연차 내역을 검토합니다. 연차 사용의 잠정 집계는 제공하지만 **확정 잔액, 소멸·이월, 회계연도 기준 전환·정산, 퇴직 시 수당, 최종 승인**은 처리하지 않습니다.
 
 ## 1. 무엇을 준비하나요?
 
@@ -187,7 +229,7 @@ python run.py bhandara pto-calculator --period 2026-07
 | `pto-review.json` | 오류·검토 필요 사유 |
 | `pto-run.json` | 입력·출력 이력 기록, 승인증이 아님 |
 
-`pto-result.xlsx` 안에는 `Summary`, `Grants`, `Unresolved`, `Review Required` 시트가 있습니다. **발생하지 않았다고 표시된 항목이나 검토 필요 항목을 0일로 확정하지 마세요.**
+`pto-result.xlsx` 안에는 `Summary`, `Accruals`, `Grants`, `Usage`, `Balances`, `Unresolved`, `Review Required`, `Run Info` 시트가 있습니다. **발생하지 않았다고 표시된 항목이나 검토 필요 항목을 0일로 확정하지 마세요.**
 
 **`PASS`는 계산 완료를 나타낼 뿐 최종 연차 승인이나 법적 적합성 확정이 아닙니다.**
 
