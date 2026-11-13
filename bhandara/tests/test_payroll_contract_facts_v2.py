@@ -208,6 +208,37 @@ class ContractFactsV2Tests(unittest.TestCase):
         ):
             self._audit()
 
+    def test_public_two_sheet_excel_example_matches_documented_sums(self):
+        sample = (
+            ROOT / "bhandara/payroll-calculator/examples/"
+            "contract-v2-two-sheet.demo.xlsx"
+        )
+        book = load_workbook(sample, read_only=True, data_only=False)
+        try:
+            self.assertEqual(book.sheetnames, ["Contracts", "Components"])
+            rows = list(book["Contracts"].values)
+            self.assertEqual(rows[0][-2:], ("amount_type", "relationship_type"))
+            self.assertEqual(rows[1][-2:], ("BASE", "REGULAR_EMPLOYEE"))
+            self.assertEqual(rows[2][-2:], ("TOTAL", "FIXED_TERM_EMPLOYEE"))
+            components = list(book["Components"].values)
+        finally:
+            book.close()
+        amounts = {}
+        for contract_id, code, value in components[1:]:
+            amounts.setdefault(contract_id, {})[code] = Decimal(str(value))
+        base = terms.resolve_monthly_terms(
+            contract_id="CTR-BASE-001", pay_basis="MONTHLY",
+            contract_amount=Decimal("3500000"),
+            amount_type="BASE", components=amounts["CTR-BASE-001"],
+        )
+        total = terms.resolve_monthly_terms(
+            contract_id="CTR-TOTAL-002", pay_basis="MONTHLY",
+            contract_amount=Decimal("3500000"),
+            amount_type="TOTAL", components=amounts["CTR-TOTAL-002"],
+        )
+        self.assertEqual(base.monthly_paid_total, Decimal("3750000"))
+        self.assertEqual(total.monthly_paid_total, Decimal("3500000"))
+
     def test_public_semantics_registry_lists_relationships_but_not_tax_rules(self):
         path = ROOT / "bhandara/payroll-calculator/resources/contract-types.json"
         registry = json.loads(path.read_text(encoding="utf-8"))
