@@ -39,9 +39,18 @@ SALARY_BASIS = {"ANNUAL", "MONTHLY"}
 TIME_BASIS = {"HOURLY", "DAILY"}
 EMPLOYEE_BASIS = SALARY_BASIS | TIME_BASIS
 COMPONENT_CODES = {"position_allowance", "meal_allowance"}
-EMPLOYEE_RELATIONSHIPS = {
-    "REGULAR_EMPLOYEE", "FIXED_TERM_EMPLOYEE", "DAILY_EMPLOYEE",
-}
+
+
+def _employee_relationship_types() -> set[str]:
+    """Read the public vocabulary; do not infer legal status from ID prefixes."""
+    resource = Path(__file__).resolve().parent / "resources/contract-types.json"
+    catalog = json.loads(resource.read_text(encoding="utf-8"))
+    if catalog.get("schema_version") != "1.0":
+        raise InputLayoutError("unsupported contract-types registry version")
+    return {
+        name for name, spec in catalog["relationship_types"].items()
+        if spec.get("route") == "employee_payroll"
+    }
 
 
 def _contract_layout(path: Path) -> str:
@@ -118,7 +127,7 @@ def _load_employee_contracts(path: Path, identities: Mapping[str, Any],
             if layout == "v2" else "LEGACY_EMPLOYEE"
         )
         if layout == "v2":
-            if relationship_type not in EMPLOYEE_RELATIONSHIPS:
+            if relationship_type not in _employee_relationship_types():
                 raise InputLayoutError(
                     f"pay-contract.xlsx row {line}: unsupported relationship_type "
                     f"{relationship_type!r} for employee payroll"
