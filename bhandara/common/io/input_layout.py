@@ -99,8 +99,8 @@ def read_sheet(path: Path, required: Iterable[str], *,
                sheet_name: str | None = None) -> list[dict[str, Any]]:
     """Strict workbook parse, preserving row numbers and rejecting bad headers.
 
-    An optional extra column such as case_id is deliberately ignored by the
-    consumer, while unknown columns remain visible for source lineage.
+    Extra columns are left available to callers without becoming required
+    calculation fields. User-facing sample inputs omit test-only metadata.
     """
     try:
         # This shared-layout contract rejects every formula, unlike Payroll's
