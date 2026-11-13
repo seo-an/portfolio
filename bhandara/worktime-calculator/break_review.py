@@ -301,6 +301,21 @@ def _assess_one(worker_id: str, employee_id: str, day: str,
         reasons.extend(errors)
         required = None
         gap = None
+    # Core Worktime still uses attendance.break_min for PAY-CANDIDATE hours.
+    # Never mark legal rest verified when that independent number conflicts
+    # with the complete, certified rest evidence. No silent pay rewrite.
+    reported = attendance.get("break_min")
+    if reported not in (None, ""):
+        try:
+            reported_int = int(reported)
+            consistent = (reported_int == rest_min and str(reported_int) == str(reported).strip())
+        except (TypeError, ValueError, OverflowError):
+            consistent = False
+        if not consistent and (rest_min or coverage):
+            state = REVIEW
+            reasons.append("REPORTED_BREAK_REQUIRES_RECONCILIATION")
+            required = None
+            gap = None
     if verification.get("four_hour_waiver_ref") and work_date < EXCEPTION_START:
         state = REVIEW
         reasons.append("WAIVER_NOT_IN_FORCE")
@@ -314,6 +329,7 @@ def _assess_one(worker_id: str, employee_id: str, day: str,
             item.isoformat(timespec="minutes") for item in planned
         ] if planned else None,
         "gross_presence_min": gross_min,
+        "reported_break_min": reported,
         "verified_rest_min": rest_min,
         "required_break_min": required,
         "confirmed_shortfall_min": gap,
