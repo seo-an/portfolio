@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from .accrual_pipeline import calculate_anniversary_accrual
 from .daily_calendar import build_daily_calendar_record
 from .handoff_inputs import load_handoff_inputs
+from .leave_ledger import calculate_leave_ledger
 
 
 def _date_range(start: date, end: date):
@@ -40,10 +41,20 @@ def calculate_employee(employee: dict, inputs: dict, *, start_date: date, end_da
         as_of_date=effective_end,
         daily_records=daily_records,
     )
+    ledger = calculate_leave_ledger(
+        employee_id=employee["employee_id"],
+        grants=accrual["grants"],
+        event_rows=inputs["event_rows"],
+        as_of_date=effective_end,
+        period_start=start_date,
+        hire_date=employee["hire_date"],
+        termination_date=employee.get("termination_date"),
+    )
     return {
         "employee_id": employee["employee_id"],
         "name": employee.get("name"),
         **accrual,
+        "ledger": ledger,
     }
 
 

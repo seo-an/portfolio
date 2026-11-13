@@ -27,10 +27,22 @@ def observed_work_hours(attendance: dict[str, Any]) -> float | None:
     if clock_in is None or clock_out is None:
         return None
 
+    # A missing break is unknown, NOT zero and NOT a default 60 minutes.
+    # Worktime owns the verified effective break calculation.
+    break_min = attendance.get("break_min")
+    if break_min is None or isinstance(break_min, bool):
+        return None
+    try:
+        value = float(break_min)
+    except (ValueError, TypeError, OverflowError):
+        return None
+    if not 0 <= value <= 1440:
+        return None
     gross = _hours_between(clock_in, clock_out)
-    break_min = attendance.get("break_min") or 0
-    net = gross - float(break_min) / 60
-    return max(net, 0.0)
+    net = gross - value / 60
+    if net < 0:
+        return None
+    return net
 
 
 def compose_reduced_hours_attendance(
@@ -71,7 +83,7 @@ def compose_reduced_hours_attendance(
     if observed_hours is None:
         return {
             "resolved": False,
-            "reason": "INCOMPLETE_ATTENDANCE_FOR_REDUCED_HOURS",
+            "reason": "ATTENDANCE_OR_BREAK_UNVERIFIED_FOR_REDUCED_HOURS",
         }
 
     required_observed_hours = max(scheduled_hours - reduced_hours, 0.0)

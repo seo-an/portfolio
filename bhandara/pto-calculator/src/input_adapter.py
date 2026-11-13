@@ -293,7 +293,10 @@ def load_pto_inputs(input_dir: Path, source_files: dict[str, Any]) -> PTOInputBu
     """Prepare legacy handoff, retaining per-file provenance and blast radius."""
     if not isinstance(source_files, dict):
         raise PTOInputError("config.files must be an object")
-    mandatory = ("employees", "schedule", "assignments")
+    # When every required day is supplied by a dated monthly schedule,
+    # a separate employee-to-cycle assignment workbook is unnecessary.
+    # Missing coverage still fails closed in resolve_employee_schedule().
+    mandatory = ("employees", "schedule")
     for name in mandatory:
         if not isinstance(source_files.get(name), str):
             raise PTOInputError(f"config.files.{name} must be a filename")
@@ -301,6 +304,10 @@ def load_pto_inputs(input_dir: Path, source_files: dict[str, Any]) -> PTOInputBu
         if not isinstance(source_files.get(name, []), list):
             raise PTOInputError(f"config.files.{name} must be a list")
     tasks = [(name, source_files[name]) for name in mandatory]
+    if source_files.get("assignments") is not None:
+        if not isinstance(source_files["assignments"], str):
+            raise PTOInputError("config.files.assignments must be a filename when provided")
+        tasks.append(("assignments", source_files["assignments"]))
     tasks += [(kind, name) for kind in ("monthly_schedule", "attendance")
               for name in source_files.get(kind, [])]
     if source_files.get("events") is not None:
@@ -356,7 +363,7 @@ def load_pto_inputs(input_dir: Path, source_files: dict[str, Any]) -> PTOInputBu
     handoff = {
         "employees": employees.rows,
         "schedule_rows": [row for sheet in loaded["schedule"] for row in sheet.rows],
-        "assignment_rows": [row for sheet in loaded["assignments"] for row in sheet.rows],
+        "assignment_rows": [row for sheet in loaded.get("assignments", []) for row in sheet.rows],
         "monthly_rows": [row for sheet in loaded.get("monthly_schedule", []) for row in sheet.rows],
         "attendance_rows": [row for sheet in loaded.get("attendance", []) for row in sheet.rows],
         "event_rows": [row for sheet in loaded.get("events", []) for row in sheet.rows],

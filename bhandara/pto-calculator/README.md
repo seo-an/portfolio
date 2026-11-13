@@ -1,11 +1,26 @@
-# PTO Calculator — 공개 독립 실행 모듈 v0.1.1
+# PTO Calculator — 공개 독립 실행 모듈 v0.2.0
 
 > **실제 사용하려는 분:** [연차 계산기 RUNBOOK](RUNBOOK.md)에 Excel 저장 위치·파일 이름·활성 시트·헤더·예시 데이터·`config.json`의 수정 항목을 설명했습니다. **이 README는 개발자·설치 담당자용 기술 및 검증 문서**입니다.
 
 
+
+## v0.2.0: 연차 발생 + 사용 + 잠정 잔여
+- **발생:** 기존 입사일 기준 연차 발생 계산과 검토 자료는 유지합니다.
+- **사용:** `employee-events.xlsx`의 승인된 연차(`DAY`)·오전/오후 반차(`HALF_DAY`)만 차감합니다. 조퇴·외출·단축근무는 연차 사용으로 간주하지 않습니다.
+- **잔여:** 발생합계 - 사용합계를 `provisional_remaining_before_expiry_days`로 보여줍니다. **이월·소멸·과거 사용 이력의 완전성이 검증되지 않았으므로 확정 잔여가 아닙니다.** `confirmed_balance_days`, `expired_days`는 `null`을 유지합니다.
+- **시간차:** 시간→일 환산 정책을 추정하지 않고 `HOURLY_CONVERSION_POLICY_REQUIRED`로 표시합니다.
+- **입력:** 날짜별 월간 스케줄이 계산기간 전체를 덮는 경우 `--config`에서 `files.assignments`를 생략할 수 있습니다. 커버리지가 모자라면 오류이며 교대 패턴을 임의 보간하지 않습니다. 기존 배정 시트와 간편 Excel 모드 경로는 그대로 지원합니다.
+- **휴게:** 실제 휴게시간이 누락되면 0분이나 예정 60분을 대입하지 않습니다. Worktime에서 검증할 사항입니다.
+- **결과 Excel:** `Summary`(직원별 잠정 발생/사용), `Accruals`, `Grants`(기존 호환), `Usage`, `Balances`, `Unresolved`, `Review Required`, `Run Info`.
+- **테스트:** `python -m unittest bhandara.tests.test_pto_ledger_v2` 및 전체 회귀.
+- **실무형 합성 샘플:** `python bhandara/pto-calculator/examples/generate_leave_usage_cases.py --output-dir /tmp/pto-usage-cases`로 연차 2명, 오전 반차 3명, 오후 반차 2명, 조기퇴근 1명, 육아기 단축근무 1명의 가상 사례 생성. 실제 승인 자료가 아닙니다.
+
+**업무 경계:** Worktime은 검증된 실제 근로시간·휴게, PTO는 연차 발생/사용/잠정 잔여, Payroll은 임금 지급 후보를 다룹니다. PTO는 근로시간·세금·보험료·휴가 승인·지급 승인·정산액을 계산하거나 확정하지 않습니다.
+
+
 **기능:** 기존 Gearbox PTO의 **입사일 기산(anniversary-basis) 연차 발생 기록**을 로컬 Excel 입력으로 계산한다. 1년 미만의 월별 발생, 1년 이상 연차 발생, 근무 스케줄·근태·승인 이벤트에 따른 **출근율 충족 여부가 불확실한 항목**을 검토용으로 표시한다.
 
-**계산하지 않는 것:** 회계연도 기준 연차 정산, 휴가 사용 잔액, 퇴직 정산·수당, 임금 지급 승인, 법률 적합성 확정, 근태 마감. 이 엔진의 과거 정책·계산식을 자동으로 개선했다고 주장하지 않는다.
+**계산하지 않는 것:** 회계연도 기준 연차 정산, 검증된 잔액 확정 및 소멸/이월, 퇴직 정산·수당, 임금 지급 승인, 법률 적합성 확정, 근태 마감. 이 엔진의 과거 정책·계산식을 자동으로 개선했다고 주장하지 않는다.
 
 **현재 상태 (2026-11-10):** 공개 PTO v0.1.0 이전([portfolio PR #4](https://github.com/seo-an/portfolio/pull/4))과 2026-07 합성 Golden 비교, 2026년 전체 기간의 기존 Gearbox 대비 합성 직원 3명 계산 동등성, **Base + PTO만 설치한 독립 실행 및 상호배타 테스트**가 모두 PASS했다. 합성 전용 Hermes PTO Preview Tool의 Slack 호출도 검증했다. 단, **기존 운영 PTO Pipeline은 그대로 유지**한다. 합성 자료의 일치는 실제 직원·회사 정책의 적합성이나 승인 결과를 의미하지 않는다.
 
@@ -68,7 +83,7 @@ GitHub ZIP을 사용한다면 최상위 `run.py`, `install.py`, `requirements.tx
 
 기본 입력 위치는 `bhandara/data/pto-calculator/input/`. 이 폴더 전체는 Git에서 제외된다. 직접 입력·출력 경로를 지정하는 것이 가장 안전하다.
 
-필수 파일은 **`employee.xlsx`**, **`work-schedule.xlsx`**, **`work-schedule-assignment.xlsx`**다. 월별 스케줄과 출퇴근 기록은 해당 기간에 필요할 때 지정하며, 승인 이벤트 파일도 선택 사항이다. 아래 표는 기존 PTO 입력 준비 단계에서 읽었던 **정확한 헤더**다. 열 순서는 자유롭고, **추가 열·빈 추가 헤더가 있어도 무시**한다.
+필수 파일은 **`employee.xlsx`**, **`work-schedule.xlsx`**다. 배정표(`work-schedule-assignment.xlsx`)는 순환 근무표를 쓰거나 월별 근무표에 공백이 있으면 필요하다. 월별 스케줄과 출퇴근 기록은 해당 기간에 필요할 때 지정하며, 승인 이벤트 파일도 선택 사항이다. 아래 표는 기존 PTO 입력 준비 단계에서 읽었던 **정확한 헤더**다. 열 순서는 자유롭고, **추가 열·빈 추가 헤더가 있어도 무시**한다.
 
 | 파일 | 선택하는 헤더 |
 |---|---|
