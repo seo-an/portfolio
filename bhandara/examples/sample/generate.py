@@ -17,6 +17,18 @@ from openpyxl import Workbook
 SEED = 20261112
 EMPLOYEES = 80
 SCHEDULES = ("FIXED", "STAGGERED", "TWO_SHIFT", "THREE_SHIFT", "DAY_NIGHT", "FLEXIBLE")
+CASE_OVERRIDES = {
+    2: "LOW_ATTENDANCE",
+    5: "MISSING_RAW_EVENT",
+    7: "TERMINATED_JUL20",
+    12: "NIGHT_SHIFT",
+    19: "TERMINATED_JUL31",
+    31: "CHILDCARE_REDUCED",
+    44: "DUPLICATE_RAW_TAG",
+    67: "FLEXIBLE_REVIEW",
+}
+DEFAULT_CASE = "NORMAL_OR_WORKSYSTEM_REVIEW"
+
 START = date(2026, 6, 1)
 END = date(2026, 7, 31)
 
@@ -68,14 +80,18 @@ def roster() -> list[dict]:
             "termination_date": date(2026, 7, 20) if i == 7 else
                                 date(2026, 7, 31) if i == 19 else None,
             "work_system": schedule,
-            "case_id": (
-                {2: "LOW_ATTENDANCE", 5: "MISSING_RAW_EVENT",
-                 7: "TERMINATED_JUL20", 12: "NIGHT_SHIFT",
-                 19: "TERMINATED_JUL31", 31: "CHILDCARE_REDUCED",
-                 44: "DUPLICATE_RAW_TAG", 67: "FLEXIBLE_REVIEW"}
-            ).get(i, "NORMAL_OR_WORKSYSTEM_REVIEW"),
         })
     return result
+
+
+def test_case_groups(people: list[dict]) -> dict[str, list[str]]:
+    """Synthetic fixture metadata only: never part of calculator input."""
+    groups: dict[str, list[str]] = {}
+    for person in people:
+        employee_id = person["employee_id"]
+        label = CASE_OVERRIDES.get(int(employee_id[1:]), DEFAULT_CASE)
+        groups.setdefault(label, []).append(employee_id)
+    return groups
 
 
 def day_schedule(employee: dict, day: date):
@@ -101,22 +117,22 @@ def build_shared_input(root: Path) -> dict[str, int]:
     employee_rows = [
         (x["employee_id"], x["hire_date"].isoformat(),
          x["termination_date"].isoformat() if x["termination_date"] else None,
-         x["work_system"], x["case_id"])
+         x["work_system"])
         for x in people
     ]
     ids = [
         (x["employee_id"], x["security_id"], x["worker_id"],
-         x["payroll_id"], x["work_system"], x["case_id"])
+         x["payroll_id"])
         for x in people
     ]
     rng.shuffle(employee_rows)
     rng.shuffle(ids)
     save_xlsx(input_dir / "common/employee.xlsx",
-              ("employee_id", "hire_date", "termination_date", "work_system", "case_id"),
+              ("employee_id", "hire_date", "termination_date", "work_system"),
               employee_rows)
     save_xlsx(input_dir / "common/id-map.xlsx",
-              ("employee_id", "security_id", "worker_id", "payroll_id",
-               "work_system", "case_id"), ids, sheet_name="ID_MAP")
+              ("employee_id", "security_id", "worker_id", "payroll_id"),
+              ids, sheet_name="ID_MAP")
 
     master, assignments = [], []
     cycle_anchor = "2026-06-01"
@@ -344,12 +360,16 @@ def build_shared_input(root: Path) -> dict[str, int]:
             },
         },
     })
+    # Stored outside input/: calculators only consume the four-column employee
+    # roster and ID mapping files; the test suite owns this scenario index.
+    write_json(root / "test-cases.json", test_case_groups(people))
     write_json(root / "sample-manifest.json", {
         "schema_version": "1.0", "seed": SEED, "employees": EMPLOYEES,
         "note": "Synthetic inputs. Raw reader layouts are illustrative, not vendor-certified.",
         "worktime_month": "2026-06", "pto_month": "2026-07",
         "payroll_month": "2026-07",
         "identity_map": "input/common/id-map.xlsx",
+        "test_case_index": "test-cases.json",
         "source_files": {
             "pto_schedule": len(pto_schedules),
             "pto_attendance": len(pto_attendance),
