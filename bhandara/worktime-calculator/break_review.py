@@ -150,6 +150,8 @@ def _events(bundle: Mapping[str, Any]) -> tuple[dict[tuple[str, str], list], str
             raise BreakReviewError("access event identifier invalid")
         if event_id in ids:
             raise BreakReviewError("duplicated CAPS event ID")
+        if row.get("worker_id") is not None and not str(row.get("worker_id")).strip():
+            raise BreakReviewError("access worker_id empty")
         ids.add(event_id)
         if direction is None or mode not in MODES or auth_status not in {"SUCCESS", "FAILED", "UNKNOWN"}:
             raise BreakReviewError("invalid normalized direction/mode/auth status")
@@ -161,6 +163,7 @@ def _events(bundle: Mapping[str, Any]) -> tuple[dict[tuple[str, str], list], str
             "event_id": event_id, "at": stamped, "direction": direction,
             "mode": mode, "auth_status": auth_status,
             "device_id": row.get("device_id"), "device_name": row.get("device_name"),
+            "worker_id": row.get("worker_id"),
             "source_row_number": trace.get("row_number"),
             "classification": classification,
             "free_use_confirmed": row.get("free_use_confirmed") is True,
@@ -418,6 +421,8 @@ def analyze_access_breaks(bundle: Mapping[str, Any],
     for key, items in events.items():
         if key[0] not in roster:
             raise BreakReviewError("access event references unknown employee")
+        if any(item["worker_id"] not in (None, roster[key[0]]) for item in items):
+            raise BreakReviewError("access event worker identity mismatch")
     # Gearbox may attach unapproved attendance candidates derived from explicit
     # clock modes and first-access fallback. They never become payroll clocks.
     candidate_source = bundle["sources"].get("attendance_candidates", {})
@@ -433,6 +438,8 @@ def analyze_access_breaks(bundle: Mapping[str, Any],
             raise BreakReviewError("attendance candidate identity/duplicate invalid")
         if candidate.get("confirmed") is not False:
             raise BreakReviewError("attendance candidate must be unconfirmed")
+        if candidate.get("worker_id") != roster[key[0]]:
+            raise BreakReviewError("attendance candidate worker identity mismatch")
         candidates[key] = dict(candidate)
     examined = set()
     rows = []
@@ -477,10 +484,17 @@ def analyze_access_breaks(bundle: Mapping[str, Any],
         item["attendance_candidate"] = candidates[key]
         rows.append(item)
     rows.sort(key=lambda row: (row["worker_id"], row["work_date"], row["review_codes"]))
+    upstream = bundle.get("access_normalization_review", {})
+    if not isinstance(upstream, Mapping):
+        raise BreakReviewError("access normalization review must be an object")
+    upstream_issues = upstream.get("issues", [])
+    if not isinstance(upstream_issues, list):
+        raise BreakReviewError("access normalization issues invalid")
     return {
         "schema_version": VERSION,
-        "status": REVIEW if any(row["status"] != "PASS_VERIFIED" for row in rows)
+        "status": REVIEW if (upstream_issues or any(row["status"] != "PASS_VERIFIED" for row in rows))
                   else "PASS_VERIFIED",
+        "normalization_issue_count": len(upstream_issues),
         "finalizable": False, "approved": False,
         "source_batch_id": bundle.get("batch_id"),
         "access_events_sha256": digest,
