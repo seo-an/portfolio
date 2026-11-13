@@ -5,6 +5,8 @@ on:
     paths:
       - "bhandara/common/io/tabular.py"
       - "bhandara/common/io/xlsx_stream.py"
+      - "bhandara/common/io/xlsx.py"
+      - "bhandara/tests/test_common_xlsx_validation_stream.py"
       - "bhandara/common/io/input_layout.py"
       - "bhandara/tests/test_common_xlsx_stream_contract.py"
       - "bhandara/common/validation/scalars.py"
@@ -33,6 +35,8 @@ jobs:
         run: python -m unittest discover -s bhandara/tests -p "test_common_tabular_normalization.py" -v
       - name: XLSX stream formula, headers and lineage compatibility
         run: python -m unittest discover -s bhandara/tests -p "test_common_xlsx_stream_contract.py" -v
+      - name: XLSX required-header and row rejection compatibility
+        run: python -m unittest discover -s bhandara/tests -p "test_common_xlsx_validation_stream.py" -v
       - name: Historic migration provenance and explicit post-migration refactor SHA
         run: python -m unittest discover -s bhandara/tests -p "test_payroll_migration.py" -v
       - name: Base with only the requested calculator
