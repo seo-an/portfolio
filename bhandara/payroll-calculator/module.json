@@ -93,7 +93,40 @@
       ],
       "service_records_optional": true,
       "service_estimates": "hourly/daily contract rate multiplied by separately evidenced quantity, review only",
-      "annual_payout_assumption": "12 equal monthly installments, always flagged for human review"
+      "annual_payout_assumption": "12 equal monthly installments, always flagged for human review",
+      "v2": {
+        "sheets": [
+          "Contracts",
+          "Components"
+        ],
+        "required_contract_columns": [
+          "contract_id",
+          "employee_id",
+          "pay_basis",
+          "contract_amount",
+          "effective_from",
+          "effective_to",
+          "standard_day_hours",
+          "amount_type",
+          "relationship_type"
+        ],
+        "required_component_columns": [
+          "contract_id",
+          "pay_item_code",
+          "monthly_amount"
+        ],
+        "amount_types": [
+          "BASE",
+          "TOTAL",
+          "RATE"
+        ],
+        "relationship_vocabulary": "resources/contract-types.json",
+        "total_validation": "sum(explicit base_salary + fixed allowances) == monthly contract total",
+        "additive_payment": "base_salary + fixed allowances",
+        "service_v2": "PENDING_WORKTIME_AND_SERVICE_REVIEW_MIGRATION",
+        "tax_split": "NOT_IMPLEMENTED"
+      },
+      "legacy": "single-sheet pay-contract.xlsx with separate included pay-contract-components.xlsx (kept for compatibility)"
     }
   }
 }
