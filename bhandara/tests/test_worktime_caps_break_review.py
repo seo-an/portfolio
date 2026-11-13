@@ -106,6 +106,15 @@ class AccessBreakReviewTests(unittest.TestCase):
         self.assertEqual(row["required_break_min"], 60)
         self.assertEqual(row["status"], "PASS_VERIFIED")
 
+    def test_verified_rest_conflicting_with_reported_break_needs_reconciliation(self):
+        row, _ = self.assess([
+            evt("exit", "12:00", "OUT", category="REST_CONFIRMED",
+                verified=True, ref="HR-EVIDENCE-1"),
+            evt("entry", "13:00", "IN"),
+        ], break_min=30)
+        self.assertEqual(row["status"], "REVIEW_REQUIRED")
+        self.assertIn("REPORTED_BREAK_REQUIRES_RECONCILIATION", row["review_codes"])
+
     def test_business_trip_does_not_debit_break(self):
         row, _ = self.assess([
             evt("e1", "12:00", "OUT", category="REST_CONFIRMED",
