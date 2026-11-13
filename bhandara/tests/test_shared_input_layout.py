@@ -82,6 +82,66 @@ class SharedLayoutFixtureTests(unittest.TestCase):
         finally:
             book.close()
 
+    def test_test_case_index_is_separate_from_hr_inputs(self):
+        # Case labels explain synthetic scenarios; production calculators do
+        # not read the case index or require case columns in source workbooks.
+        case_path = SAMPLE.parent / "test-cases.json"
+        self.assertTrue(case_path.is_file())
+        self.assertFalse(case_path.is_relative_to(SAMPLE))
+        cases = json.loads(case_path.read_text(encoding="utf-8"))
+        expected_cases = {
+            "LOW_ATTENDANCE": "E002",
+            "MISSING_RAW_EVENT": "E005",
+            "TERMINATED_JUL20": "E007",
+            "NIGHT_SHIFT": "E012",
+            "TERMINATED_JUL31": "E019",
+            "CHILDCARE_REDUCED": "E031",
+            "DUPLICATE_RAW_TAG": "E044",
+            "FLEXIBLE_REVIEW": "E067",
+        }
+        self.assertEqual(
+            set(cases), set(expected_cases) | {"NORMAL_OR_WORKSYSTEM_REVIEW"}
+        )
+        for case, ident in expected_cases.items():
+            self.assertEqual(cases[case], [ident])
+        self.assertEqual(len(cases["NORMAL_OR_WORKSYSTEM_REVIEW"]), 72)
+        flattened = [employee for group in cases.values() for employee in group]
+        self.assertEqual(len(flattened), 80)
+        self.assertEqual(len(set(flattened)), 80)
+
+        book = load_workbook(SAMPLE / "common/employee.xlsx", read_only=True)
+        try:
+            rows = list(book.active.values)
+        finally:
+            book.close()
+        self.assertEqual(
+            rows[0],
+            ("employee_id", "hire_date", "termination_date", "work_system"),
+        )
+        self.assertEqual(len(rows), 81)
+        self.assertEqual({row[0] for row in rows[1:]}, set(flattened))
+        self.assertEqual(
+            {row[0]: row[2] for row in rows[1:] if row[2]},
+            {"E007": "2026-07-20", "E019": "2026-07-31"},
+        )
+        self.assertEqual(len({row[3] for row in rows[1:]}), 6)
+
+        book = load_workbook(SAMPLE / "common/id-map.xlsx", read_only=True)
+        try:
+            self.assertIn("ID_MAP", book.sheetnames)
+            mappings = list(book["ID_MAP"].values)
+        finally:
+            book.close()
+        self.assertEqual(
+            mappings[0],
+            ("employee_id", "security_id", "worker_id", "payroll_id"),
+        )
+        self.assertEqual(len(mappings), 81)
+        self.assertEqual({row[0] for row in mappings[1:]}, set(flattened))
+        self.assertEqual(len({row[1] for row in mappings[1:]}), 80)
+        self.assertEqual(len({row[2] for row in mappings[1:]}), 80)
+        self.assertEqual(len({row[3] for row in mappings[1:]}), 80)
+
     def test_manifest_files_are_real_default_input_contract(self):
         for module in ("pto", "worktime", "payroll"):
             path = ROOT / "bhandara" / f"{module}-calculator/module.json"
