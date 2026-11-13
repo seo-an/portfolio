@@ -51,7 +51,8 @@ python run.py bhandara worktime-calculator --period 2026-06
 
 외부 인력이 실제로 시간제·일급제 업무를 제공하고 그 실적을 근거로
 계약대가를 검토해야 한다면 **새 근태 Excel을 만들 필요가 없습니다.**
-기존 파일 3개만 사용합니다.
+기존 필수 Excel 4개(`employee.xlsx`, `id-map.xlsx`, 근무표, 근태표)를
+그대로 사용하며, 외부 인력을 위해 수정하는 것은 **ID 매핑·근무표·근태표 3개**뿐입니다.
 
 ### 1. `common/id-map.xlsx` — `EXTERNAL` 시트 추가(선택)
 
