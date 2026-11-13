@@ -18,7 +18,7 @@ from .src.input_adapter import PTOInputError, load_pto_inputs
 
 
 MODULE_ID = "pto-calculator"
-MODULE_VERSION = "0.1.1"
+MODULE_VERSION = "0.2.0"
 MODULE_DIR = Path(__file__).resolve().parent
 LOCAL_DATA_DIR = MODULE_DIR.parent / "data" / MODULE_ID
 LEGAL_BASIS_FILE = MODULE_DIR / "resources" / "legal-basis.json"
@@ -101,42 +101,70 @@ def _append_rows(sheet, columns: tuple[str, ...], rows: list[dict[str, Any]]) ->
 
 
 def make_workbook(payload: dict[str, Any], findings: list[Finding]) -> bytes:
-    """Review-only XLSX. JSON is the authoritative exact-value artifact."""
+    """Put PTO figures first; all balance amounts remain provisional."""
     book = Workbook()
     try:
-        sheet = book.active
-        sheet.title = "Summary"
-        _append_rows(sheet, ("field", "value"), [
-            {"field": "Module", "value": MODULE_ID},
-            {"field": "Status", "value": payload["status"]},
-            {"field": "Legal basis version", "value": payload["legal_basis"]["basis_version"]},
-            {"field": "Legal basis checked at", "value": payload["legal_basis"]["reviewed_at"]},
-            {"field": "Period start", "value": payload["period"]["from"]},
-            {"field": "Period end", "value": payload["period"]["to"]},
-            {"field": "Calculated employees", "value": len(payload["results"])},
-            {"field": "Review/error findings", "value": len(findings)},
-            {"field": "Finalizable", "value": False},
-            {"field": "Approved", "value": False},
-        ])
-        grant_rows: list[dict[str, Any]] = []
-        unresolved_rows: list[dict[str, Any]] = []
+        summary = book.active
+        summary.title = "Summary"
+        summary_rows = []
+        grant_rows = []
+        usage_rows = []
+        balance_rows = []
+        unresolved_rows = []
         for employee in payload["results"]:
             ident = employee["employee_id"]
-            for record in employee["grants"]:
-                grant_rows.append({"employee_id": ident, **record})
-            for record in employee["unresolved_grants"]:
-                unresolved_rows.append({"employee_id": ident, **record})
+            ledger = employee.get("ledger", {})
+            balance = {
+                "employee_id": ident,
+                "as_of_date": ledger.get("as_of_date"),
+                "known_granted_days": ledger.get("known_granted_days"),
+                "known_used_days": ledger.get("known_used_days"),
+                "provisional_remaining_before_expiry_days":
+                    ledger.get("provisional_remaining_before_expiry_days"),
+                "confirmed_balance_days": ledger.get("confirmed_balance_days"),
+                "expired_days": ledger.get("expired_days"),
+                "opening_balance_days": ledger.get("opening_balance_days"),
+                "status": ledger.get("status", "REVIEW_REQUIRED"),
+                "review_codes": ", ".join(ledger.get("review_codes", [])),
+            }
+            summary_rows.append(balance)
+            balance_rows.append(balance)
+            for grant in employee["grants"]:
+                record = {"employee_id": ident, **grant}
+                if record.get("raw_days") is not None:
+                    record["raw_days"] = str(record["raw_days"])
+                grant_rows.append(record)
+            for item in ledger.get("usage", []):
+                usage_rows.append({"employee_id": ident, **item})
+            for item in employee["unresolved_grants"]:
+                record = {"employee_id": ident, **item}
+                record["unresolved_reasons"] = json.dumps(
+                    record["unresolved_reasons"], default=str, ensure_ascii=False
+                )
+                unresolved_rows.append(record)
+
+        principal = ("employee_id", "as_of_date", "known_granted_days",
+                     "known_used_days", "provisional_remaining_before_expiry_days",
+                     "confirmed_balance_days", "status")
+        _append_rows(summary, principal, summary_rows)
+
+        accruals = book.create_sheet("Accruals")
+        columns = ("employee_id", "grant_date", "grant_type",
+                   "service_year", "raw_days", "eligibility")
+        _append_rows(accruals, columns, grant_rows)
+        # Retained for consumers of the original PTO workbook.
         grants = book.create_sheet("Grants")
-        for record in grant_rows:
-            if record.get("raw_days") is not None:
-                record["raw_days"] = str(record["raw_days"])
-        _append_rows(grants, ("employee_id", "grant_date", "grant_type",
-                             "service_year", "raw_days", "eligibility"), grant_rows)
+        _append_rows(grants, columns, grant_rows)
+
+        usage = book.create_sheet("Usage")
+        _append_rows(usage, ("employee_id", "request_id", "event_date",
+                             "raw_event_type", "leave_part", "status",
+                             "days", "reason"), usage_rows)
+        balances = book.create_sheet("Balances")
+        _append_rows(balances, principal + ("expired_days", "opening_balance_days",
+                                           "review_codes"), balance_rows)
+
         unresolved = book.create_sheet("Unresolved")
-        for record in unresolved_rows:
-            record["unresolved_reasons"] = json.dumps(
-                record["unresolved_reasons"], default=str, ensure_ascii=False
-            )
         _append_rows(unresolved, ("employee_id", "grant_date", "grant_type",
                                   "period_start", "period_end",
                                   "unresolved_reasons"), unresolved_rows)
@@ -144,6 +172,23 @@ def make_workbook(payload: dict[str, Any], findings: list[Finding]) -> bytes:
         _append_rows(review, ("code", "severity", "scope", "source",
                               "sheet", "row_number", "field", "message"),
                      [finding.to_dict() for finding in findings])
+
+        info = book.create_sheet("Run Info")
+        _append_rows(info, ("field", "value"), [
+            {"field": "Module", "value": MODULE_ID},
+            {"field": "Module version", "value": MODULE_VERSION},
+            {"field": "Status", "value": payload["status"]},
+            {"field": "Legal basis version", "value": payload["legal_basis"]["basis_version"]},
+            {"field": "Legal basis checked at", "value": payload["legal_basis"]["reviewed_at"]},
+            {"field": "Period start", "value": payload["period"]["from"]},
+            {"field": "Period end", "value": payload["period"]["to"]},
+            {"field": "Calculated employees", "value": len(payload["results"])},
+            {"field": "Review/error findings", "value": len(findings)},
+            {"field": "Balances provisional", "value": True},
+            {"field": "Expiry/opening/history verified", "value": False},
+            {"field": "Finalizable", "value": False},
+            {"field": "Approved", "value": False},
+        ])
         output = BytesIO()
         book.save(output)
         return output.getvalue()
