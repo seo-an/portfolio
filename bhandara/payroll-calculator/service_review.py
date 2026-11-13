@@ -182,14 +182,13 @@ def review_services(
         flags = False
         partial = False
         for row in matches:
-            ordinary = _positive(
-                row.get("ordinary_hours"), "Worktime ordinary_hours", zero=True
-            )
+            # Contract service quantity is time actually worked, not the
+            # statutory ordinary-wage bucket used for employee salary.
             worked = _positive(
                 row.get("worked_hours"), "Worktime worked_hours", zero=True
             )
-            hours += ordinary
-            if worked > 0 and ordinary >= (contract["standard_day_hours"] or 0):
+            hours += worked
+            if worked > 0 and worked >= (contract["standard_day_hours"] or 0):
                 days += 1
             elif basis == "DAILY" and worked > 0:
                 partial = True
