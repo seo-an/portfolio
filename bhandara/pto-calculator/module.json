@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "module_id": "pto-calculator",
-  "module_version": "0.1.1",
+  "module_version": "0.2.0",
   "status": "review_only",
   "requires_base": "0.1",
   "python": ">=3.12",
@@ -58,7 +58,7 @@
     {
       "key": "assignments",
       "filename": "work-schedule-assignment.xlsx",
-      "required": true,
+      "required": false,
       "sheet": "active",
       "headers": [
         "employee_id",
@@ -75,7 +75,8 @@
         "effective_from",
         "cycle_anchor_date",
         "start_sequence"
-      ]
+      ],
+      "note": "May be omitted only when dated monthly schedule covers every required employee-day; no cycle mapping is inferred"
     },
     {
       "key": "monthly_schedule",
@@ -142,7 +143,8 @@
       ],
       "optional_headers": [
         "reduced_hours"
-      ]
+      ],
+      "note": "Annual leave is charged only for approved unambiguous DAY/HALF_DAY inputs. Hourly conversions require company policy; non-leave events do not debit PTO."
     }
   ],
   "output_files": [
@@ -160,7 +162,9 @@
     "Anniversary-basis accrual only",
     "Unresolved attendance eligibility requires human review",
     "No automatic close, payout or payroll approval",
-    "Current input error isolation can block a whole run for unassignable global source rows"
+    "Current input error isolation can block a whole run for unassignable global source rows",
+    "Remaining days are provisional before expiry: opening balance, usage history and carryover are not certified",
+    "Hourly annual leave and partial-day attendance require independently verified policy and evidence"
   ],
   "shared_excel_input": {
     "supported": true,
@@ -181,5 +185,12 @@
     "default_period_option": "--period YYYY-MM",
     "advanced_overrides": "--paths-config JSON role map",
     "note": "Fixed paths are defaults. Old explicit JSON/normalized CLI modes remain supported."
+  },
+  "ledger_contract": {
+    "confirmed_balance_days": null,
+    "expired_days": null,
+    "provisional_remaining_before_expiry_days": "string Decimal; NOT an approved balance",
+    "status": "REVIEW_REQUIRED",
+    "explanation": "No inferred opening balance, leave expiry, historical usage or payroll approval"
   }
 }
