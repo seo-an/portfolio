@@ -7,7 +7,20 @@ import json
 from datetime import date, time, timedelta
 from pathlib import Path
 
-from .generate_demo import save_book
+from openpyxl import Workbook
+
+
+def save_book(path: Path, header: tuple[str, ...], rows: list[tuple]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    book = Workbook()
+    try:
+        sheet = book.active
+        sheet.append(header)
+        for row in rows:
+            sheet.append(row)
+        book.save(path)
+    finally:
+        book.close()
 
 
 START = date(2025, 7, 1)
