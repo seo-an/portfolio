@@ -22,6 +22,29 @@
 유지되며, 마이그레이션 이전 계약금액의 의미를 자동으로 추측하지 않습니다.
 원래 계산 엔진·퇴직/입사·근태·승인 상태는 변경하지 않습니다.
 
+## v2 용역 계약: 추가 Excel 없이 Worktime으로 검토
+
+두 시트 `pay-contract.xlsx`의 `Contracts`에는 직원 계약뿐 아니라
+`INDEPENDENT_SERVICE`와 `CORPORATE_VENDOR`도 입력할 수 있습니다.
+용역 계약은 `employee_id`를 비우고 `party_id`를 명시합니다.
+`HOURLY`·`DAILY` 계약은 Worktime JSON의 `worker_id`도 명시해야
+하며, 직원 급여대장에 들어가는 `worker_id`와 중복되면 실패합니다.
+
+- 이 모드에서는 `service-contracts.xlsx`·`service-work-records.xlsx`
+  **모두 사용하지 않으며**, 두 파일이 남아 있거나 오버라이드가 있으면 차단합니다.
+- Worktime에서 가져온 시간·일수를 근거로 **검토용 추정액**만 산출하고
+  지급 승인·세무 판단은 하지 않습니다.
+- `PROJECT` 계약은 계약서 원 금액만 기록하고 검수/납품 증빙이 없으면
+  지급액을 추정하지 않습니다.
+- 이 PR은 **Payroll 수신 어댑터**를 확장한 것입니다. Worktime의 별도
+  Excel 입력 경로를 외부 인력까지 자동으로 확장하지는 않았습니다.
+  외부 워커가 포함된 검증 가능한 Worktime 결과 JSON을 명시적으로
+  인계해야 하며, 미포함이면 전체 실패합니다.
+- 구형 단일 시트의 별도 용역 파일 처리 경로는 하위 호환을 위해 유지합니다.
+
+[입력 방법](RUNBOOK.md) ·
+[합성 검증](../tests/test_payroll_service_worktime_v2.py)
+
 ## 공통 Excel 고정 경로 자동 입력
 
 `bhandara/data/input/{common,payroll}`의 직원·ID 매핑·연봉/월급/시급/일급 **계약금액 Excel**을 검증하고

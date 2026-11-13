@@ -123,8 +123,16 @@
         "relationship_vocabulary": "resources/contract-types.json",
         "total_validation": "sum(explicit base_salary + fixed allowances) == monthly contract total",
         "additive_payment": "base_salary + fixed allowances",
-        "service_v2": "PENDING_WORKTIME_AND_SERVICE_REVIEW_MIGRATION",
-        "tax_split": "NOT_IMPLEMENTED"
+        "service_v2": "CONTRACTS_PLUS_WORKTIME_REVIEW_ONLY",
+        "tax_split": "NOT_IMPLEMENTED",
+        "service_contracts": {
+          "source": "Contracts sheet (party_id, worker_id, relationship_type)",
+          "worktime_quantity": "Unclosed Worktime result with service worker IDs explicitly covered",
+          "billing": "REVIEW_REQUIRED; estimated only, never included in employment payroll",
+          "project": "No automatic payable quantity; delivery evidence required",
+          "legacy_service_files": "REJECTED_IF_V2",
+          "worktime_external_input_producer": "NOT_YET_MODIFIED"
+        }
       },
       "legacy": "single-sheet pay-contract.xlsx with separate included pay-contract-components.xlsx (kept for compatibility)"
     }

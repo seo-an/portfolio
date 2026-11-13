@@ -163,6 +163,56 @@ ID의 `E`, `SVC` 같은 접두어로 법적 관계를 추정하지 않습니다.
 지금 지원하는 분리 항목은 `position_allowance`와 `meal_allowance`입니다.
 수당이 전혀 없어도 파일을 삭제하지 말고 **1행 헤더만 남겨두세요**.
 
+## 새로운 두 시트 계약에서 외부 용역을 함께 관리하는 방법
+
+두 시트(v2) `pay-contract.xlsx`의 **Contracts**에 외부 계약도 함께
+기록할 수 있습니다. 별도 `service-contracts.xlsx`와
+`service-work-records.xlsx`는 **v2에서 사용하지 않으며, 남아 있으면
+충돌로 차단합니다.** 구형 단일 시트 사용자는 기존 두 파일을
+그대로 이용할 수 있습니다.
+
+`Contracts`에 `party_id`와 `worker_id` 열을 추가합니다. 직원 계약은
+두 열을 비워도 되지만 외부 계약에는 다음과 같이 기록합니다.
+
+| contract_id | employee_id | party_id | worker_id | relationship_type | pay_basis | amount_type | contract_amount |
+|---|---|---|---|---|---|---|---:|
+| SVC-101 | (빈칸) | PARTY-A | EXT-W001 | INDEPENDENT_SERVICE | HOURLY | RATE | 37000 |
+| SVC-102 | (빈칸) | VENDOR-B | EXT-W002 | CORPORATE_VENDOR | DAILY | RATE | 230000 |
+| SVC-103 | (빈칸) | VENDOR-C | (빈칸) | CORPORATE_VENDOR | PROJECT | TOTAL | 5000000 |
+
+위 표에서는 계약 시작일 등의 공통 필수 열을 생략했습니다. 실제 파일에는
+`effective_from`, `effective_to`, `standard_day_hours`도 그대로 둡니다.
+일급(`DAILY`)은 `standard_day_hours`가 필요합니다.
+
+- **`party_id`**: 계약 상대방 식별자. 직원 `employee_id`가 아닙니다.
+- **`worker_id`**: 시간·일수 기반 용역의 Worktime 결과에 등장하는
+  식별자. 반드시 명시하고, 직원 급여 대상 `worker_id`와 중복되면 안 됩니다.
+  코드 앞의 `EXT` 등의 글자만으로 법적 관계를 판정하지 않습니다.
+- **`HOURLY`**: Worktime의 `worked_hours` 합계 × 계약 시급. 직원의 통상·소정근로시간과는 구분합니다.
+- **`DAILY`**: 실제 근무가 있고 기준시간을 충족한 날짜 수 × 계약 일급.
+  미달 시간은 자동 지급액에 포함하지 않고 검토가 필요합니다.
+- **`PROJECT`**: 건별 계약금액을 입력할 수 있으나 납품·검수·청구
+  증빙을 별도로 확인하기 전에는 **지급액을 계산하거나 확정하지 않습니다.**
+
+외부 인력용 Worktime 결과는 별도 파일을 새로 만드는 대신 **같은 Worktime
+계산기의 JSON 출력 형식**을 사용합니다. Payroll 실행 시
+`--worktime-result /path/to/worktime-result.json`을 명시할 수 있습니다.
+여기에는 직원과 외부 시간 기반 제공자의 `worker_id`가 모두 포함되어야
+하며, 중복·누락·대상 기간 불일치가 있으면 전체 계산을 차단합니다.
+
+이 단계의 출력은 **`contract-basis-review.json/xlsx`의 별도 용역
+검토 영역**에만 기록됩니다. 근로자 급여대장·고용사실·원천세·4대보험
+산정으로 들어가지 않습니다. 출입기 기록을 검토 없이 청구 증빙으로
+확정하지 않으며, 실적 기록이 없는 경우 **0원 지급으로 단정하지 않습니다.**
+
+참고: 기존 `employee.xlsx`·`id-map.xlsx`는 근로자 명부로 유지하며,
+외부 계약 상대방을 직원으로 끼워 넣지 않습니다. Worktime 원본에
+외부 인력이 실제로 나타나도록 구성하는 입력 어댑터의 범위는 별도로
+검토해야 합니다. 현재 PR은 **이미 산출된 Worktime JSON 인계**를
+검증·재사용하는 Payroll 쪽 연결입니다.
+
+---
+
 ## 4. 시급·일급 계약은 어떻게 계산하나요?
 
 - **시급** = 계약 시급 × `Worktime.ordinary_hours`의 월간 합계
@@ -174,9 +224,9 @@ ID의 `E`, `SVC` 같은 접두어로 법적 관계를 추정하지 않습니다.
 다른 달과 회사의 지급 귀속 규칙은 별도 확인이 필요합니다.
 출입기 인증 자체는 승인된 근태가 아닙니다.
 
-## 5. 프리랜서/용역계약은 별도로 검토합니다
+## 5. 구형 단일 시트 프리랜서/용역계약 안내
 
-선택 파일 `service-contracts.xlsx`에 가상 용역계약 8건이 들어 있습니다.
+**아래 내용은 구형 단일 시트(legacy) 입력에만 적용됩니다.** 공통 80명 샘플의 선택 파일 `service-contracts.xlsx`에 가상 용역계약 8건이 들어 있습니다.
 `service_contract_id`, `external_vendor_id`, `pay_basis`,
 `contract_amount`, `effective_from`, `effective_to` 등을 기록합니다.
 근로자 급여와 용역대가, 원천징수, 실질 근로자성 판단은 서로 다른 문제입니다.
