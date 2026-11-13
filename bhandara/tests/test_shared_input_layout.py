@@ -16,7 +16,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from bhandara.common.io.input_layout import (
-    InputLayoutError, ROLE_PATHS, choose_path, next_result_dir, period_bounds, read_id_map,
+    InputLayoutError, ROLE_PATHS, choose_path, next_result_dir, period_bounds, read_id_map, hash_file,
 )
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -141,6 +141,24 @@ class SharedLayoutFixtureTests(unittest.TestCase):
         self.assertEqual(len({row[1] for row in mappings[1:]}), 80)
         self.assertEqual(len({row[2] for row in mappings[1:]}), 80)
         self.assertEqual(len({row[3] for row in mappings[1:]}), 80)
+
+    def test_committed_worktime_handoff_matches_current_excel_hashes(self):
+        # The sample Payroll bridge is intentionally a fixed Worktime handoff.
+        # Editing source Excel without refreshing its provenance must fail here.
+        handoff = json.loads(
+            (SAMPLE / "payroll/worktime-result.json").read_text(encoding="utf-8")
+        )
+        for role, filename in (
+            ("employees", "common/employee.xlsx"),
+            ("schedule", "worktime/work-schedule.xlsx"),
+            ("attendance", "worktime/attendance.xlsx"),
+        ):
+            with self.subTest(role=role):
+                self.assertEqual(
+                    handoff["source_hashes"][role],
+                    hash_file(SAMPLE / filename),
+                    f"stale Worktime fixture: {role} hash; refresh handoff before merge",
+                )
 
     def test_manifest_files_are_real_default_input_contract(self):
         for module in ("pto", "worktime", "payroll"):
