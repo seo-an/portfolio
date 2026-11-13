@@ -1,5 +1,77 @@
 # 급여 계산기 사용 안내서 — 계약 사실과 지급항목을 분리해 계산하기
 
+## 지급항목의 과세·비과세 후보와 판정 보류를 분리하기
+
+Payroll `module_version 0.3.2`부터, 기존 급여 계산 후 **검토용**
+`taxability-review.json`과 `taxability-review.xlsx`가 별도로 생성됩니다.
+급여 계산 원본 `payroll-calculation.json/xlsx`의 금액은 전혀 수정하지
+않으며, 원천세·사회보험료 계산도 하지 않습니다.
+
+### 무엇을 수정하나요?
+
+기존 `payroll/company-policy.json`을 열어 **최상위 객체 안**에
+다음 `taxability_review`를 추가합니다. 새 Excel이나 DB는 없습니다.
+
+```json
+"taxability_review": {
+  "schema_version": "1.0",
+  "pay_items": {
+    "base_salary": {
+      "status": "TAXABLE",
+      "policy_ref": "SYNTHETIC_TAX_POLICY_REFERENCE"
+    },
+    "meal_allowance": {
+      "status": "NON_TAXABLE",
+      "policy_ref": "SYNTHETIC_EXEMPTION_REFERENCE",
+      "cap_per_worker_period": 100000
+    },
+    "position_allowance": {
+      "status": "REVIEW"
+    }
+  }
+}
+```
+
+**위 수치는 테스트용 임의 숫자이며 법정 비과세 한도가 아닙니다.**
+실제 회사에서 사용하려면 해당 연도 법령·급여항목 성격·적용대상·
+지급 요건·증빙 및 승인 기준을 검토해야 합니다.
+`policy_ref`도 단순 문자열을 적었다고 법적 승인이 되는 것이 아닙니다.
+
+기본 상태는 언제나 `REVIEW`입니다. 설정에 항목이 없거나
+`taxability_review` 자체가 없으면 금액을 임의로 과세 또는
+비과세 처리하지 않고 **판정 보류 금액**에 포함합니다.
+
+| 상태 | 의미 | 처리 |
+|---|---|---|
+| `TAXABLE` | 회사 정책에 과세 후보로 명시 | 과세 후보 금액에 표시, 미확정 |
+| `NON_TAXABLE` | 회사 정책에 비과세 후보로 명시 | 명시한 월별 개인 한도까지만 비과세 후보, 나머지는 보류 |
+| `REVIEW` | 확인되지 않았거나 정책 없음 | 전체를 판정 보류 |
+ 
+비과세 후보는 `policy_ref`와 **`cap_per_worker_period` 두 값이 필수**입니다.
+한 근로자에게 같은 지급항목이 여러 번 나와도 한도를 공유하고,
+다른 근로자에게는 별도로 적용합니다. 한도 초과 금액을 **자동으로
+과세 처리하지 않습니다.** 소급 지급·정산 항목은 원항목의 적용기간·
+법적 성격이 확인될 때까지 판정 보류합니다.
+
+### 결과 확인
+
+`taxability-review.xlsx`를 열면:
+
+- **Review Totals**: 과세 후보 합계, 비과세 후보 합계, 판정 보류 합계,
+  원본 지급액 합계
+- **Taxability Candidates**: 직원·지급항목별 금액, 분류, 정책 참조,
+  검토 필요 사유
+- **Uncalculated Workers**: 계산되지 않아 금액을 분류할 수 없는 직원
+
+**과세 후보 + 비과세 후보 + 판정 보류 = 기존 Payroll 지급액**으로
+검산합니다. 공제·순지급액·반올림·정산조정은 이 분류에 섞지 않습니다.
+비과세 후보가 있다고 해도 `approved=false`, `finalizable=false`이며
+실제 원천징수·사회보험 산정의 승인 증빙이 아닙니다.
+
+---
+
+
+
 
 ## 내 설정 파일 하나만 수정하는 독립 실행
 

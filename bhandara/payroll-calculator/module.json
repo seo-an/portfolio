@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "module_id": "payroll-calculator",
-  "module_version": "0.3.1",
+  "module_version": "0.3.2",
   "status": "review_only",
   "requires_base": "0.1",
   "python": ">=3.12",
@@ -22,7 +22,9 @@
       "payroll-calculation.xlsx",
       "payroll-review.json",
       "payroll-review.xlsx",
-      "policy-resolution.json"
+      "policy-resolution.json",
+      "taxability-review.json",
+      "taxability-review.xlsx"
     ],
     "calculate_blocked": [
       "payroll-review.json",
@@ -31,7 +33,9 @@
     "contract_mode_additional": [
       "contract-basis-review.json",
       "contract-basis-review.xlsx",
-      "contract-derived-compensation.xlsx"
+      "contract-derived-compensation.xlsx",
+      "taxability-review.json",
+      "taxability-review.xlsx"
     ]
   },
   "exit_codes": {
@@ -41,7 +45,8 @@
   },
   "non_finalization_guards": {
     "finalizable": false,
-    "ledger_committed": false
+    "ledger_committed": false,
+    "taxability_review_approved": false
   },
   "migration_manifest": "migration-manifest.json",
   "limitations": [
@@ -124,7 +129,7 @@
         "total_validation": "sum(explicit base_salary + fixed allowances) == monthly contract total",
         "additive_payment": "base_salary + fixed allowances",
         "service_v2": "CONTRACTS_PLUS_WORKTIME_REVIEW_ONLY",
-        "tax_split": "NOT_IMPLEMENTED",
+        "tax_split": "EXPLICIT_POLICY_ONLY; PROVISIONAL_CANDIDATES_AND_REVIEW",
         "service_contracts": {
           "source": "Contracts sheet (party_id, worker_id, relationship_type)",
           "worktime_quantity": "Unclosed Worktime result with service worker IDs explicitly covered",
@@ -136,5 +141,28 @@
       },
       "legacy": "single-sheet pay-contract.xlsx with separate included pay-contract-components.xlsx (kept for compatibility)"
     }
+  },
+  "taxability_review": {
+    "schema_version": "1.0",
+    "policy_location": "company-policy.json: taxability_review.pay_items",
+    "status_values": [
+      "TAXABLE",
+      "NON_TAXABLE",
+      "REVIEW"
+    ],
+    "default_status": "REVIEW",
+    "taxable_requires": "explicit policy_ref",
+    "non_taxable_requires": "explicit policy_ref and cap_per_worker_period",
+    "excess_handling": "REVIEW (no automatic taxable fallback)",
+    "retroactive_handling": "REVIEW until origin classification is independently verified",
+    "output_files": [
+      "taxability-review.json",
+      "taxability-review.xlsx"
+    ],
+    "external_services": "NOT_INCLUDED",
+    "legal_tax_or_insurance_decision": false,
+    "payroll_result_unchanged": true,
+    "approved": false,
+    "finalizable": false
   }
 }
