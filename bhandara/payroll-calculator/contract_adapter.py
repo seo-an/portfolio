@@ -26,6 +26,7 @@ from bhandara.common.io.input_layout import (
     InputLayoutError, as_day, hash_file, period_bounds, read_sheet, role,
 )
 from .contract_terms import ContractTermsError, resolve_monthly_terms
+from .service_review import load_v2_services, review_services, time_worker_ids
 
 CONTRACT_COLUMNS = (
     "contract_id", "employee_id", "pay_basis", "contract_amount",
@@ -42,17 +43,25 @@ EMPLOYEE_BASIS = SALARY_BASIS | TIME_BASIS
 COMPONENT_CODES = {"position_allowance", "meal_allowance"}
 
 
-@lru_cache(maxsize=1)
-def _employee_relationship_types() -> frozenset[str]:
-    """Read the public vocabulary; do not infer legal status from ID prefixes."""
+@lru_cache(maxsize=2)
+def _relationship_types(route_name: str) -> frozenset[str]:
+    """Read public contract vocabulary; IDs never imply a legal relationship."""
     resource = Path(__file__).resolve().parent / "resources/contract-types.json"
     catalog = json.loads(resource.read_text(encoding="utf-8"))
     if catalog.get("schema_version") != "1.0":
         raise InputLayoutError("unsupported contract-types registry version")
     return frozenset(
         name for name, spec in catalog["relationship_types"].items()
-        if spec.get("route") == "employee_payroll"
+        if spec.get("route") == route_name
     )
+
+
+def _employee_relationship_types() -> frozenset[str]:
+    return _relationship_types("employee_payroll")
+
+
+def _service_relationship_types() -> frozenset[str]:
+    return _relationship_types("service_review")
 
 
 def _contract_layout(path: Path) -> str:
@@ -116,6 +125,14 @@ def _load_employee_contracts(path: Path, identities: Mapping[str, Any],
         basis = str(row["pay_basis"] or "").strip().upper()
         if not contract_id or contract_id in ids:
             raise InputLayoutError(f"pay-contract.xlsx row {line}: duplicate/blank contract_id")
+        if layout == "v2" and (
+            str(row.get("relationship_type") or "").strip().upper()
+            in _service_relationship_types()
+        ):
+            # Service contracts share Contracts but NEVER become employee wages.
+            # Service-specific worker/party/source checks occur in service_review.
+            ids.add(contract_id)
+            continue
         if employee_id not in identities:
             raise InputLayoutError(f"pay-contract.xlsx row {line}: unmapped employee_id")
         if basis not in EMPLOYEE_BASIS:
@@ -411,7 +428,8 @@ def build_contract_compensation(
         contract_path if layout == "v2" else
         role(root, "payroll", "contract_components", overrides)
     )
-    # A company with no service contractors must not need a dummy workbook.
+    # Legacy service files are accepted only with legacy single-sheet input.
+    # In v2 all parties are in Contracts and quantities come from Worktime.
     service_override = (
         (overrides or {}).get("payroll", {}).get("service_contracts")
     )
@@ -430,6 +448,11 @@ def build_contract_compensation(
         if service_records_override is not None or optional_service_records.is_file()
         else None
     )
+    if layout == "v2" and (service_path is not None or records_path is not None):
+        raise InputLayoutError(
+            "pay-contract.xlsx: v2 service contracts and Worktime conflict with "
+            "legacy service-contracts.xlsx/service-work-records.xlsx; remove both"
+        )
     contracts, _ = _load_employee_contracts(
         contract_path, identities, period, layout=layout
     )
@@ -437,11 +460,25 @@ def build_contract_compensation(
     components = _load_components(
         component_path, contract_map, layout=layout
     )
-    services = _load_services(service_path, records_path, period)
+    v2_services = (
+        load_v2_services(
+            contract_path, identities,
+            service_relationships=_service_relationship_types(),
+        ) if layout == "v2" else []
+    )
+    service_workers = time_worker_ids(v2_services)
+    employee_workers = {x["worker_id"] for x in identities.values()}
     worktime, source_rows = _load_worktime(
-        worktime_path,
-        {x["worker_id"] for x in identities.values()},
+        worktime_path, employee_workers | service_workers,
         source_from, source_to,
+    )
+    services = (
+        review_services(
+            v2_services, source_rows, source_from=source_from,
+            source_to=source_to, pay_period=period,
+        ) if layout == "v2" else _load_services(
+            service_path, records_path, period
+        )
     )
 
     source_hashes = {
@@ -449,8 +486,15 @@ def build_contract_compensation(
         "contract_components": (
             "IN_PAY_CONTRACT_XLSX" if layout == "v2" else hash_file(component_path)
         ),
-        "service_contracts": hash_file(service_path) if service_path else "NO_SERVICES",
-        "service_records": hash_file(records_path) if records_path else "NO_SERVICE_RECORDS",
+        "service_contracts": (
+            "IN_PAY_CONTRACT_XLSX" if layout == "v2"
+            else hash_file(service_path) if service_path else "NO_SERVICES"
+        ),
+        "service_records": (
+            "WORKTIME_HANDOFF" if layout == "v2" and service_workers
+            else "NO_SEPARATE_SERVICE_RECORDS" if layout == "v2"
+            else hash_file(records_path) if records_path else "NO_SERVICE_RECORDS"
+        ),
         "worktime_result": hash_file(worktime_path),
     }
     fingerprint = hashlib.sha256(
@@ -632,6 +676,7 @@ def build_contract_compensation(
             item for item in worktime.get("candidate_expected_keys", [])
             if str(item.get("worker_id")) in salary_workers
         ],
+        "covered_worker_ids": sorted(employee_workers),
         "coverage_verified": False,
         "close_receipt": None,
         "derivation": {
@@ -660,10 +705,16 @@ def build_contract_compensation(
         "employees": results,
         "service_contracts": services,
         "service_contracts_in_employee_payroll": False,
+        "service_worker_count": len(service_workers),
+        "service_quantity_source": (
+            "WORKTIME_HANDOFF_OR_PROJECT_REVIEW" if layout == "v2"
+            else "LEGACY_SERVICE_RECORDS"
+        ),
         "message": (
             "Contract-based base wages are estimates for review; hourly/daily "
             "premiums and paid holidays require separate verified policies. "
-            "Freelance service agreements are not employment payroll."
+            "Independent service and corporate vendor agreements are separate "
+            "REVIEW_ONLY estimates and never employment payroll."
         ),
     }
     _emit_json(review_path, review)
