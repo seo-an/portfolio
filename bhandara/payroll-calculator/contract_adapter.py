@@ -489,7 +489,7 @@ def build_contract_compensation(
                     # installments only. Other payout schedules require an
                     # explicit contract-specific policy before calculating.
                     review_codes.add("ANNUAL_12_EQUAL_INSTALLMENTS_ASSUMED")
-                    if monthly_gross * 12 != rate:
+                    if (rate / Decimal("12")) * 12 != rate:
                         review_codes.add("ANNUAL_DIVISION_PRECISION_REVIEW")
                 source_comp.append({
                     "worker_id": worker_id,
