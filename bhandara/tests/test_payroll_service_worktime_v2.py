@@ -218,6 +218,43 @@ class ServiceWorktimeV2Tests(unittest.TestCase):
         ):
             self._calculate()
 
+    def test_same_worker_cannot_have_overlapping_time_based_service_contracts(self):
+        path = self.root / "payroll/pay-contract.xlsx"
+        book = load_workbook(path)
+        try:
+            sheet = book["Contracts"]
+            duplicated = list(self._service_specs[0])
+            duplicated[0] = "SVC-H-DUP"
+            sheet.append(duplicated)
+            book.save(path)
+        finally:
+            book.close()
+        with self.assertRaisesRegex(
+            InputLayoutError, "overlapping Worktime service contracts",
+        ):
+            self._calculate()
+
+    def test_vendor_can_have_multiple_independent_projects_in_same_period(self):
+        path = self.root / "payroll/pay-contract.xlsx"
+        book = load_workbook(path)
+        try:
+            sheet = book["Contracts"]
+            extra = list(self._service_specs[2])
+            extra[0] = "SVC-P004"
+            extra[3] = 2500000
+            sheet.append(extra)
+            book.save(path)
+        finally:
+            book.close()
+        result = self._calculate()
+        report = json.loads(result["review_path"].read_text(encoding="utf-8"))
+        projects = [
+            x for x in report["service_contracts"]
+            if x["pay_basis"] == "PROJECT"
+        ]
+        self.assertEqual(len(projects), 2)
+        self.assertTrue(all(x["estimated_service_amount"] is None for x in projects))
+
     def test_external_party_cannot_be_encoded_as_employee(self):
         self._replace_contract_cell(82, "employee_id", "E081")
         with self.assertRaisesRegex(
