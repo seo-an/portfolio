@@ -141,5 +141,29 @@ class PTODailyBoundaryTests(unittest.TestCase):
                 wb.close()
 
 
+    def test_synthetic_excel_contains_all_nine_requested_event_cases(self):
+        generator = pto("examples.generate_leave_usage_cases")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            produced = generator.generate_cases(root)
+            self.assertEqual(produced["employee_count"], 9)
+            self.assertEqual(produced["event_count"], 9)
+            cfg = json.loads((root / "config.json").read_text(encoding="utf-8"))
+            self.assertNotIn("assignments", cfg["files"])
+            book = load_workbook(root / "input/employee-events.xlsx", read_only=True)
+            try:
+                rows = list(book.active.values)
+            finally:
+                book.close()
+            self.assertEqual(len(rows), 10)
+            kinds = [row[2] for row in rows[1:]]
+            self.assertEqual(kinds.count("연차"), 2)
+            self.assertEqual(kinds.count("오전 반차"), 3)
+            self.assertEqual(kinds.count("오후 반차"), 2)
+            self.assertEqual(kinds.count("조기퇴근"), 1)
+            self.assertEqual(kinds.count("육아기근로시간단축"), 1)
+            self.assertEqual(len({row[1] for row in rows[1:]}), 9)
+
+
 if __name__ == "__main__":
     unittest.main()
