@@ -399,6 +399,14 @@ def build_contract_compensation(
 
     contract_path = role(root, "payroll", "contracts", overrides)
     layout = _contract_layout(contract_path)
+    if layout == "v2":
+        old_path = root / "payroll/pay-contract-components.xlsx"
+        explicit_old = (overrides or {}).get("payroll", {}).get("contract_components")
+        if old_path.is_file() or explicit_old is not None:
+            raise InputLayoutError(
+                "pay-contract.xlsx: v2 Components sheet conflicts with legacy "
+                "pay-contract-components.xlsx; remove the separate workbook/override"
+            )
     component_path = (
         contract_path if layout == "v2" else
         role(root, "payroll", "contract_components", overrides)
