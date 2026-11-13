@@ -13,6 +13,7 @@ from bhandara.common.io.input_layout import (
     InputLayoutError, as_clock, as_day, hash_file,
     read_id_map, read_sheet, role,
 )
+from .external_identity import load_external_workers, resolve_worktime_actor
 
 
 def _lineage(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -45,6 +46,7 @@ def _source(name: str, path: Path, rows: list[dict[str, Any]],
 
 
 def _employee_source(input_root: Path, identities: Mapping[str, Mapping[str, str]],
+                     external: Mapping[str, Mapping[str, Any]],
                      overrides: Mapping | None):
     path = role(input_root, "common", "employees", overrides)
     rows = read_sheet(path, ("employee_id", "hire_date", "termination_date", "work_system"))
@@ -62,22 +64,40 @@ def _employee_source(input_root: Path, identities: Mapping[str, Mapping[str, str
          "worker_id": identities[str(x["employee_id"]).strip()]["worker_id"]}
         for x in rows
     ]
-    return _source("employees", path, rows, result)
+    source = _source("employees", path, rows, result)
+    # The core Worktime batch still calls this the "employees" source, but
+    # these additional entries are declared external Worktime participants,
+    # NOT employee records, and never written to common/employee.xlsx.
+    for worker in external.values():
+        source["rows"].append({
+            "employee_id": worker["worker_id"],
+            "worker_id": worker["worker_id"],
+            "actor_type": "EXTERNAL_SERVICE",
+        })
+        source["lineage"].append({
+            "status": "ACCEPTED",
+            "row_number": worker["_row_number"],
+            "source_sheet": "id-map.xlsx:EXTERNAL",
+            "issue_codes": [],
+        })
+    return source
 
 
-def _schedule_source(input_root: Path, identities: Mapping, overrides: Mapping | None):
+def _schedule_source(input_root: Path, identities: Mapping,
+                     external: Mapping[str, Mapping[str, Any]],
+                     overrides: Mapping | None):
     path = role(input_root, "worktime", "schedule", overrides)
     rows = read_sheet(
         path, ("employee_id", "work_date", "day_type",
                "scheduled_start", "scheduled_end", "break_min"))
     output = []
     for x in rows:
-        employee_id = str(x["employee_id"] or "").strip()
-        if employee_id not in identities:
-            raise InputLayoutError(f"{path.name} row {x['_row_number']}: unknown employee_id")
+        employee_id, worker_id = resolve_worktime_actor(
+            x, identities, external, filename=path.name,
+        )
         output.append({
             "employee_id": employee_id,
-            "worker_id": identities[employee_id]["worker_id"],
+            "worker_id": worker_id,
             "work_date": as_day(x["work_date"], "work_date"),
             "day_type": str(x["day_type"] or "").strip().upper(),
             "scheduled_start": as_clock(x["scheduled_start"], "scheduled_start"),
@@ -91,18 +111,20 @@ def _schedule_source(input_root: Path, identities: Mapping, overrides: Mapping |
     return _source("schedule", path, rows, output)
 
 
-def _attendance_source(input_root: Path, identities: Mapping, overrides: Mapping | None):
+def _attendance_source(input_root: Path, identities: Mapping,
+                       external: Mapping[str, Mapping[str, Any]],
+                       overrides: Mapping | None):
     path = role(input_root, "worktime", "attendance", overrides)
     rows = read_sheet(path, ("employee_id", "work_date", "clock_in", "clock_out",
                              "break_min"))
     output = []
     for x in rows:
-        employee_id = str(x["employee_id"] or "").strip()
-        if employee_id not in identities:
-            raise InputLayoutError(f"{path.name} row {x['_row_number']}: unknown employee_id")
+        employee_id, worker_id = resolve_worktime_actor(
+            x, identities, external, filename=path.name,
+        )
         output.append({
             "employee_id": employee_id,
-            "worker_id": identities[employee_id]["worker_id"],
+            "worker_id": worker_id,
             "work_date": as_day(x["work_date"], "work_date"),
             "clock_in": as_clock(x["clock_in"], "clock_in"),
             "clock_out": as_clock(x["clock_out"], "clock_out"),
@@ -121,10 +143,12 @@ def read_shared_worktime(input_root: Path, period: str, *,
 
     start, end = period_bounds(period)
     identities = read_id_map(input_root, overrides=overrides)
+    id_map_path = role(input_root, "common", "identity", overrides)
+    external = load_external_workers(id_map_path, identities)
     sources = {
-        "employees": _employee_source(input_root, identities, overrides),
-        "schedule": _schedule_source(input_root, identities, overrides),
-        "attendance": _attendance_source(input_root, identities, overrides),
+        "employees": _employee_source(input_root, identities, external, overrides),
+        "schedule": _schedule_source(input_root, identities, external, overrides),
+        "attendance": _attendance_source(input_root, identities, external, overrides),
     }
     for name, source in sources.items():
         if not source["rows"]:
@@ -132,11 +156,16 @@ def read_shared_worktime(input_root: Path, period: str, *,
     digest = hashlib.sha256()
     for item in sources.values():
         digest.update(item["source_sha256"].encode())
+    identity_sha = hash_file(id_map_path)
+    # Both ID_MAP and the optional EXTERNAL mapping are source evidence.
+    digest.update(identity_sha.encode())
     bundle = {
         "schema_version": "0.1",
         "status": "READY_FOR_CALCULATION",
         "batch_id": "shared-worktime-" + digest.hexdigest()[:16],
         "sources": sources,
+        "identity_map_sha256": identity_sha,
+        "external_worker_ids": sorted(external),
     }
     assignments = {
         employee_id: {
@@ -157,6 +186,13 @@ def read_shared_worktime(input_root: Path, period: str, *,
                 "worktime_system": "non_standard_review",
                 "rule_ref": "MANUAL_REVIEW",
             }
+    for worker_id in external:
+        # Worktime computes observed time only. Never infer that external
+        # services are employees subject to standard wage settlement.
+        assignments[worker_id] = {
+            "worktime_system": "non_standard_review",
+            "rule_ref": "EXTERNAL_SERVICE_HOURS_REVIEW_ONLY",
+        }
     config = {
         "schema_version": "0.1", "period_from": start, "period_to": end,
         "worktime_assignments": assignments,
@@ -184,6 +220,7 @@ def run_shared_excel(input_root: str | Path, period: str,
             f"output directory already exists: {target}; choose a new path"
         )
     result = calculate_worktime_batch(normalized, config)
+    result["source_hashes"]["identity_map"] = normalized["identity_map_sha256"]
     output = write_worktime_outputs(target, result)
     for name, payload in (
         ("normalized-input.json", normalized),
