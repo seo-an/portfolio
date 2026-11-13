@@ -52,7 +52,7 @@ def load_v2_services(
         ), sheet_name="Contracts",
     )
     internal_workers = {x["worker_id"] for x in identities.values()}
-    by_party: dict[str, list[dict]] = defaultdict(list)
+    by_worker: dict[str, list[dict]] = defaultdict(list)
     party_by_worker: dict[str, str] = {}
     found: list[dict] = []
     for row in rows:
@@ -139,15 +139,19 @@ def load_v2_services(
             "standard_day_hours": standard_hours,
             "source_row": line,
         }
-        by_party[party].append(entry)
+        if worker and basis in {"HOURLY", "DAILY"}:
+            by_worker[worker].append(entry)
         found.append(entry)
-    for party, contracts in by_party.items():
+    # A vendor may have simultaneous independent projects or different workers.
+    # Reusing *one* Worktime worker for overlapping time-based contracts is
+    # ambiguous: its hours could otherwise be counted more than once.
+    for worker, contracts in by_worker.items():
         ordered = sorted(contracts, key=lambda x: x["effective_from"])
         for previous, next_item in zip(ordered, ordered[1:]):
             if (previous["effective_to"] is None
                     or next_item["effective_from"] <= previous["effective_to"]):
                 raise InputLayoutError(
-                    f"pay-contract.xlsx: overlapping external contracts for {party}"
+                    f"pay-contract.xlsx: overlapping Worktime service contracts for {worker}"
                 )
     return found
 
