@@ -38,6 +38,26 @@ Worktime을 다시 실행하고 그 결과를 급여 계산에 사용하려면
 | Worktime | `worktime/work-schedule.xlsx`, `worktime/attendance.xlsx` |
 | Payroll | `payroll/pay-contract.xlsx`, `payroll/pay-contract-components.xlsx`, `payroll/payroll-input.xlsx`, `payroll/company-policy.json`, `payroll/worktime-result.json` 및 선택 `payroll/service-contracts.xlsx` |
 
+## 공통 직원·식별자 입력과 테스트 시나리오의 분리
+
+실제로 계산기에 넣는 공통 Excel은 필요한 정보만 포함합니다.
+
+| 파일 | 열 | 역할 |
+|---|---|---|
+| `input/common/employee.xlsx` | `employee_id`, `hire_date`, `termination_date`, `work_system` | 직원의 고용·근로제 사실 |
+| `input/common/id-map.xlsx` (`ID_MAP` 시트) | `employee_id`, `security_id`, `worker_id`, `payroll_id` | 시스템별 직원 식별자 대응 |
+
+`work_system`은 직원명부에서만 관리합니다. 식별자 대응표에 중복 기록하지 않습니다.
+`case_id`는 **두 Excel 모두에서 제거**했습니다. 계산에 쓰는 입력값이 아니라
+가상 직원에게 부여한 테스트 시나리오 설명이기 때문입니다.
+
+별도 `test-cases.json`은 이 샘플의 **`input/` 바깥**에 있으며 테스트에서만
+시나리오별 직원 ID를 확인합니다. 예를 들어
+`"LOW_ATTENDANCE": ["E002"]`이며, 일반·근로제 검토 사례는
+`NORMAL_OR_WORKSYSTEM_REVIEW`로 묶습니다.
+이 JSON은 계산기의 입력·설정에 넣거나 수정할 필요가 없습니다.
+Excel의 실제 근태·스케줄을 수정해도 테스트 시나리오 분류가 자동으로 바뀌지는 않습니다.
+
 ## 계약 유형이 섞인 급여 샘플
 
 `payroll/pay-contract.xlsx`에는 가상 직원 80명의 원 계약금액이 있습니다:
