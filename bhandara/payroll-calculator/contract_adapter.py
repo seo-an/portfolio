@@ -1,7 +1,8 @@
 """Versioned contract -> monthly compensation adapter for the Bhandara easy CLI.
 
-Does NOT alter the migrated Payroll arithmetic engine. Contract amounts
-and components are separate, so base salary is derived, never guessed.
+Does NOT alter the migrated Payroll arithmetic engine. In the new Contracts /
+Components layout, contract amounts are reconciled to explicitly stated
+additive pay items; base salary is never inferred from an unknown agreement.
 Hourly/daily wage quantities come from an explicit, unclosed Worktime handoff.
 Their premiums/weekly holiday compensation are NOT silently inferred; such
 workers get explicit REVIEW_REQUIRED findings and are excluded from the
@@ -13,6 +14,7 @@ import hashlib
 import json
 import os
 from collections import defaultdict
+from functools import lru_cache
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -23,6 +25,7 @@ from openpyxl import Workbook, load_workbook
 from bhandara.common.io.input_layout import (
     InputLayoutError, as_day, hash_file, period_bounds, read_sheet, role,
 )
+from .contract_terms import ContractTermsError, resolve_monthly_terms
 
 CONTRACT_COLUMNS = (
     "contract_id", "employee_id", "pay_basis", "contract_amount",
@@ -37,6 +40,36 @@ SALARY_BASIS = {"ANNUAL", "MONTHLY"}
 TIME_BASIS = {"HOURLY", "DAILY"}
 EMPLOYEE_BASIS = SALARY_BASIS | TIME_BASIS
 COMPONENT_CODES = {"position_allowance", "meal_allowance"}
+
+
+@lru_cache(maxsize=1)
+def _employee_relationship_types() -> frozenset[str]:
+    """Read the public vocabulary; do not infer legal status from ID prefixes."""
+    resource = Path(__file__).resolve().parent / "resources/contract-types.json"
+    catalog = json.loads(resource.read_text(encoding="utf-8"))
+    if catalog.get("schema_version") != "1.0":
+        raise InputLayoutError("unsupported contract-types registry version")
+    return frozenset(
+        name for name, spec in catalog["relationship_types"].items()
+        if spec.get("route") == "employee_payroll"
+    )
+
+
+def _contract_layout(path: Path) -> str:
+    """The two-sheet contract is opt-in; legacy single-sheet stays valid."""
+    book = load_workbook(path, read_only=True, data_only=False, keep_links=False)
+    try:
+        names = set(book.sheetnames)
+    finally:
+        book.close()
+    if "Contracts" in names or "Components" in names:
+        if not {"Contracts", "Components"} <= names:
+            raise InputLayoutError(
+                "pay-contract.xlsx: v2 requires both Contracts and Components sheets"
+            )
+        return "v2"
+    return "legacy"
+
 
 
 def _decimal(value: Any, field: str, *, allow_zero: bool = False) -> Decimal:
@@ -62,8 +95,15 @@ def _inside(day: str, start: str, end: str | None) -> bool:
 
 
 def _load_employee_contracts(path: Path, identities: Mapping[str, Any],
-                             period: str) -> tuple[list[dict], set[str]]:
-    rows = read_sheet(path, CONTRACT_COLUMNS)
+                             period: str, *, layout: str = "legacy"
+                             ) -> tuple[list[dict], set[str]]:
+    required = (
+        (*CONTRACT_COLUMNS, "amount_type", "relationship_type")
+        if layout == "v2" else CONTRACT_COLUMNS
+    )
+    rows = read_sheet(
+        path, required, sheet_name="Contracts" if layout == "v2" else None
+    )
     if not rows:
         raise InputLayoutError("pay-contract.xlsx: at least one contract is required")
     ids = set()
@@ -80,6 +120,29 @@ def _load_employee_contracts(path: Path, identities: Mapping[str, Any],
             raise InputLayoutError(f"pay-contract.xlsx row {line}: unmapped employee_id")
         if basis not in EMPLOYEE_BASIS:
             raise InputLayoutError(f"pay-contract.xlsx row {line}: unknown pay_basis {basis!r}")
+        amount_type = (
+            str(row.get("amount_type") or "").strip().upper()
+            if layout == "v2" else "LEGACY_INCLUDED_TOTAL"
+        )
+        relationship_type = (
+            str(row.get("relationship_type") or "").strip().upper()
+            if layout == "v2" else "LEGACY_EMPLOYEE"
+        )
+        if layout == "v2":
+            if relationship_type not in _employee_relationship_types():
+                raise InputLayoutError(
+                    f"pay-contract.xlsx row {line}: unsupported relationship_type "
+                    f"{relationship_type!r} for employee payroll"
+                )
+            invalid_amount_type = (
+                amount_type != "RATE" if basis in TIME_BASIS
+                else amount_type not in {"BASE", "TOTAL"}
+            )
+            if invalid_amount_type:
+                raise InputLayoutError(
+                    f"pay-contract.xlsx row {line}: invalid amount_type "
+                    f"{amount_type!r} for {basis}"
+                )
         start = as_day(row["effective_from"], "effective_from")
         end = _optional_day(row.get("effective_to"), "effective_to")
         if end is not None and end < start:
@@ -99,6 +162,8 @@ def _load_employee_contracts(path: Path, identities: Mapping[str, Any],
             "employee_id": employee_id,
             "worker_id": identities[employee_id]["worker_id"],
             "pay_basis": basis,
+            "amount_type": amount_type,
+            "relationship_type": relationship_type,
             "contract_amount": rate,
             "standard_day_hours": hours,
             "effective_from": start,
@@ -120,21 +185,25 @@ def _load_employee_contracts(path: Path, identities: Mapping[str, Any],
     return validated, ids
 
 
-def _load_components(path: Path, contracts: Mapping[str, dict]) -> dict[str, dict[str, Decimal]]:
-    rows = read_sheet(path, COMPONENT_COLUMNS)
+def _load_components(path: Path, contracts: Mapping[str, dict], *,
+                     layout: str = "legacy") -> dict[str, dict[str, Decimal]]:
+    rows = read_sheet(
+        path, COMPONENT_COLUMNS, sheet_name="Components" if layout == "v2" else None
+    )
+    label = "pay-contract.xlsx Components" if layout == "v2" else "pay-contract-components.xlsx"
     components: dict[str, dict[str, Decimal]] = defaultdict(dict)
     for row in rows:
         line = row["_row_number"]
         ident = str(row.get("contract_id") or "").strip()
         code = str(row.get("pay_item_code") or "").strip()
         if ident not in contracts:
-            raise InputLayoutError(f"pay-contract-components.xlsx row {line}: unknown contract")
-        if code not in COMPONENT_CODES:
-            raise InputLayoutError(f"pay-contract-components.xlsx row {line}: unsupported item {code}")
+            raise InputLayoutError(f"{label} row {line}: unknown contract")
+        if code not in COMPONENT_CODES | ({"base_salary"} if layout == "v2" else set()):
+            raise InputLayoutError(f"{label} row {line}: unsupported item {code}")
         if contracts[ident]["pay_basis"] not in SALARY_BASIS:
-            raise InputLayoutError(f"pay-contract-components.xlsx row {line}: hourly/daily cannot include fixed monthly components")
+            raise InputLayoutError(f"{label} row {line}: hourly/daily cannot include fixed monthly components")
         if code in components[ident]:
-            raise InputLayoutError(f"pay-contract-components.xlsx row {line}: duplicate contract/item")
+            raise InputLayoutError(f"{label} row {line}: duplicate contract/item")
         components[ident][code] = _decimal(row["monthly_amount"], f"monthly_amount row {line}")
     return components
 
@@ -329,7 +398,19 @@ def build_contract_compensation(
     target_from, target_to = period_bounds(period)
 
     contract_path = role(root, "payroll", "contracts", overrides)
-    component_path = role(root, "payroll", "contract_components", overrides)
+    layout = _contract_layout(contract_path)
+    if layout == "v2":
+        old_path = root / "payroll/pay-contract-components.xlsx"
+        explicit_old = (overrides or {}).get("payroll", {}).get("contract_components")
+        if old_path.is_file() or explicit_old is not None:
+            raise InputLayoutError(
+                "pay-contract.xlsx: v2 Components sheet conflicts with legacy "
+                "pay-contract-components.xlsx; remove the separate workbook/override"
+            )
+    component_path = (
+        contract_path if layout == "v2" else
+        role(root, "payroll", "contract_components", overrides)
+    )
     # A company with no service contractors must not need a dummy workbook.
     service_override = (
         (overrides or {}).get("payroll", {}).get("service_contracts")
@@ -349,9 +430,13 @@ def build_contract_compensation(
         if service_records_override is not None or optional_service_records.is_file()
         else None
     )
-    contracts, _ = _load_employee_contracts(contract_path, identities, period)
+    contracts, _ = _load_employee_contracts(
+        contract_path, identities, period, layout=layout
+    )
     contract_map = {x["contract_id"]: x for x in contracts}
-    components = _load_components(component_path, contract_map)
+    components = _load_components(
+        component_path, contract_map, layout=layout
+    )
     services = _load_services(service_path, records_path, period)
     worktime, source_rows = _load_worktime(
         worktime_path,
@@ -361,7 +446,9 @@ def build_contract_compensation(
 
     source_hashes = {
         "pay_contract": hash_file(contract_path),
-        "contract_components": hash_file(component_path),
+        "contract_components": (
+            "IN_PAY_CONTRACT_XLSX" if layout == "v2" else hash_file(component_path)
+        ),
         "service_contracts": hash_file(service_path) if service_path else "NO_SERVICES",
         "service_records": hash_file(records_path) if records_path else "NO_SERVICE_RECORDS",
         "worktime_result": hash_file(worktime_path),
@@ -398,19 +485,32 @@ def build_contract_compensation(
             if span_to < span_from:
                 continue
             if basis in SALARY_BASIS:
-                monthly_gross = rate / Decimal("12") if basis == "ANNUAL" else rate
                 included = components.get(c["contract_id"], {})
-                allowance_total = sum(included.values(), Decimal("0"))
-                base = monthly_gross - allowance_total
-                if base <= 0:
-                    raise InputLayoutError(f"{employee_id}: contract fixed components exceed gross")
+                if layout == "v2":
+                    try:
+                        terms = resolve_monthly_terms(
+                            contract_id=c["contract_id"], pay_basis=basis,
+                            contract_amount=rate, amount_type=c["amount_type"],
+                            components=included,
+                        )
+                    except ContractTermsError as exc:
+                        raise InputLayoutError(str(exc)) from exc
+                    base, monthly_gross = terms.base_salary, terms.monthly_paid_total
+                    included = terms.allowances
+                else:
+                    # Old input contract: gross includes listed allowances.
+                    monthly_gross = rate / Decimal("12") if basis == "ANNUAL" else rate
+                    allowance_total = sum(included.values(), Decimal("0"))
+                    base = monthly_gross - allowance_total
+                    if base <= 0:
+                        raise InputLayoutError(f"{employee_id}: contract fixed components exceed gross")
                 salary_workers.add(worker_id)
                 if basis == "ANNUAL":
                     # The basic adapter supports twelve equal monthly wage
                     # installments only. Other payout schedules require an
                     # explicit contract-specific policy before calculating.
                     review_codes.add("ANNUAL_12_EQUAL_INSTALLMENTS_ASSUMED")
-                    if monthly_gross * 12 != rate:
+                    if (rate / Decimal("12")) * 12 != rate:
                         review_codes.add("ANNUAL_DIVISION_PRECISION_REVIEW")
                 source_comp.append({
                     "worker_id": worker_id,
@@ -423,12 +523,21 @@ def build_contract_compensation(
                     "contract_id": c["contract_id"],
                     "pay_basis": basis,
                     "contract_amount": str(rate),
-                    "monthly_contract_amount": str(monthly_gross),
+                    "amount_type": c["amount_type"],
+                    "relationship_type": c["relationship_type"],
+                    "monthly_contract_amount": str(
+                        rate / Decimal("12") if basis == "ANNUAL" else rate
+                    ),
+                    "monthly_gross": str(monthly_gross),
                     "monthly_base_salary": str(base),
                     "included_fixed_allowances": {k: str(v) for k,v in included.items()},
                     "effective_from": c["effective_from"],
                     "effective_to": c["effective_to"],
-                    "calculation": "ANNUAL/12-minus-included-components" if basis=="ANNUAL" else "MONTHLY-minus-included-components",
+                    "calculation": (
+                        "SUM_EXPLICIT_PAY_ITEMS"
+                        if layout == "v2" else
+                        ("ANNUAL/12-minus-included-components" if basis=="ANNUAL" else "MONTHLY-minus-included-components")
+                    ),
                 })
                 monthly_base += base
                 for code, amount in included.items():
@@ -543,6 +652,7 @@ def build_contract_compensation(
         "approved": False, "finalizable": False,
         "source_hashes": source_hashes,
         "worktime_unclosed": True,
+        "contract_input_layout": layout,
         "time_based_premiums_calculated": False,
         "employee_count": len(results),
         "time_based_worker_count": len(time_workers),
@@ -581,7 +691,7 @@ def export_review_workbook(review_path: Path, destination: Path) -> None:
                 contract["contract_id"],
                 contract["pay_basis"],
                 contract["contract_amount"],
-                contract.get("monthly_contract_amount"),
+                contract.get("monthly_gross", contract.get("monthly_contract_amount")),
                 contract.get("monthly_base_salary", contract.get("calculated_base_salary")),
                 contract.get("ordinary_hours"),
                 contract.get("qualified_days"),
