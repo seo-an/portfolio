@@ -1,5 +1,28 @@
 # 급여 계산기(Payroll Calculator) — 독립 실행 모듈 v0.3.1
 
+## 별도 Taxability Review 결과 (0.3.2)
+
+독립된 `taxability_adapter.py`와
+`functions/taxability_review.py`가 기존 Payroll Result의
+`direction=pay` 항목만 읽어 과세 후보·비과세 후보·판정 보류로
+**검토용** 분류를 추가합니다.
+
+기존 `functions/payroll_standalone_runner.py`와
+`functions/payroll_standalone_report.py` 등 마이그레이션된 원본
+계산 파일은 변경하지 않습니다. 원천징수·사회보험·Ledger·용역 계약
+정산과 독립이며, 부분 성공 직원의 원본 지급 합계도 수정하지 않습니다.
+
+회사 정책은 `company-policy.json`의 선택 `taxability_review`에
+표시합니다. `NON_TAXABLE` 후보는 `policy_ref`와 명시된
+`cap_per_worker_period`가 필요합니다. 미지정·초과·소급 정산은
+`REVIEW`로 남습니다. 법정 한도와 적용 자격을 자동 추정하지 않습니다.
+
+출력: `taxability-review.json`, `taxability-review.xlsx`.
+[비개발자 사용법](RUNBOOK.md) ·
+[단위 및 CLI 통합 검증](../tests/test_payroll_taxability_review.py).
+
+
+
 ## 계약 사실과 지급항목 분리 — 새 두 시트 입력 (v2)
 
 `pay-contract.xlsx`에 `Contracts`·`Components` 두 시트가 함께 있으면
