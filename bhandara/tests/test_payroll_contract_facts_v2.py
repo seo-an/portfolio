@@ -100,7 +100,7 @@ class ContractFactsV2Tests(unittest.TestCase):
             emp_col = names.index("employee_id") + 1
             for row in range(2, sheet.max_row + 1):
                 if sheet.cell(row, emp_col).value == employee_id:
-                    sheet.cell(row, target, value)
+                    sheet.cell(row, target).value = value
                     break
             else:
                 raise AssertionError("missing synthetic employee")
