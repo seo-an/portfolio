@@ -1,4 +1,23 @@
-# Worktime Calculator — 독립 모듈 v0.4.0 (이전 엔진 유지)
+# Worktime Calculator — 독립 모듈 v0.5.0 (이전 엔진 유지)
+
+## Worktime 0.5.0 — 출퇴근 모드와 물리적 방향 분리
+
+CAPS·세콤·KT 원본 업체별 컬럼 해석은 Gearbox 등 비공개 정규화 어댑터가 담당합니다.
+공개 Bhandara는 정규화된 `sources.access_events`의 `mode`와 `direction`을
+독립적인 필드로 사용합니다.
+
+- `mode=CLOCK_IN/CLOCK_OUT`: 명시적 출퇴근 인증. 내부 외출 구간이나 휴게로 사용하지 않습니다.
+- `mode=ACCESS`: 일반 출입 인증. `direction=UNKNOWN`이면 IN/OUT을 추측하지 않고 검토합니다.
+- `mode=OUTING/RETURN`: 명시적 외출·복귀 모드의 의미로만 구간을 연결할 수 있습니다. 물리적 단말기 방향은 여전히 `UNKNOWN`이며 자동으로 휴게를 인정하지 않습니다.
+- `mode=DISARM`: 경비 해제. 출퇴근·휴게 판정에 사용하지 않습니다.
+- `auth_status=FAILED/UNKNOWN`: 인증된 출입으로 계산하지 않으며 검토 사유를 보존합니다.
+- 선택적 `sources.attendance_candidates`의 최초 일반 출입 추정값 `INFERRED_FIRST_ACCESS`는 근태 승인이나 급여 계산에 반영하지 않습니다. `confirmed=false`가 필수입니다.
+- 정규화 과정의 실패/미매핑/중복 검토 내용이 `access_normalization_review.issues`로 제공되면 전체 상태가 `REVIEW_REQUIRED`이며 승인·마감하지 않습니다.
+
+업체별 출입기·사원번호 매핑·구형 `.xls` 파일 파싱은 공개 모듈에 포함하지 않습니다.
+입력 Excel을 추가할 필요는 없고, 검토 결과는 `break-compliance.json`과
+`worktime-review.xlsx`의 `Break Compliance` 시트에서 확인합니다.
+
 
 ## Worktime v0.4.0 — CAPS 출입 이벤트 기반 휴게 검토
 
