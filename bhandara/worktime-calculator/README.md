@@ -1,4 +1,64 @@
-# Worktime Calculator — 독립 모듈 이전 v0.1.0
+# Worktime Calculator — 독립 모듈 v0.4.0 (이전 엔진 유지)
+
+## Worktime v0.4.0 — CAPS 출입 이벤트 기반 휴게 검토
+
+`time-events.xlsx` 같은 새 입력 시트를 만들지 않습니다. Worktime은 원래 사용하던
+`work-schedule.xlsx`와 `attendance.xlsx`를 유지하며, **실제 CAPS 수집 및 업체별
+코드 매핑은 Gearbox 등 원본 정규화 담당**이 수행합니다. 공개 계산기는
+정규화된 `normalized-input.json`의 선택적 `sources.access_events`만 읽습니다.
+
+- 근무표에는 `break_min` 외에 선택적 `break_start` / `break_end` 열을 추가할 수 있습니다. 해당 구간은 **예정 휴게**일 뿐 실제 휴게 증빙이 아닙니다.
+- 출입기 `OUT → IN`으로 확인한 구간이 예정 휴게와 일치하면 `PLANNED_BREAK_CANDIDATE`입니다. 그 자체로 휴게를 확정하지 않습니다.
+- 상위 정규화에서 `REST_CONFIRMED` + `free_use_confirmed=true` + `verification_ref`가 제공된 구간만 법정 휴게에 합산합니다.
+- `BUSINESS_OUTING`은 업무 외출, `PERSONAL_OUTING`은 개인 외출로 표시하지만 휴게로 자동 차감하지 않습니다.
+- `PASS_VERIFIED`: 확인된 휴게가 법정 최소 이상. `SHORTFALL_DETECTED`: 휴게 기록의 **완전성까지 별도로 확인**한 경우에만 확인된 부족분 산출. 그 외 `REVIEW_REQUIRED`.
+- 2026-12-10 시행하는 정확히 4시간 근로자의 명시적 요청 예외는 서면 등 확인 가능한 근거가 없는 한 적용하지 않습니다.
+- 결과: 기존 `worktime-review.xlsx`에 `Break Compliance` 시트, 별도 `break-compliance.json` 검토용 sidecar. 기존 `worktime-result.json`의 원래 근로시간 엔진과 임금 마감 계약은 유지합니다.
+- `access_events`를 전달하지 않은 기존 Excel/JSON 실행은 기존 산출물 구성을 유지합니다. **CAPS 원본을 자동으로 가져오는 기능은 아직 없으며**, 출입이 없다고 사내 휴게가 없었다고 추정하지 않습니다.
+- `shared_excel.py`의 근태 `break_min` 공란을 무조건 0분으로 바꾸지 않습니다. 공란에 대한 근로시간은 기존 엔진에서 검토/오류로 처리합니다.
+
+단독 실행과 Gearbox 연결은 여전히 별개이며, **실제 근로시간·Payroll 금액을 새로운 휴게 판정만으로 임의 수정하지 않습니다**. 확인된 휴게와 근태표 `break_min`이 충돌하면 `REPORTED_BREAK_REQUIRES_RECONCILIATION`으로 표기합니다.
+
+### 정규화된 CAPS 이벤트 계약 (개발자 참고)
+
+기존 `normalized-input.json.sources` 아래에 선택적으로 다음 묶음을 붙입니다.
+
+```json
+"access_events": {
+  "rows": [
+    {
+      "employee_id": "E001",
+      "worker_id": "EP0001",
+      "work_date": "2026-11-13",
+      "event_id": "DEMO-EXIT-001",
+      "event_time": "12:00",
+      "direction": "OUT",
+      "classification": "REST_CONFIRMED",
+      "free_use_confirmed": true,
+      "verification_ref": "SYNTHETIC-REVIEW-001"
+    },
+    {
+      "employee_id": "E001",
+      "worker_id": "EP0001",
+      "work_date": "2026-11-13",
+      "event_id": "DEMO-ENTRY-001",
+      "event_time": "13:00",
+      "direction": "IN",
+      "classification": "UNKNOWN"
+    }
+  ],
+  "source_sha256": "실제 원본 정규화 단계에서 생성한 해시",
+  "lineage": [
+    {"status": "ACCEPTED", "row_number": 2, "issue_codes": []},
+    {"status": "ACCEPTED", "row_number": 3, "issue_codes": []}
+  ]
+}
+```
+
+위의 `REST_CONFIRMED`와 `verification_ref`는 가상 검증 상태 예시이며, CAPS 리더가 자동으로 제공한 판정이 아닙니다. 실제로는 검토자가 승인·확인한 증빙이 있을 때만 이 값을 보내야 합니다. `break_verifications` 설정에서 `coverage_complete: true`를 선언하려면 `evidence_ref`가 필수이며, 실내 휴게까지 확인된 경우에만 사용합니다.
+
+**법령 참조:** 근로기준법 제54조(2026-11-13 현재)와 2026-12-10 시행 예정 개정. 법률 판정·금전 확정은 사람이 수행합니다.
+
 
 ## 외부 인력 포함 Worktime Excel 어댑터 (선택 기능)
 
