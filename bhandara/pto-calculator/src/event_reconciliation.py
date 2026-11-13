@@ -6,6 +6,7 @@ from datetime import date
 from typing import Iterable
 
 from bhandara.common.contracts.pto_diagnostics import REVIEW_REQUIRED, WARNING, build_diagnostic
+from .event_type import normalize_event_detail
 
 
 ACTIVE_EVENT_STATUSES = {"APPROVED", "CONFIRMED"}
@@ -36,6 +37,27 @@ def reconcile_daily_employee_event(
         row for row in matched
         if str(row.get("status") or "").upper() in ACTIVE_EVENT_STATUSES
     ]
+
+    # Two approved, complementary half-days are a complete day of leave,
+    # not an overlap. Preserve originals for the independent usage ledger.
+    if len(active) == 2 and all(
+        str(row.get("status") or "").upper() == "APPROVED" for row in active
+    ):
+        details = [normalize_event_detail(row.get("event_type")) for row in active]
+        parts = {item["event_subtype"] for item in details}
+        compatible_units = all(
+            str(row.get("unit") or "").upper() in {"", "HALF", "HALF_DAY", "0.5", "AM_HALF", "PM_HALF"}
+            for row in active
+        )
+        if (parts == {"AM_HALF", "PM_HALF"} and compatible_units
+                and all(item["event_type"] == "ANNUAL_LEAVE" for item in details)):
+            combined = dict(active[0])
+            combined.update({"event_type": "ANNUAL_LEAVE", "unit": "DAY"})
+            return {
+                "event": combined, "matched_events": matched,
+                "active_events": active, "status": "RESOLVED",
+                "flags": [], "requires_review": False, "diagnostics": [],
+            }
 
     if len(active) > 1:
         diagnostic = build_diagnostic(
