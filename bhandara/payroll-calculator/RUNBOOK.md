@@ -123,7 +123,7 @@ ID의 `E`, `SVC` 같은 접두어로 법적 관계를 추정하지 않습니다.
 `pay-contract.xlsx` + `pay-contract-components.xlsx` 구조입니다.
 호환성을 유지하기 위해 기존 방식도 그대로 지원합니다.
 
-새로운 두 시트 방식에서는 `pay-contract-components.xlsx`가 필요 없습니다.
+새로운 두 시트 방식에서는 `pay-contract-components.xlsx`가 필요 없으며, **같은 입력 폴더에 구형 수당 파일이 남아 있거나 파일 경로를 별도 지정하면 충돌로 차단합니다.**
 기존 자료의 `contract_amount`를 새 방식으로 옮길 때에는 계약서 원문이
 기본급(`BASE`)인지 수당 포함 총액(`TOTAL`)인지 먼저 확인해야 합니다.
 `amount_type`을 공란으로 두거나 추측해 채우면 안 됩니다.
