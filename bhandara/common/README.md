@@ -23,7 +23,15 @@
 | 공통 검증 `io/xlsx.py` | 필수 헤더만 고유하면 됨. 필수 셀의 수식·누락은 해당 행 거절 | 정상 행을 유지하고 `Finding`을 보고 |
 | PTO `src/input_adapter.py` | 필수 헤더만 검사, 선택 이벤트 필드·엑셀 날짜/시간을 자체 변환 | 오류 행의 직원 식별 가능 여부에 따라 개별 직원 차단 또는 전체 차단 |
 
-따라서 `data_only`, 헤더 검사, `Finding` 및 차단 범위를 일괄 변경하면 기존 계산 결과가 달라질 수 있습니다. 다음 단계에서 `io/xlsx.py`·PTO의 워크북 순회를 순차적으로 재사용하더라도 **기존 오류 코드·행번호·원본 SHA·승인 상태는 그대로** 유지해야 합니다. Worktime `shared_excel.py`는 `input_layout.py`를 사용하므로 이번 변경의 간접 적용 대상입니다.
+따라서 `data_only`, 헤더 검사, `Finding` 및 차단 범위를 일괄 변경하면 기존 계산 결과가 달라질 수 있습니다. 다음 단계에서 `io/xlsx.py` 등의 워크북 순회를 순차적으로 재사용하더라도 **기존 오류 코드·행번호·원본 SHA·승인 상태는 그대로** 유지해야 합니다. Worktime `shared_excel.py`는 `input_layout.py`를 사용하므로 이번 변경의 간접 적용 대상입니다.
+
+### PTO XLSX 스트림 적용 (2026-11-13)
+
+PTO의 `src/input_adapter.py`도 Common의 `open_xlsx_rows()`를 사용하여 워크북 열기·시트 선택·행 순회·파일 닫기를 수행합니다. 단, `data_only=False`와 `keep_links=False`를 유지하며, 엑셀의 원본 날짜 기준(`workbook.epoch`)도 그대로 전달합니다.
+
+**PTO 고유 규칙은 이동하지 않았습니다.** 필수 헤더 중복 검사(무관한 추가 열은 허용), 필수 셀 수식 거절, 이벤트 `reduced_hours` 선택 검증, `Finding` 코드·원본 행번호, 직원별 거절 또는 전역 차단, 입력 전후 SHA 확인은 모두 PTO가 담당합니다. Common 스트림은 회사 정책이나 업무 오류의 영향 범위를 결정하지 않습니다.
+
+합성 Excel 회귀 검증: `python -m unittest discover -s bhandara/tests -p 'test_pto_xlsx_stream_contract.py' -v`.
 
 ### 회사별 매핑과의 경계
 
