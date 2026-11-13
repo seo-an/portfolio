@@ -154,6 +154,10 @@ def resolve_daily_attendance_policy(
             }
         if not event_policy["requires_review"]:
             return event_policy
+        # A clock-in/out pair does not prove the uncovered portion of
+        # an approved half-day/hourly leave satisfied the work obligation.
+        if event_policy["reason"] == "PARTIAL_LEAVE_ATTENDANCE_EVIDENCE_REQUIRED":
+            return event_policy
 
     if attendance_status == "PRESENT":
         return {
