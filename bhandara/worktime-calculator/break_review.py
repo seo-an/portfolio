@@ -175,6 +175,12 @@ def _paired_outings(events: list[dict], start: datetime, end: datetime):
         if not start <= moment <= end:
             problems.append("ACCESS_EVENT_OUTSIDE_ATTENDANCE")
             continue
+        # The first entry and final exit are already represented by the
+        # canonical attendance clock interval, not an intra-shift outing.
+        if event["direction"] == "IN" and moment == start and open_exit is None:
+            continue
+        if event["direction"] == "OUT" and moment == end and open_exit is None:
+            continue
         if event["direction"] == "OUT":
             if open_exit is not None:
                 problems.append("DUPLICATE_OUT_PUNCH")
@@ -346,6 +352,12 @@ def analyze_access_breaks(bundle: Mapping[str, Any],
         row["employee_id"]: row["worker_id"]
         for row in bundle["sources"]["employees"]["rows"]
     }
+    if len(set(roster.values())) != len(roster):
+        raise BreakReviewError("ambiguous worker identity mapping")
+    # A cross-employee collision or forged worker_id is never an implicit match.
+    for key, items in events.items():
+        if key[0] not in roster:
+            raise BreakReviewError("access event references unknown employee")
     examined = set()
     rows = []
     for computed in result["rows"]:
