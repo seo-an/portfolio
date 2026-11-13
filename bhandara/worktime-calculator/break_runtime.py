@@ -37,8 +37,15 @@ def _augment_reviews(result: dict, break_analysis: dict) -> None:
             "employee_id": "", "worker_id": row["worker_id"],
             "work_date": row["work_date"],
         })
-    if result["status"] == "CALCULATED_UNCLOSED" and any(
-        row["status"] != "PASS_VERIFIED" for row in break_analysis["rows"]
+    if break_analysis.get("normalization_issue_count", 0):
+        result["issues"].append({
+            "code": "CAPS_UPSTREAM_NORMALIZATION_REVIEW", "severity": "REVIEW",
+            "message": "CAPS mapping contained rejected/uncertain source rows",
+            "source": "access_events", "row_number": None,
+            "employee_id": "", "worker_id": "", "work_date": "",
+        })
+    if result["status"] == "CALCULATED_UNCLOSED" and (
+        break_analysis["status"] != "PASS_VERIFIED"
     ):
         result["status"] = "REVIEW_REQUIRED"
 

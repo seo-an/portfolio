@@ -19,7 +19,8 @@ from openpyxl import load_workbook
 VERSION = "0.1"
 LEGAL_BASIS = "KR_LSA_ART54_2026-10-08"
 EXCEPTION_START = date(2026, 12, 10)
-DIRECTIONS = {"OUT": "OUT", "EXIT": "OUT", "IN": "IN", "ENTRY": "IN"}
+DIRECTIONS = {"OUT": "OUT", "EXIT": "OUT", "IN": "IN", "ENTRY": "IN", "UNKNOWN": "UNKNOWN"}
+MODES = {"CLOCK_IN", "CLOCK_OUT", "ACCESS", "OUTING", "RETURN", "DISARM", "UNKNOWN"}
 CLASSES = {"REST_CONFIRMED", "BUSINESS_OUTING", "PERSONAL_OUTING", "UNKNOWN"}
 REVIEW = "REVIEW_REQUIRED"
 
@@ -142,20 +143,28 @@ def _events(bundle: Mapping[str, Any]) -> tuple[dict[tuple[str, str], list], str
         person = row.get("employee_id")
         day = _date(row.get("work_date"))
         event_id = row.get("event_id")
-        direction = DIRECTIONS.get(str(row.get("direction") or "").strip().upper())
+        direction = DIRECTIONS.get(str(row.get("direction") or "UNKNOWN").strip().upper())
+        mode = str(row.get("mode") or "ACCESS").strip().upper()
+        auth_status = str(row.get("auth_status") or "SUCCESS").strip().upper()
         if not isinstance(person, str) or not person or not isinstance(event_id, str) or not event_id:
             raise BreakReviewError("access event identifier invalid")
         if event_id in ids:
             raise BreakReviewError("duplicated CAPS event ID")
+        if row.get("worker_id") is not None and not str(row.get("worker_id")).strip():
+            raise BreakReviewError("access worker_id empty")
         ids.add(event_id)
-        if direction is None:
-            raise BreakReviewError("direction must be normalized IN/OUT")
+        if direction is None or mode not in MODES or auth_status not in {"SUCCESS", "FAILED", "UNKNOWN"}:
+            raise BreakReviewError("invalid normalized direction/mode/auth status")
         stamped = _clock(row.get("event_time"), day)
         classification = str(row.get("classification") or "UNKNOWN").upper()
         if classification not in CLASSES:
             raise BreakReviewError("unrecognized access classification")
         results[(person, day.isoformat())].append({
             "event_id": event_id, "at": stamped, "direction": direction,
+            "mode": mode, "auth_status": auth_status,
+            "device_id": row.get("device_id"), "device_name": row.get("device_name"),
+            "worker_id": row.get("worker_id"),
+            "source_row_number": trace.get("row_number"),
             "classification": classification,
             "free_use_confirmed": row.get("free_use_confirmed") is True,
             "verification_ref": row.get("verification_ref"),
@@ -166,24 +175,56 @@ def _events(bundle: Mapping[str, Any]) -> tuple[dict[tuple[str, str], list], str
 
 
 def _paired_outings(events: list[dict], start: datetime, end: datetime):
-    """Pair OUT to following IN. Unknown/duplicate/partial punches stay reviews."""
+    """Only pair proven physical OUT/IN or explicit OUTING/RETURN semantics.
+
+    A raw '출입' authentication without physical direction is retained as
+    UNKNOWN_ACCESS_DIRECTION, never guessed to be an entry or an exit.
+    A '출근'/'퇴근' mode concerns attendance intent, not door direction.
+    """
     outings = []
     problems = []
     open_exit = None
     for event in events:
         moment = event["at"]
+        mode = event["mode"]
+        direction = event["direction"]
+        if event["auth_status"] != "SUCCESS":
+            problems.append("ACCESS_AUTHENTICATION_NOT_VERIFIED")
+            continue
         if not start <= moment <= end:
             problems.append("ACCESS_EVENT_OUTSIDE_ATTENDANCE")
             continue
-        # The first entry and final exit are already represented by the
-        # canonical attendance clock interval, not an intra-shift outing.
-        if event["direction"] == "IN" and moment == start and open_exit is None:
+        if mode in {"CLOCK_IN", "CLOCK_OUT", "DISARM"}:
+            # Clock mode is never a rest interval punch.
             continue
-        if event["direction"] == "OUT" and moment == end and open_exit is None:
+        if mode == "UNKNOWN":
+            problems.append("UNKNOWN_ACCESS_MODE")
             continue
-        if event["direction"] == "OUT":
+        if mode == "OUTING":
+            if direction == "IN":
+                problems.append("ACCESS_MODE_DIRECTION_CONFLICT")
+                continue
+            flow = "OUT"
+        elif mode == "RETURN":
+            if direction == "OUT":
+                problems.append("ACCESS_MODE_DIRECTION_CONFLICT")
+                continue
+            flow = "IN"
+        else:
+            flow = direction
+        if flow == "UNKNOWN":
+            problems.append("UNKNOWN_ACCESS_DIRECTION")
+            continue
+        # Start and end attendance punches are not in-shift outing intervals.
+        if mode == "ACCESS" and flow == "IN" and moment == start and open_exit is None:
+            continue
+        if mode == "ACCESS" and flow == "OUT" and moment == end and open_exit is None:
+            continue
+        if flow == "OUT":
             if open_exit is not None:
                 problems.append("DUPLICATE_OUT_PUNCH")
+                # Never overwrite the first unmatched exit silently.
+                continue
             open_exit = event
         else:
             if open_exit is None:
@@ -198,7 +239,6 @@ def _paired_outings(events: list[dict], start: datetime, end: datetime):
     if open_exit is not None:
         problems.append("UNPAIRED_OUT_PUNCH")
     return outings, sorted(set(problems))
-
 
 def _verification_index(config: Mapping[str, Any]) -> dict[tuple[str, str], dict]:
     supplied = config.get("break_verifications", [])
@@ -335,6 +375,13 @@ def _assess_one(worker_id: str, employee_id: str, day: str,
         "confirmed_shortfall_min": gap,
         "coverage_complete": coverage,
         "event_intervals": classifications,
+        "access_evidence": [
+            {"event_id": item["event_id"], "event_time": item["at"].isoformat(timespec="minutes"),
+             "mode": item["mode"], "direction": item["direction"],
+             "auth_status": item["auth_status"], "device_id": item["device_id"],
+             "device_name": item["device_name"], "source_row_number": item["source_row_number"]}
+            for item in events
+        ],
         "review_codes": sorted(set(reasons)),
         "legal_basis": LEGAL_BASIS,
         "approved": False,
@@ -349,7 +396,7 @@ def _unresolved(worker_id: str, day: str, reason: str,
         "planned_window": None, "gross_presence_min": None,
         "verified_rest_min": None, "required_break_min": None,
         "confirmed_shortfall_min": None, "coverage_complete": False,
-        "event_intervals": [], "review_codes": [reason],
+        "event_intervals": [], "access_evidence": [], "review_codes": [reason],
         "legal_basis": LEGAL_BASIS, "approved": False,
     }
 
@@ -374,6 +421,26 @@ def analyze_access_breaks(bundle: Mapping[str, Any],
     for key, items in events.items():
         if key[0] not in roster:
             raise BreakReviewError("access event references unknown employee")
+        if any(item["worker_id"] not in (None, roster[key[0]]) for item in items):
+            raise BreakReviewError("access event worker identity mismatch")
+    # Gearbox may attach unapproved attendance candidates derived from explicit
+    # clock modes and first-access fallback. They never become payroll clocks.
+    candidate_source = bundle["sources"].get("attendance_candidates", {})
+    candidate_rows = candidate_source.get("rows", []) if isinstance(candidate_source, Mapping) else []
+    if not isinstance(candidate_rows, list):
+        raise BreakReviewError("attendance_candidates rows invalid")
+    candidates = {}
+    for candidate in candidate_rows:
+        if not isinstance(candidate, Mapping):
+            raise BreakReviewError("attendance candidate row invalid")
+        key = (candidate.get("employee_id"), _date(candidate.get("work_date")).isoformat())
+        if key[0] not in roster or key in candidates:
+            raise BreakReviewError("attendance candidate identity/duplicate invalid")
+        if candidate.get("confirmed") is not False:
+            raise BreakReviewError("attendance candidate must be unconfirmed")
+        if candidate.get("worker_id") != roster[key[0]]:
+            raise BreakReviewError("attendance candidate worker identity mismatch")
+        candidates[key] = dict(candidate)
     examined = set()
     rows = []
     for computed in result["rows"]:
@@ -387,9 +454,21 @@ def analyze_access_breaks(bundle: Mapping[str, Any],
         if key not in schedule or key not in attendance:
             rows.append(_unresolved(worker, day, "SOURCE_DAY_MISSING", {}))
         else:
-            rows.append(_assess_one(worker, ident, day, schedule[key],
-                                    attendance[key], events.get(key, []),
-                                    checks.get(key, {})))
+            assessed = _assess_one(worker, ident, day, schedule[key],
+                                   attendance[key], events.get(key, []),
+                                   checks.get(key, {}))
+            candidate = candidates.get(key)
+            if candidate is not None:
+                assessed["attendance_candidate"] = candidate
+                if candidate.get("arrival_basis") != "EXPLICIT_CLOCK_IN" or (
+                    candidate.get("departure_basis") != "EXPLICIT_CLOCK_OUT"
+                ) or candidate.get("review_codes"):
+                    assessed["status"] = REVIEW
+                    assessed["confirmed_shortfall_min"] = None
+                    assessed["review_codes"] = sorted(set(
+                        assessed["review_codes"] + ["ATTENDANCE_CANDIDATE_REVIEW"]
+                    ))
+            rows.append(assessed)
     for key in sorted(set(events) - examined):
         ident, day = key
         rows.append(_unresolved(roster.get(ident, ""), day,
@@ -398,11 +477,24 @@ def analyze_access_breaks(bundle: Mapping[str, Any],
         ident, day = key
         rows.append(_unresolved(roster.get(ident, ""), day,
                                 "UNMATCHED_BREAK_VERIFICATION", schedule.get(key, {})))
+    for key in sorted(set(candidates) - examined):
+        ident, day = key
+        item = _unresolved(roster.get(ident, ""), day,
+                           "ATTENDANCE_CANDIDATE_NOT_APPLIED", schedule.get(key, {}))
+        item["attendance_candidate"] = candidates[key]
+        rows.append(item)
     rows.sort(key=lambda row: (row["worker_id"], row["work_date"], row["review_codes"]))
+    upstream = bundle.get("access_normalization_review", {})
+    if not isinstance(upstream, Mapping):
+        raise BreakReviewError("access normalization review must be an object")
+    upstream_issues = upstream.get("issues", [])
+    if not isinstance(upstream_issues, list):
+        raise BreakReviewError("access normalization issues invalid")
     return {
         "schema_version": VERSION,
-        "status": REVIEW if any(row["status"] != "PASS_VERIFIED" for row in rows)
+        "status": REVIEW if (upstream_issues or any(row["status"] != "PASS_VERIFIED" for row in rows))
                   else "PASS_VERIFIED",
+        "normalization_issue_count": len(upstream_issues),
         "finalizable": False, "approved": False,
         "source_batch_id": bundle.get("batch_id"),
         "access_events_sha256": digest,
@@ -431,7 +523,8 @@ def write_break_review(output_dir: str | Path, data: Mapping[str, Any]) -> None:
         cols = ("worker_id", "work_date", "status", "planned_break_min",
                 "gross_presence_min", "verified_rest_min",
                 "required_break_min", "confirmed_shortfall_min",
-                "coverage_complete", "review_codes", "event_intervals")
+                "coverage_complete", "review_codes", "event_intervals",
+                "attendance_candidate", "access_evidence")
         sheet.append(cols)
         for row in data["rows"]:
             values = []

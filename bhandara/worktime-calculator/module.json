@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "module_id": "worktime-calculator",
-  "module_version": "0.4.0",
+  "module_version": "0.5.0",
   "status": "review_only",
   "requires_base": "0.1",
   "python": ">=3.12",
@@ -50,7 +50,8 @@
     "No approval, period close, or payroll finalization",
     "Original functions and standalone CLI are copied without logic edits",
     "The optional access source requires a trusted upstream normalizer; reading raw CAPS exports or vendor APIs is not part of the public module.",
-    "Break compliance review is evidence-only, with no automatic payroll-hour adjustment; any mismatch between observed/payroll break minutes requires separate reconciliation."
+    "Break compliance review is evidence-only, with no automatic payroll-hour adjustment; any mismatch between observed/payroll break minutes requires separate reconciliation.",
+    "Mode/door-direction distinction and first-access attendance candidates are review-only; real raw export parsing remains in private Gearbox adapter."
   ],
   "shared_excel_input": {
     "supported": true,
@@ -99,7 +100,12 @@
         "direction",
         "classification",
         "free_use_confirmed",
-        "verification_ref"
+        "verification_ref",
+        "mode",
+        "auth_status",
+        "device_id",
+        "device_name",
+        "raw_timestamp"
       ],
       "access_classifications": [
         "UNKNOWN",
@@ -119,7 +125,23 @@
         "REVIEW_REQUIRED"
       ],
       "approval": false,
-      "limitations": "No CAPS vendor adapter implemented; employer-specific access code mapping remains upstream. Neither punch nor schedule automatically proves free rest. Migrated Worktime payroll-hour engine remains unchanged."
+      "limitations": "No CAPS vendor adapter implemented; employer-specific access code mapping remains upstream. Neither punch nor schedule automatically proves free rest. Migrated Worktime payroll-hour engine remains unchanged.",
+      "optional_attendance_candidates": {
+        "source": "normalized-input.json.sources.attendance_candidates",
+        "fields": [
+          "employee_id",
+          "worker_id",
+          "work_date",
+          "arrival_candidate",
+          "arrival_basis",
+          "departure_candidate",
+          "departure_basis",
+          "review_codes",
+          "confirmed"
+        ],
+        "note": "Always unconfirmed; never auto-copied into Worktime attendance or Payroll"
+      },
+      "direction_handling": "UNKNOWN allowed; explicit CLOCK_IN/CLOCK_OUT modes are not physical IN/OUT; OUTING/RETURN can pair as semantic movements without confirming rest"
     }
   }
 }
