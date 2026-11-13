@@ -120,10 +120,13 @@ def prepare_shared_payroll(root: Path, period: str, *,
         raise InputLayoutError("Worktime handoff must be a JSON object")
     covered = set(worktime_result.get("covered_worker_ids") or [])
     expected = {item["worker_id"] for item in identities.values()}
-    if covered and covered != expected:
+    if covered and covered != expected and not contract_mode:
         raise InputLayoutError(
             "Worktime handoff worker roster differs from current id-map.xlsx"
         )
+    # Contract mode validates the complete roster in contract_adapter.
+    # Its v2 input may include separate, explicitly named service Worktime
+    # workers who are NOT employee payroll members or ID_MAP entries.
     # Verify a default Worktime handoff against the current shared Excel.
     # An explicit --worktime-result can come from a separate standalone run.
     if worktime_result_path is None:
