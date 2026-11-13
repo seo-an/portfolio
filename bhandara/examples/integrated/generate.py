@@ -192,7 +192,8 @@ def generate(destination: Path) -> Path:
         raise ValueError("create the sample outside the Git repository")
     with tempfile.TemporaryDirectory(prefix="bhandara-v2-generator-") as tmp:
         stage = Path(tmp)
-        input_dir = stage / "input"
+        payload = stage / "sample"
+        input_dir = payload / "input"
         shutil.copytree(LEGACY_INPUT, input_dir)
         _install_external_mapping(input_dir)
         _extend_worktime(input_dir)
@@ -212,13 +213,13 @@ def generate(destination: Path) -> Path:
             "finalizable": False,
             "note": "Synthetic only; no employment, vendor billing or tax approval",
         }
-        (stage / "manifest.json").write_text(
+        (payload / "manifest.json").write_text(
             json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",
         )
         target.parent.mkdir(parents=True, exist_ok=True)
         # Atomic only at the directory level: destination must be nonexistent.
-        shutil.move(str(stage), str(target))
+        shutil.move(str(payload), str(target))
     return target
 
 
