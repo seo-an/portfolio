@@ -12,6 +12,14 @@ EVENT_TYPE_ALIASES = {
     },
     "ANNUAL_LEAVE": {
         "연차", "연차휴가", "연차유급휴가",
+        "오전반차", "오후반차", "오전 반차", "오후 반차", "반차",
+        "시간차", "시간연차",
+    },
+    "EARLY_DEPARTURE": {
+        "조퇴", "조기퇴근", "조기 퇴근",
+    },
+    "OUTING": {
+        "외출", "업무외출",
     },
     "PARENTAL_LEAVE": {
         "육아휴직", "육휴",
@@ -73,6 +81,10 @@ def normalize_event_type(value: object) -> str | None:
 # Detailed labels preserve policy-relevant distinctions while keeping the
 # existing normalize_event_type() API backward compatible.
 EVENT_DETAIL_ALIASES = {
+    ("ANNUAL_LEAVE", "AM_HALF"): {"오전반차", "오전 반차"},
+    ("ANNUAL_LEAVE", "PM_HALF"): {"오후반차", "오후 반차"},
+    ("ANNUAL_LEAVE", "HALF_DAY"): {"반차"},
+    ("ANNUAL_LEAVE", "HOURLY"): {"시간차", "시간연차"},
     ("BEREAVEMENT_LEAVE", "PARENT_DEATH"): {
         "모친상", "부친상", "부모상",
     },
