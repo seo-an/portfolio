@@ -1,5 +1,27 @@
 # 급여 계산기(Payroll Calculator) — 독립 실행 모듈 v0.3.1
 
+## 계약 사실과 지급항목 분리 — 새 두 시트 입력 (v2)
+
+`pay-contract.xlsx`에 `Contracts`·`Components` 두 시트가 함께 있으면
+기존 `pay-contract-components.xlsx` 없이도 계약을 검증합니다.
+`Contracts`에서 계약금액의 의미(`amount_type=BASE|TOTAL|RATE`),
+근로자 관계 코드(`relationship_type`), 산정 단위(`pay_basis`)를 명시하고,
+`Components`에는 기본급과 별도 지급항목을 적습니다.
+
+- `BASE`: 계약금액을 기본급으로 보고 지급항목을 **더함**.
+- `TOTAL`: `base_salary`를 포함한 명시된 지급항목의 **합계가 계약총액과 동일해야** 함. 자동 역산하지 않음.
+- `RATE`: 시급·일급으로 기존 Worktime 자료의 시간·일수를 적용.
+- 계약 형태는 `resources/contract-types.json`에서 확인하며 **ID 접두어로 추정하지 않음**.
+- 현재 v2는 직원 근로소득용 계약에 한정합니다. 외부 용역/법인 계약 인계와 과세·비과세 금액 산출은 별도 후속 변경이며, 잘못된 자동 확정은 금지합니다.
+
+[실제 두 시트 예제 XLSX](examples/contract-v2-two-sheet.demo.xlsx) ·
+[비개발자용 입력 방법](RUNBOOK.md) ·
+[두 시트 계약 회귀 테스트](../tests/test_payroll_contract_facts_v2.py)
+
+기존 80명 공통 샘플은 아직 단일 시트+별도 수당파일 방식(legacy)으로
+유지되며, 마이그레이션 이전 계약금액의 의미를 자동으로 추측하지 않습니다.
+원래 계산 엔진·퇴직/입사·근태·승인 상태는 변경하지 않습니다.
+
 ## 공통 Excel 고정 경로 자동 입력
 
 `bhandara/data/input/{common,payroll}`의 직원·ID 매핑·연봉/월급/시급/일급 **계약금액 Excel**을 검증하고
