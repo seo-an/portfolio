@@ -1,5 +1,34 @@
 # Worktime Calculator — 독립 모듈 이전 v0.1.0
 
+## 외부 인력 포함 Worktime Excel 어댑터 (선택 기능)
+
+공통 `common/id-map.xlsx`에 `EXTERNAL` 시트(`worker_id`,
+`security_id`)를 선택적으로 추가할 수 있습니다. 기존 직원 `ID_MAP`
+시트와 `employee.xlsx`는 직원 전용으로 **변경하지 않습니다**.
+
+동일한 `worktime/work-schedule.xlsx`, `worktime/attendance.xlsx`
+첫 시트에 `worker_id` 열을 선택적으로 추가합니다.
+
+- 직원 행: `employee_id`만 기입, 직원 ID_MAP으로 연결.
+- 외부 행: `employee_id` 공란, `worker_id` 기입, `EXTERNAL`
+  시트에 등록된 ID만 허용.
+- 둘 다 기입/둘 다 공란/미등록 ID/직원과 겹치는 ID·출입기 ID는
+  `InputLayoutError`로 차단.
+- 원본 출처: 직원 Excel, 근무표, 근태표 및 `id-map.xlsx`
+  SHA-256 기록. 직원 80명만 있는 기존 입력도 그대로 지원.
+- 외부 근무제의 검토 표시는 `EXTERNAL_SERVICE_HOURS_REVIEW_ONLY`로
+  생성하며, 근로소득·법정 기준 또는 용역 청구를 승인하지 않음.
+- `shared_excel.py` 및 `external_identity.py`에만 신규 입력 로직;
+  **이전 Worktime 계산 엔진, Payroll·PTO 코드와 의존성 없음**.
+
+Worktime이 만든 `worktime-result.json`은 이미 지원하는 Payroll
+`Contracts`의 외부 `worker_id`와 직접 연결될 수 있습니다. 직원 80명과
+외부 근로시간을 같은 파일에서 계산했더라도 Payroll 직원 급여의 대상
+`expected_worker_ids`는 80명으로 유지됩니다.
+
+[직접 Excel 준비하는 방법](RUNBOOK.md) ·
+[가상 직원 80명+외부 시간제 2명 통합 테스트](../tests/test_worktime_external_shared_excel.py).
+
 ## 공통 Excel 고정 경로 자동 입력
 
 `bhandara/data/input/{common,worktime}`의 Excel을 자동으로 읽어
