@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from .event_type import normalize_event_type
+from .event_type import normalize_event_detail, normalize_event_type
 
 
 DENOMINATOR_INCLUDED = "INCLUDED"
@@ -61,6 +61,22 @@ def resolve_event_attendance_policy(event: dict[str, Any]) -> dict[str, Any]:
             "reason": "EVENT_NOT_APPROVED",
             "requires_review": True,
         }
+
+    # Half-day/hourly leave cannot imply presence for the uncovered hours.
+    # Worktime evidence for the remaining obligation must be verified first.
+    if event_type == "ANNUAL_LEAVE":
+        detail = normalize_event_detail(raw_event_type)
+        unit = str(event.get("unit") or "").upper()
+        if (detail["event_subtype"] in {"AM_HALF", "PM_HALF", "HALF_DAY", "HOURLY"}
+                or unit in {"HALF", "HALF_DAY", "AM_HALF", "PM_HALF", "0.5",
+                            "HOUR", "HOURS", "HOURLY"}):
+            return {
+                "denominator": DENOMINATOR_INCLUDED,
+                "credit": CREDIT_REVIEW,
+                "basis_type": BASIS_REVIEW,
+                "reason": "PARTIAL_LEAVE_ATTENDANCE_EVIDENCE_REQUIRED",
+                "requires_review": True,
+            }
 
     if event_type in STATUTORY_DEEMED_PRESENT_EVENTS:
         return {
