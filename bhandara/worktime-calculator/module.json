@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "module_id": "worktime-calculator",
-  "module_version": "0.2.0",
+  "module_version": "0.3.0",
   "status": "review_only",
   "requires_base": "0.1",
   "python": ">=3.12",
@@ -45,7 +45,7 @@
   },
   "migration_manifest": "migration-manifest.json",
   "limitations": [
-    "No source-normalizer migration or new Excel input handling",
+    "Original direct JSON and Worktime core functions unchanged; optional shared Excel bridge validates external participants, not approval or source-normalizer semantics",
     "No approval, period close, or payroll finalization",
     "Original functions and standalone CLI are copied without logic edits"
   ],
@@ -63,6 +63,25 @@
     "monthly_files": [],
     "default_period_option": "--period YYYY-MM",
     "advanced_overrides": "--paths-config JSON role map",
-    "note": "Fixed paths are defaults. Old explicit JSON/normalized CLI modes remain supported."
+    "note": "Fixed paths are defaults. Old explicit JSON/normalized CLI modes remain supported.",
+    "external_workers": {
+      "optional": true,
+      "identity_book": "common/id-map.xlsx",
+      "employee_sheet": "ID_MAP",
+      "external_sheet": "EXTERNAL",
+      "external_columns": [
+        "worker_id",
+        "security_id"
+      ],
+      "employee_columns": "employee_id only, worker_id blank/absent",
+      "external_record_columns": "employee_id blank, worker_id required",
+      "applies_to": [
+        "worktime/work-schedule.xlsx",
+        "worktime/attendance.xlsx"
+      ],
+      "provenance": "source_hashes.identity_map (SHA-256 of entire common/id-map.xlsx)",
+      "legal_status": "REVIEW_ONLY; identity mapping does not infer employment or vendor withholding",
+      "payroll_integration": "external worker_id in pay-contract.xlsx Contracts; no service-specific work-record file"
+    }
   }
 }
