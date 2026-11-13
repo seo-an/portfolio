@@ -1,4 +1,4 @@
-# 급여 계산기 사용 안내서 — 계약금액부터 기본급 산정까지
+# 급여 계산기 사용 안내서 — 계약 사실과 지급항목을 분리해 계산하기
 
 
 ## 내 설정 파일 하나만 수정하는 독립 실행
@@ -66,7 +66,71 @@ bhandara/data/input/
 단, `pay-contract.xlsx`가 없는 기존 사용자는 월 급여액을 직접 적는
 `compensation.xlsx` 방식도 계속 사용할 수 있습니다.
 
-## 2. pay-contract.xlsx — 무엇을 입력하나요?
+## 새로운 권장 계약 입력: Excel 하나에 2개 시트
+
+새로운 계약 파일은 `payroll/pay-contract.xlsx` 하나에 **`Contracts`** 와
+**`Components`** 두 시트를 만듭니다. 샘플은
+[계약 사실 분리 예제 Excel](examples/contract-v2-two-sheet.demo.xlsx)에서
+바로 열어 볼 수 있습니다. 이 예제는 구조를 설명하는 가상 직원 2명 자료이며,
+80명 전체 실행용 입력은 아닙니다.
+
+**Contracts 시트** (표시는 핵심 열만 발췌):
+
+| contract_id | employee_id | pay_basis | contract_amount | amount_type | relationship_type |
+|---|---|---|---:|---|---|
+| CTR-BASE-001 | E001 | MONTHLY | 3500000 | BASE | REGULAR_EMPLOYEE |
+| CTR-TOTAL-002 | E002 | MONTHLY | 3500000 | TOTAL | FIXED_TERM_EMPLOYEE |
+
+실제 Excel에는 이 외에도 `effective_from`, `effective_to`,
+`standard_day_hours` 열이 있어야 합니다. 이름은 정확히 일치해야 하고,
+빈 `effective_to`는 계약이 계속 적용됨을 의미합니다.
+
+**Components 시트**:
+
+| contract_id | pay_item_code | monthly_amount |
+|---|---|---:|
+| CTR-BASE-001 | position_allowance | 150000 |
+| CTR-BASE-001 | meal_allowance | 100000 |
+| CTR-TOTAL-002 | base_salary | 3250000 |
+| CTR-TOTAL-002 | position_allowance | 150000 |
+| CTR-TOTAL-002 | meal_allowance | 100000 |
+
+두 직원 모두 기본급과 수당을 **더하는 단일 지급항목 계산 구조**를 사용하지만,
+계약 사실은 다르게 해석합니다.
+
+- `BASE`: 계약금액 3,500,000원이 기본급. 수당 250,000원을 더해 **3,750,000원**.
+- `TOTAL`: 계약금액 3,500,000원이 수당 포함 총액. 명시된 기본급 3,250,000원과 수당 250,000원을 더한 결과가 **3,500,000원**인지 검증.
+- `RATE`: 시급·일급의 단가를 뜻하며, 기존 Worktime 시간·일수 검증을 유지합니다. 시급·일급 행의 `amount_type`은 `RATE`를 사용합니다.
+
+`TOTAL`에서 `base_salary` 행을 누락하거나 항목의 합계가 계약금액과
+다르면 계산을 차단합니다. **계약총액에서 수당을 빼 기본급을 임의 추정하지 않습니다.**
+연봉의 경우 계약금액을 12개월에 균등 분할한다는 기존 검토 전제를 유지합니다.
+
+`relationship_type`은
+[계약 유형 코드표](resources/contract-types.json)에서 이름을 관리합니다.
+ID의 `E`, `SVC` 같은 접두어로 법적 관계를 추정하지 않습니다.
+**이 단계에서는 근로자 유형의 Payroll 계산만 v2로 실행합니다.**
+독립 용역·외부 법인의 통합 입력은 후속 Worktime 인계 정리까지 마친 뒤 지원하며,
+현재의 두 용역 파일은 기존 모드에서만 사용합니다.
+
+**과세·비과세 판정은 아직 자동화하지 않았습니다.**
+지급항목의 합계를 구했다고 원천세·보험 또는 비과세 요건이 확정된 것은 아닙니다.
+세무 분류는 별도 정책과 검증이 붙기 전까지 미판정으로 취급합니다.
+
+### 기존 샘플 사용자에게
+
+현재 [80명 공통 샘플](../examples/sample/input/)은 여전히 **구형 단일 시트**
+`pay-contract.xlsx` + `pay-contract-components.xlsx` 구조입니다.
+호환성을 유지하기 위해 기존 방식도 그대로 지원합니다.
+
+새로운 두 시트 방식에서는 `pay-contract-components.xlsx`가 필요 없습니다.
+기존 자료의 `contract_amount`를 새 방식으로 옮길 때에는 계약서 원문이
+기본급(`BASE`)인지 수당 포함 총액(`TOTAL`)인지 먼저 확인해야 합니다.
+`amount_type`을 공란으로 두거나 추측해 채우면 안 됩니다.
+
+---
+
+## 2. 기존 단일 시트 pay-contract.xlsx — 무엇을 입력하나요?
 
 엑셀의 **활성 시트**, 1행에 아래 **영문 헤더 그대로** 입력합니다. 두 번째 행부터 값입니다.
 
@@ -84,14 +148,14 @@ bhandara/data/input/
 - `standard_day_hours`는 시급·일급 계약일 때 **계약상 하루 기준시간**입니다.
 - 동일 직원의 계약기간이 겹치거나 계약이 없으면 계산을 차단합니다.
 
-## 3. pay-contract-components.xlsx — 기본급과 포함 수당 분리
+## 3. 기존 pay-contract-components.xlsx — 기본급과 포함 수당 분리
 
 | contract_id | pay_item_code | monthly_amount |
 |---|---|---:|
 | CTR-0006 | position_allowance | 150000 |
 | CTR-0006 | meal_allowance | 100000 |
 
-**월급계약 350만 원 예시:** 월 계약 총액 3,500,000원 − 직책수당 150,000원 − 식대 100,000원
+**구형 방식(수당 포함 총액)에서 월급계약 350만 원 예시:** 월 계약 총액 3,500,000원 − 직책수당 150,000원 − 식대 100,000원
 = **월 기본급 3,250,000원**. 기존 엔진에는 기본급, 직책수당, 식대를 별도의 급여항목으로 전달합니다.
 
 연봉계약 역시 **연 계약 총액 ÷ 12 − 포함된 월 고정수당**으로 기본급을 구합니다. **현재는 연봉을 12개월에 동일하게 나누어 지급한다는 전제**만 지원하며, 13회 지급·성과급 포함·별도 상여 지급 계약은 그대로 적용하면 안 됩니다. 계산 결과에 `ANNUAL_12_EQUAL_INSTALLMENTS_ASSUMED` 검토 표시가 남습니다.
