@@ -17,5 +17,6 @@
     "contract_components": 20,
     "service_contracts_excluded": 8,
     "service_delivery_records": 16
-  }
+  },
+  "test_case_index": "test-cases.json"
 }
