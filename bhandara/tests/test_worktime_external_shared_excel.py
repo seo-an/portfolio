@@ -299,7 +299,7 @@ class ExternalWorktimeExcelTests(unittest.TestCase):
         try:
             sheet = wb.active
             header = [c.value for c in sheet[1]]
-            sheet.cell(82, header.index("worker_id") + 1).value = "UNKNOWN"
+            sheet.cell(sheet.max_row - 3, header.index("worker_id") + 1).value = "UNKNOWN"
             wb.save(path)
         finally:
             wb.close()
