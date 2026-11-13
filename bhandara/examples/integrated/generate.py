@@ -164,6 +164,33 @@ def _create_v2_contracts(input_dir: Path) -> None:
         (input_dir / "payroll" / name).unlink()
 
 
+def _add_synthetic_taxability_policy(input_dir: Path) -> None:
+    """Demonstrate the NEW review buckets without asserting legal eligibility."""
+    path = input_dir / "payroll/company-policy.json"
+    policy = json.loads(path.read_text(encoding="utf-8"))
+    policy["taxability_review"] = {
+        "schema_version": "1.0",
+        "pay_items": {
+            "base_salary": {
+                "status": "TAXABLE",
+                "policy_ref": "SYNTHETIC_DEMO_BASE_NO_LEGAL_ASSERTION",
+            },
+            "meal_allowance": {
+                "status": "NON_TAXABLE",
+                "policy_ref": "SYNTHETIC_DEMO_MEAL_NO_LEGAL_ASSERTION",
+                "cap_per_worker_period": 100000,
+            },
+            "position_allowance": {
+                "status": "REVIEW",
+            },
+        },
+    }
+    path.write_text(
+        json.dumps(policy, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+
+
 def _create_worktime_handoff(input_dir: Path, working_dir: Path) -> None:
     module = importlib.import_module("bhandara.worktime-calculator.shared_excel")
     target = working_dir / "worktime-output"
@@ -198,6 +225,7 @@ def generate(destination: Path) -> Path:
         _install_external_mapping(input_dir)
         _extend_worktime(input_dir)
         _create_v2_contracts(input_dir)
+        _add_synthetic_taxability_policy(input_dir)
         _create_worktime_handoff(input_dir, stage)
         manifest = {
             "schema_version": "2.0",
