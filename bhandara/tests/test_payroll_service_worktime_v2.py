@@ -106,7 +106,7 @@ class ServiceWorktimeV2Tests(unittest.TestCase):
              "ordinary_hours": "8", "worked_hours": "8",
              "validation_flags": []},
             {"worker_id": "EXT-W001", "work_date": "2026-06-03",
-             "ordinary_hours": "14", "worked_hours": "14",
+             "ordinary_hours": "8", "worked_hours": "14",
              "validation_flags": []},
             {"worker_id": "EXT-W002", "work_date": "2026-06-02",
              "ordinary_hours": "8", "worked_hours": "8",
