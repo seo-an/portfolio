@@ -12,12 +12,10 @@ try:
     from .payroll_operational_entrypoint import run_operational_payroll
     from .payroll_run import run_worker_payroll
     from .payroll_validation import build_validation
-    from .taxability_review import review_payment_taxability
 except ImportError:
     from payroll_operational_entrypoint import run_operational_payroll
     from payroll_run import run_worker_payroll
     from payroll_validation import build_validation
-    from taxability_review import review_payment_taxability
 
 
 def _issue(code: str, message: str, *, worker_id: str | None = None,
@@ -126,14 +124,6 @@ def run_standalone_payroll(data: Mapping[str, Any]) -> dict[str, Any]:
                 worker_id=worker_id, severity="ERROR",
             ))
     composition = {**computed, "worker_runs": runs}
-    # Taxability is a separate, read-only view of already calculated employee
-    # pay amounts. It never changes Payroll Results, gross/net, insurance,
-    # withholding, service billing or settlement ledger.
-    taxability = review_payment_taxability(
-        composition, data["company_policy"], data["registry"],
-        payroll_period=data["payroll_period"],
-        expected_worker_ids=worker_ids,
-    )
     has_error = any(item["severity"] == "ERROR" for item in issues)
     status = "BLOCKED" if has_error else "REVIEW_REQUIRED"
     return {
@@ -150,7 +140,6 @@ def run_standalone_payroll(data: Mapping[str, Any]) -> dict[str, Any]:
         "source_hashes": data["source_hashes"],
         "worktime_receipt_hashes": worktime["receipt_hashes"],
         "composition": composition,
-        "taxability_review": taxability,
         "issues": issues,
         "ledger_write_requests": operational["ledger_write_requests"],
         "final_ledger_requests": operational["final_ledger_requests"],
