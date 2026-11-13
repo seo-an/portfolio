@@ -47,6 +47,82 @@ python run.py bhandara worktime-calculator --period 2026-06
 메뉴 미선택이나 중복 태그를 자동으로 출퇴근 확정하지 않습니다.
 아래의 JSON 직접 준비 방식은 기존의 고급 사용자용 계약 설명입니다.
 
+## 직원과 외부 인력을 같은 근태 Excel로 처리하기
+
+외부 인력이 실제로 시간제·일급제 업무를 제공하고 그 실적을 근거로
+계약대가를 검토해야 한다면 **새 근태 Excel을 만들 필요가 없습니다.**
+기존 파일 3개만 사용합니다.
+
+### 1. `common/id-map.xlsx` — `EXTERNAL` 시트 추가(선택)
+
+원래 **`ID_MAP` 시트는 사내 직원 전용**으로 그대로 유지합니다.
+외부 인력이 있는 경우에만 같은 파일에 `EXTERNAL` 시트를 추가하세요.
+
+| worker_id | security_id |
+|---|---|
+| EXT-W001 | SEC-EXT-001 |
+| EXT-W002 | SEC-EXT-002 |
+
+- **`worker_id`**는 Worktime과 Payroll 계약을 연결할 식별자입니다.
+- **`security_id`**는 출입기·근태 원본과 연결하는 식별자입니다.
+- 두 열은 공란·중복 불가이며, `ID_MAP` 직원의 사번·worker_id·security_id와
+  충돌하면 차단합니다.
+- `party_id`(외부 계약 상대방)는 **Payroll 계약의 Contracts 시트에서만**
+  작성합니다. Worktime에는 보수 단가나 계약 유형을 중복 기록하지 않습니다.
+- 외부 인력이 없다면 `EXTERNAL` 시트는 만들지 않아도 됩니다.
+
+### 2. `worktime/work-schedule.xlsx`와 `worktime/attendance.xlsx`
+
+두 파일에서 기존 `employee_id` 열을 **그대로 유지**하고,
+맨 오른쪽에 `worker_id` 열을 추가하면 됩니다. 일반 직원과 외부
+인력을 같은 시트의 여러 행으로 기록합니다.
+
+| employee_id | worker_id | work_date | 예시 |
+|---|---|---|---|
+| E001 | (빈칸) | 2026-06-02 | 직원 근무표·근태 |
+| (빈칸) | EXT-W001 | 2026-06-02 | 외부 인력 근무표·근태 |
+
+- 직원 행은 `employee_id`만 입력합니다. 기존 Excel에는
+  `worker_id` 열 자체가 없어도 됩니다.
+- 외부 인력 행은 `worker_id`만 입력합니다. 반드시
+  `EXTERNAL` 시트에 등록되어 있어야 합니다.
+- **한 행에 두 ID를 동시에 입력하거나 둘 다 비워 두면 차단**됩니다.
+- 나머지 예정시간·근태시간·휴게시간·근무일 헤더는 기존 파일과 동일합니다.
+- Worktime이 외부 인력을 계산할 때 필요한 내부 연결키는
+  `worker_id`에서 자동 생성합니다. 실제 직원으로 등록하거나
+  `common/employee.xlsx`에 옮겨 적는 작업은 **하지 않습니다.**
+
+실행은 평소와 같습니다.
+
+```bash
+python run.py bhandara worktime-calculator --period 2026-06
+```
+
+출력 `worktime-result.json`의 `covered_worker_ids`에는 직원·외부 인력이
+모두 포함됩니다. `source_hashes.identity_map`에는 `id-map.xlsx`의
+원본 SHA-256도 남습니다. 외부 인력의 근무시간은 승인 완료가 아닌
+**검토용 계산 사실**이며, 법정 근로시간·급여·청구 승인으로 간주하지
+않습니다.
+
+Payroll에서는 해당 결과 파일을 다음과 같이 **명시적으로** 전달합니다.
+
+```bash
+python run.py bhandara payroll-calculator \
+  --period 2026-07 \
+  --worktime-result /실제경로/worktime-result.json
+```
+
+Payroll의 `pay-contract.xlsx` → `Contracts`에는 해당 외부 인력의
+`worker_id`, `party_id`, `relationship_type`을 입력합니다.
+Payroll 직원 급여에는 이 외부 인력이 포함되지 않으며,
+`contract-basis-review`에서 추정 대가만 검토합니다.
+
+**CAPS·세콤의 출입 태그만으로 출퇴근을 확정하지 않습니다.**
+근무표와 출퇴근 Excel은 검증된 정규화 사실을 입력한 것으로 보고
+추가 검토를 표시합니다. Worktime 계산은 용역 청구·지급 승인과 별개입니다.
+
+---
+
 Worktime(근무시간) 계산기는 **직원별 근무표와 출퇴근 정보를 받아 일별 근무시간을 계산하고, 확인이 필요한 항목을 표시**합니다. 이 문서는 실제 입력 자료를 준비하는 사람을 위한 설명입니다. 설치·코드·테스트 명령은 [Worktime README](README.md)에 있습니다.
 
 > **기본 사용:** 표준 경로의 Excel을 읽습니다. 고급 사용자에게는 기존 정규화 JSON 입력도 제공합니다.
@@ -59,7 +135,7 @@ Worktime(근무시간) 계산기는 **직원별 근무표와 출퇴근 정보를
 | **`worktime-config.json`** | `.json` | 계산기간, 직원별 근로제·적용 기준, 승인 참조 | 계산을 준비하는 담당자 |
 | `review-report.json` | `.json` | 원본 정규화 중 발견된 문제 목록 | 정규화 과정에서 생성한 경우 함께 보관 |
 
-**이 계산기에는 입력 Excel의 시트 이름을 지정하는 항목이 없습니다.** 입력이 JSON이기 때문입니다. 엑셀 원본을 가지고 있다면 별도 정규화 도구(예: 동일 포트폴리오의 Payroll `normalize` 기능 또는 회사의 별도 매핑 절차)를 이용해 요구되는 형태의 JSON을 만든 뒤 Worktime에 전달합니다. 다만 **Payroll 모듈을 함께 설치해야 한다는 의미는 아닙니다.** 외부에서 준비된 JSON 파일만 있으면 Worktime 단독 실행이 가능합니다.
+**이하 설명은 고급 JSON 직접 입력 방식입니다.** 위의 간편 Excel 모드에서는 `common/id-map.xlsx`의 `ID_MAP`(직원)과 선택 `EXTERNAL`(외부 인력) 시트가 사용됩니다. 엑셀 원본을 가지고 있다면 별도 정규화 도구(예: 동일 포트폴리오의 Payroll `normalize` 기능 또는 회사의 별도 매핑 절차)를 이용해 요구되는 형태의 JSON을 만든 뒤 Worktime에 전달합니다. 다만 **Payroll 모듈을 함께 설치해야 한다는 의미는 아닙니다.** 외부에서 준비된 JSON 파일만 있으면 Worktime 단독 실행이 가능합니다.
 
 ## 2. 폴더는 이렇게 준비하세요
 
@@ -192,7 +268,7 @@ Worktime에서 만든 `worktime-result.json`을 Payroll 프로그램의 설정 �
 
 ## 8. 자주 묻는 질문
 
-**Q. 시트 이름은 뭘로 해야 하나요?** Worktime 자체는 Excel이 아니라 JSON을 읽으므로 **시트 이름을 지정하지 않습니다**. 원본 정규화 도구에서 Excel을 처리한다면 그 도구의 시트 선택 기준을 따릅니다.
+**Q. 시트 이름은 뭘로 해야 하나요?** 간편 Excel 모드에서는 `id-map.xlsx`에 `ID_MAP`(필수)과 `EXTERNAL`(외부 인력 있을 때만)을 사용합니다. 근무표·근태표는 첫 번째 시트를 읽으며, 고급 JSON 직접 실행은 Excel 시트를 읽지 않습니다.
 
 **Q. 직원이 추가되면 어디를 바꾸나요?** 정규화된 직원명부·근무표·근태뿐 아니라 설정의 `worktime_assignments`도 해당 직원에 맞춰야 합니다. 예제의 `E01`만 바꿔서는 실제 근태를 추가한 것이 아닙니다.
 
