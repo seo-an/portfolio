@@ -28,6 +28,12 @@ def _event_days(row: dict) -> tuple[Decimal | None, str, str | None]:
         if unit and unit not in HALF_UNITS:
             return None, subtype, "LEAVE_UNIT_CONFLICT"
         return HALF, subtype, None
+    if subtype == "HALF_DAY":
+        if unit and unit not in HALF_UNITS:
+            return None, subtype, "LEAVE_UNIT_CONFLICT"
+        return HALF, subtype, None
+    if subtype == "HOURLY":
+        return None, subtype, "HOURLY_CONVERSION_POLICY_REQUIRED"
     if unit in FULL_UNITS:
         return ONE, "FULL", None
     if unit in HALF_UNITS:
