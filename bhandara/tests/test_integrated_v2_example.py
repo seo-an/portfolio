@@ -86,6 +86,14 @@ class IntegratedExampleTests(unittest.TestCase):
         )
         self.assertEqual(meta["schema_version"], "2.0")
         self.assertFalse((self.destination / "worktime-output").exists())
+        company_policy = json.loads(
+            (payroll / "company-policy.json").read_text(encoding="utf-8")
+        )
+        taxable = company_policy["taxability_review"]["pay_items"]
+        self.assertEqual(taxable["base_salary"]["status"], "TAXABLE")
+        self.assertEqual(taxable["meal_allowance"]["status"], "NON_TAXABLE")
+        self.assertEqual(taxable["meal_allowance"]["cap_per_worker_period"], 100000)
+        self.assertIn("SYNTHETIC", taxable["meal_allowance"]["policy_ref"])
         with self.assertRaises(FileExistsError):
             _load_generator().generate(self.destination)
 
