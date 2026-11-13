@@ -51,6 +51,28 @@ def local_cli_config(module_id: str) -> dict:
     return resolve_config(None, build)
 
 
+def _attach_taxability_review(config_path, output_dir, exit_code: int, *,
+                              scenario_id: str | None = None) -> int:
+    """Add a non-finalizing employee taxability report after Payroll finishes.
+
+    The migrated calculation CLI and its original output contracts are intact.
+    A failed sidecar cannot authorize payments and reports a safe error code.
+    """
+    from importlib import import_module
+    try:
+        adapter = import_module("bhandara.payroll-calculator.taxability_adapter")
+        paths = adapter.write_taxability_sidecars(
+            config_path, output_dir, scenario_id=scenario_id,
+        )
+    except (ValueError, OSError, TypeError, KeyError) as exc:
+        print(f"TAXABILITY_REVIEW_BLOCKED: {type(exc).__name__}",
+              file=sys.stderr)
+        return 2
+    if paths:
+        print("TAXABILITY_REVIEW=REVIEW_REQUIRED (tax/insurance unverified)")
+    return exit_code
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Public Portfolio CLI: PTO, Worktime, Payroll and Golden comparisons."
@@ -319,7 +341,7 @@ def main(argv: list[str] | None = None) -> int:
                     )
                     print("CONTRACT_BASE_STATUS: REVIEW_REQUIRED (no payroll approval)")
                     print("CONTRACT_BASE_ARTIFACT: " + str(output / "contract-basis-review.xlsx"))
-                return exit_code
+                return _attach_taxability_review(config, output, exit_code)
             if args.operation == "normalize":
                 if not all((args.input_dir, args.output_dir)):
                     print(
@@ -340,14 +362,22 @@ def main(argv: list[str] | None = None) -> int:
                 return 2
             if args.isolate_worker_failures:
                 isolation = import_module("bhandara.payroll-calculator.isolation_cli")
-                return isolation.calculate_cli(
+                code = isolation.calculate_cli(
                     args.config, args.output_dir, scenario_id=args.scenario_id,
+                )
+                return _attach_taxability_review(
+                    args.config, args.output_dir, code,
+                    scenario_id=args.scenario_id,
                 )
             cli = ["calculate", "--config", args.config,
                    "--output-dir", args.output_dir]
             if args.scenario_id:
                 cli.extend(["--scenario-id", args.scenario_id])
-            return payroll.main(cli)
+            code = payroll.main(cli)
+            return _attach_taxability_review(
+                args.config, args.output_dir, code,
+                scenario_id=args.scenario_id,
+            )
         print(
             f"UNAVAILABLE: {args.module_id!r} is not installed in this portfolio. "
             "No calculations were performed.",
