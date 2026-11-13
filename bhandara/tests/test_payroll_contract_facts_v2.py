@@ -208,6 +208,14 @@ class ContractFactsV2Tests(unittest.TestCase):
         ):
             self._audit()
 
+    def test_modern_components_cannot_silently_ignore_legacy_file(self):
+        old_components = self.root / "payroll/pay-contract-components.xlsx"
+        old_components.write_bytes(b"legacy-file-must-not-be-silently-ignored")
+        with self.assertRaisesRegex(
+            InputLayoutError, "v2 Components sheet conflicts with legacy",
+        ):
+            self._audit()
+
     def test_public_two_sheet_excel_example_matches_documented_sums(self):
         sample = (
             ROOT / "bhandara/payroll-calculator/examples/"
