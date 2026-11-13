@@ -14,11 +14,11 @@ from pathlib import Path
 from typing import Any
 from zipfile import BadZipFile
 
-from openpyxl import load_workbook
 from openpyxl.utils.datetime import from_excel
 from openpyxl.utils.exceptions import InvalidFileException
 
 from bhandara.common.contracts.findings import Finding, Scope, Severity
+from bhandara.common.io.xlsx_stream import XlsxStreamError, open_xlsx_rows
 from bhandara.common.utils.hashing import sha256_file
 from bhandara.common.validation.headers import HeaderContractError, is_blank, parse_headers
 
@@ -177,104 +177,116 @@ def read_pto_sheet(path: Path, kind: str, *, sheet_name: str | None = None) -> L
     spec = SCHEMAS[kind]
     try:
         before = sha256_file(path)
-        book = load_workbook(path, read_only=True, data_only=False, keep_links=False)
     except (InvalidFileException, BadZipFile, OSError, ValueError) as exc:
         raise PTOInputError(f"unable to open {path.name}: {type(exc).__name__}") from exc
+
+    # Preserve PTO's existing error classification: bad workbook opens are
+    # input failures, whereas errors after opening a sheet are read failures.
+    opened_sheet = False
     try:
-        if sheet_name is not None and sheet_name not in book.sheetnames:
-            raise PTOInputError(f"{path.name}: required worksheet missing: {sheet_name}")
-        sheet = book[sheet_name] if sheet_name is not None else book.active
-        values = sheet.iter_rows()
-        first = next(values, None)
-        if first is None:
-            raise PTOInputError(f"{path.name}: no header row")
-        try:
-            header_map = parse_headers([cell.value for cell in first], spec["headers"])
-        except HeaderContractError as exc:
-            raise PTOInputError(f"{path.name}: {exc}") from exc
-        loaded = LoadedSheet(kind=kind, path=path, sheet=sheet.title, source_hash=before)
-        for row_number, cells in enumerate(values, start=2):
-            if not any(not is_blank(c.value) for c in cells):
-                continue
-            selected = header_map.project([c.value for c in cells])
-            invalid = False
-            # Optional event field. Existing 7-column event workbooks still load.
-            if kind == "events":
-                header_values = [cell.value for cell in first]
-                if "reduced_hours" in header_values:
-                    position = header_values.index("reduced_hours")
-                    if position < len(cells) and cells[position].data_type == "f":
-                        loaded.findings.append(_finding(
-                            kind, path, sheet.title, row_number,
-                            "reduced_hours", "FORMULA_UNSUPPORTED",
-                        ))
-                        invalid = True
-                    else:
-                        value = cells[position].value if position < len(cells) else None
-                        if value not in (None, ""):
-                            try:
-                                hours = Decimal(str(value))
-                                if not hours.is_finite() or hours < 0:
-                                    raise ValueError("reduced_hours must be nonnegative")
-                                selected["reduced_hours"] = float(hours)
-                            except (InvalidOperation, ValueError, TypeError, OverflowError):
-                                loaded.findings.append(_finding(
-                                    kind, path, sheet.title, row_number,
-                                    "reduced_hours", "INVALID_REDUCED_HOURS",
-                                ))
-                                invalid = True
-            owner = selected.get("employee_id")
-            if isinstance(owner, str) and owner and owner == owner.strip():
-                owner_id = owner
-            else:
-                owner_id = None
-            for name, position in zip(header_map.required, header_map.positions):
-                if position < len(cells) and cells[position].data_type == "f":
-                    loaded.findings.append(_finding(kind, path, sheet.title, row_number, name, "FORMULA_UNSUPPORTED"))
-                    invalid = True
-            for required in spec["required_values"]:
-                if is_blank(selected[required]):
-                    loaded.findings.append(_finding(kind, path, sheet.title, row_number, required, "REQUIRED_CELL_MISSING"))
-                    invalid = True
-            for required in spec["required_values"]:
-                if required == "employee_id" and selected[required] is not None and owner_id is None:
-                    loaded.findings.append(_finding(kind, path, sheet.title, row_number, required, "EMPLOYEE_ID_INVALID"))
-                    invalid = True
-            for name in spec.get("dates", ()):
-                try:
-                    selected[name] = _normalize_date(selected[name], epoch=book.epoch)
-                except (ValueError, TypeError, OverflowError):
-                    loaded.findings.append(_finding(kind, path, sheet.title, row_number, name, "INVALID_DATE"))
-                    invalid = True
-            for name in spec.get("times", ()):
-                try:
-                    selected[name] = _normalize_time(selected[name])
-                except (ValueError, TypeError, OverflowError):
-                    loaded.findings.append(_finding(kind, path, sheet.title, row_number, name, "INVALID_TIME"))
-                    invalid = True
-            for name in spec.get("integers", ()):
-                value = selected[name]
-                if value not in (None, ""):
-                    try:
-                        selected[name] = int(value)
-                    except (ValueError, TypeError, OverflowError):
-                        loaded.findings.append(_finding(kind, path, sheet.title, row_number, name, "INVALID_INTEGER"))
-                        invalid = True
-            if invalid:
-                if owner_id is None or kind == "schedule":
-                    loaded.unassignable_error = True
+        with open_xlsx_rows(
+            path, sheet_name=sheet_name, data_only=False, keep_links=False,
+        ) as source:
+            opened_sheet = True
+            book, sheet = source.workbook, source.sheet
+            first, values = source.header_cells, source.rows
+            try:
+                header_map = parse_headers([cell.value for cell in first], spec["headers"])
+            except HeaderContractError as exc:
+                raise PTOInputError(f"{path.name}: {exc}") from exc
+            loaded = LoadedSheet(kind=kind, path=path, sheet=sheet.title, source_hash=before)
+            for row_number, cells in enumerate(values, start=2):
+                if not any(not is_blank(c.value) for c in cells):
+                    continue
+                selected = header_map.project([c.value for c in cells])
+                invalid = False
+                # Optional event field. Existing 7-column event workbooks still load.
+                if kind == "events":
+                    header_values = [cell.value for cell in first]
+                    if "reduced_hours" in header_values:
+                        position = header_values.index("reduced_hours")
+                        if position < len(cells) and cells[position].data_type == "f":
+                            loaded.findings.append(_finding(
+                                kind, path, sheet.title, row_number,
+                                "reduced_hours", "FORMULA_UNSUPPORTED",
+                            ))
+                            invalid = True
+                        else:
+                            value = cells[position].value if position < len(cells) else None
+                            if value not in (None, ""):
+                                try:
+                                    hours = Decimal(str(value))
+                                    if not hours.is_finite() or hours < 0:
+                                        raise ValueError("reduced_hours must be nonnegative")
+                                    selected["reduced_hours"] = float(hours)
+                                except (InvalidOperation, ValueError, TypeError, OverflowError):
+                                    loaded.findings.append(_finding(
+                                        kind, path, sheet.title, row_number,
+                                        "reduced_hours", "INVALID_REDUCED_HOURS",
+                                    ))
+                                    invalid = True
+                owner = selected.get("employee_id")
+                if isinstance(owner, str) and owner and owner == owner.strip():
+                    owner_id = owner
                 else:
-                    loaded.rejected_owners.add(owner_id)
-                continue
-            loaded.rows.append(selected)
-            loaded.row_numbers.append(row_number)
-        if sha256_file(path) != before:
-            raise PTOInputError(f"{path.name}: input changed during read")
-        return loaded
-    except (BadZipFile, OSError) as exc:
-        raise PTOInputError(f"could not read {path.name}: {type(exc).__name__}") from exc
-    finally:
-        book.close()
+                    owner_id = None
+                for name, position in zip(header_map.required, header_map.positions):
+                    if position < len(cells) and cells[position].data_type == "f":
+                        loaded.findings.append(_finding(kind, path, sheet.title, row_number, name, "FORMULA_UNSUPPORTED"))
+                        invalid = True
+                for required in spec["required_values"]:
+                    if is_blank(selected[required]):
+                        loaded.findings.append(_finding(kind, path, sheet.title, row_number, required, "REQUIRED_CELL_MISSING"))
+                        invalid = True
+                for required in spec["required_values"]:
+                    if required == "employee_id" and selected[required] is not None and owner_id is None:
+                        loaded.findings.append(_finding(kind, path, sheet.title, row_number, required, "EMPLOYEE_ID_INVALID"))
+                        invalid = True
+                for name in spec.get("dates", ()):
+                    try:
+                        selected[name] = _normalize_date(selected[name], epoch=book.epoch)
+                    except (ValueError, TypeError, OverflowError):
+                        loaded.findings.append(_finding(kind, path, sheet.title, row_number, name, "INVALID_DATE"))
+                        invalid = True
+                for name in spec.get("times", ()):
+                    try:
+                        selected[name] = _normalize_time(selected[name])
+                    except (ValueError, TypeError, OverflowError):
+                        loaded.findings.append(_finding(kind, path, sheet.title, row_number, name, "INVALID_TIME"))
+                        invalid = True
+                for name in spec.get("integers", ()):
+                    value = selected[name]
+                    if value not in (None, ""):
+                        try:
+                            selected[name] = int(value)
+                        except (ValueError, TypeError, OverflowError):
+                            loaded.findings.append(_finding(kind, path, sheet.title, row_number, name, "INVALID_INTEGER"))
+                            invalid = True
+                if invalid:
+                    if owner_id is None or kind == "schedule":
+                        loaded.unassignable_error = True
+                    else:
+                        loaded.rejected_owners.add(owner_id)
+                    continue
+                loaded.rows.append(selected)
+                loaded.row_numbers.append(row_number)
+            if sha256_file(path) != before:
+                raise PTOInputError(f"{path.name}: input changed during read")
+            return loaded
+    except XlsxStreamError as exc:
+        if sheet_name is not None and str(exc) == f"worksheet not found: {sheet_name}":
+            raise PTOInputError(f"{path.name}: required worksheet missing: {sheet_name}") from exc
+        if str(exc) == "XLSX source has no header row":
+            raise PTOInputError(f"{path.name}: no header row") from exc
+        raise PTOInputError(f"{path.name}: {exc}") from exc
+    except (InvalidFileException, BadZipFile, OSError, ValueError) as exc:
+        if isinstance(exc, PTOInputError):
+            raise
+        if not opened_sheet:
+            raise PTOInputError(f"unable to open {path.name}: {type(exc).__name__}") from exc
+        if isinstance(exc, (BadZipFile, OSError)):
+            raise PTOInputError(f"could not read {path.name}: {type(exc).__name__}") from exc
+        raise
 
 
 def load_pto_inputs(input_dir: Path, source_files: dict[str, Any]) -> PTOInputBundle:
