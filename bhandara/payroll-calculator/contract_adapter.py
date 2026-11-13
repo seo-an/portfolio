@@ -14,6 +14,7 @@ import hashlib
 import json
 import os
 from collections import defaultdict
+from functools import lru_cache
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
@@ -41,16 +42,17 @@ EMPLOYEE_BASIS = SALARY_BASIS | TIME_BASIS
 COMPONENT_CODES = {"position_allowance", "meal_allowance"}
 
 
-def _employee_relationship_types() -> set[str]:
+@lru_cache(maxsize=1)
+def _employee_relationship_types() -> frozenset[str]:
     """Read the public vocabulary; do not infer legal status from ID prefixes."""
     resource = Path(__file__).resolve().parent / "resources/contract-types.json"
     catalog = json.loads(resource.read_text(encoding="utf-8"))
     if catalog.get("schema_version") != "1.0":
         raise InputLayoutError("unsupported contract-types registry version")
-    return {
+    return frozenset(
         name for name, spec in catalog["relationship_types"].items()
         if spec.get("route") == "employee_payroll"
-    }
+    )
 
 
 def _contract_layout(path: Path) -> str:
@@ -132,9 +134,11 @@ def _load_employee_contracts(path: Path, identities: Mapping[str, Any],
                     f"pay-contract.xlsx row {line}: unsupported relationship_type "
                     f"{relationship_type!r} for employee payroll"
                 )
-            expected_type = "RATE" if basis in TIME_BASIS else None
-            if (amount_type != expected_type if expected_type else
-                    amount_type not in {"BASE", "TOTAL"}):
+            invalid_amount_type = (
+                amount_type != "RATE" if basis in TIME_BASIS
+                else amount_type not in {"BASE", "TOTAL"}
+            )
+            if invalid_amount_type:
                 raise InputLayoutError(
                     f"pay-contract.xlsx row {line}: invalid amount_type "
                     f"{amount_type!r} for {basis}"
