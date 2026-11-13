@@ -125,7 +125,7 @@ def _load_employee_contracts(path: Path, identities: Mapping[str, Any],
         basis = str(row["pay_basis"] or "").strip().upper()
         if not contract_id or contract_id in ids:
             raise InputLayoutError(f"pay-contract.xlsx row {line}: duplicate/blank contract_id")
-        if layout == "v2" and (
+        if layout == "v2" and employee_id not in identities and (
             str(row.get("relationship_type") or "").strip().upper()
             in _service_relationship_types()
         ):
