@@ -102,7 +102,11 @@ def _schedule_source(input_root: Path, identities: Mapping,
             "day_type": str(x["day_type"] or "").strip().upper(),
             "scheduled_start": as_clock(x["scheduled_start"], "scheduled_start"),
             "scheduled_end": as_clock(x["scheduled_end"], "scheduled_end"),
-            "break_min": x["break_min"] or 0,
+            "break_min": x["break_min"],
+            "break_start": (as_clock(x["break_start"], "break_start")
+                            if x.get("break_start") not in (None, "") else None),
+            "break_end": (as_clock(x["break_end"], "break_end")
+                          if x.get("break_end") not in (None, "") else None),
             "scheduled_work_hours": x.get("scheduled_work_hours"),
         })
     # Preserve duplicated employee/date rows as evidence. The existing
@@ -128,7 +132,7 @@ def _attendance_source(input_root: Path, identities: Mapping,
             "work_date": as_day(x["work_date"], "work_date"),
             "clock_in": as_clock(x["clock_in"], "clock_in"),
             "clock_out": as_clock(x["clock_out"], "clock_out"),
-            "break_min": x["break_min"] or 0,
+            "break_min": x["break_min"],
             "source": str(x.get("source") or "").strip(),
         })
     # Duplicate attendance is not silently dropped or globally rejected;

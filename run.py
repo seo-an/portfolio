@@ -288,13 +288,10 @@ def main(argv: list[str] | None = None) -> int:
                 )
                 return 2
             from importlib import import_module
-            worktime = import_module("bhandara.worktime-calculator.run")
-            return worktime.main([
-                "calculate",
-                "--normalized", args.normalized,
-                "--config", args.config,
-                "--output-dir", args.output_dir,
-            ])
+            worktime = import_module("bhandara.worktime-calculator.break_runtime")
+            return worktime.calculate_with_break_evidence(
+                args.normalized, args.config, args.output_dir,
+            )
         if args.module_id == "payroll-calculator":
             from importlib import import_module
             payroll = import_module("bhandara.payroll-calculator.run")
