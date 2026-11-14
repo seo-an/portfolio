@@ -1,5 +1,21 @@
 # Portfolio · Bhandara(반다라)
 
+## 범용 Excel 읽기 / 표준 Excel 출력 (Calamine 입력 마이그레이션)
+
+Bhandara의 입력 데이터 읽기 계층은 `python-calamine==0.9.1`을 사용합니다.
+일반 원본 정규화에서는 `.xls`, `.xlsx`, `.xlsm`, `.xlsb`, `.ods`를
+읽을 수 있고 `.csv`는 기본 Python 모듈로 읽습니다.
+**출력 보고서·급여 장부·서식은 계속 `openpyxl`로 `.xlsx`를 작성**합니다.
+
+단, **파일을 읽을 수 있다는 것과 계산 입력으로 승인할 수 있다는 것은 다릅니다.**
+수식이 금지된 PTO·Worktime·Payroll의 엄격한 Excel 입력 경로는
+`.xlsx/.xlsm`에서 수식을 추가 검사하며, 수식 식별이 보장되지 않는
+`.xls/.xlsb/.ods`는 해당 경로에서 자동 통과시키지 않습니다.
+구형 원본을 곧바로 계산에 반영하지 말고 먼저 정규화·검증한 뒤
+기존 입력 양식으로 전달하세요. 기존 이름·시트·헤더 규칙은 유지됩니다.
+
+---
+
 ## 이제 Excel만 복사해서 실행할 수 있습니다
 
 **공개 샘플:** [가상 직원 80명의 실제 Excel](bhandara/examples/sample/input/) · [샘플 설명](bhandara/examples/sample/README.md)

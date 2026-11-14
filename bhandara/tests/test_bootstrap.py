@@ -40,6 +40,7 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("No packages were installed", result.stdout)
         self.assertIn("openpyxl==3.1.5", result.stdout)
+        self.assertIn("python-calamine==0.9.1", result.stdout)
 
     def test_python_version_check(self):
         spec = importlib.util.spec_from_file_location("portfolio_install", ROOT / "install.py")
@@ -51,11 +52,24 @@ class BootstrapTests(unittest.TestCase):
         self.assertTrue(module.check_python((3, 12, 0))[0])
         self.assertTrue(module.check_python((3, 14, 9))[0])
         self.assertEqual(module.check_packages(), [])
+        self.assertEqual(module.check_isolated_imports(), [])
+
+    def test_isolated_import_check_prevents_false_metadata_pass(self):
+        spec = importlib.util.spec_from_file_location("portfolio_isolation_check", ROOT / "install.py")
+        assert spec is not None and spec.loader is not None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        from unittest.mock import patch
+        with patch.object(module.subprocess, "run") as fake:
+            fake.return_value.returncode = 1
+            problems = module.check_isolated_imports()
+        self.assertEqual(len(problems), 1)
+        self.assertIn("Python -E", problems[0])
 
     def test_base_dependency_pin_matches_hermes(self):
         lines = (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
         packages = [line.strip() for line in lines if line.strip() and not line.lstrip().startswith("#")]
-        self.assertEqual(packages, ["openpyxl==3.1.5", "korean-lunar-calendar==0.4.0"])
+        self.assertEqual(packages, ["python-calamine==0.9.1", "openpyxl==3.1.5", "korean-lunar-calendar==0.4.0"])
 
     def test_local_runtime_data_is_ignored(self):
         ignore = (ROOT / ".gitignore").read_text(encoding="utf-8")

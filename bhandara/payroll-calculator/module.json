@@ -1,12 +1,13 @@
 {
   "schema_version": "1.0",
   "module_id": "payroll-calculator",
-  "module_version": "0.3.2",
+  "module_version": "0.3.3",
   "status": "review_only",
   "requires_base": "0.1",
   "python": ">=3.12",
   "dependencies": {
-    "openpyxl": "3.1.5"
+    "openpyxl": "3.1.5",
+    "python-calamine": "0.9.1"
   },
   "execution": {
     "calculate": "python run.py bhandara payroll-calculator --config <payroll-config.json> --output-dir <new-private-output>",
@@ -164,5 +165,12 @@
     "payroll_result_unchanged": true,
     "approved": false,
     "finalizable": false
+  },
+  "input_reader": {
+    "engine": "python-calamine",
+    "version": "0.9.1",
+    "strict_formula_guard": "openpyxl metadata for XLSX/XLSM, fail closed on uninspectable binary formats",
+    "report_writer": "openpyxl 3.1.5 unchanged",
+    "note": "Core calculation and output/report contracts preserved; dependency change requires Gearbox explicit compatibility."
   }
 }

@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: "3.14"
       - name: Install public Python dependencies
-        run: python -m pip install openpyxl==3.1.5 korean-lunar-calendar==0.4.0
+        run: python -m pip install -r requirements.txt
       - name: Validate module-only settings and complete external JSON precedence
         run: python -m unittest discover -s bhandara/tests -p "test_module_local_settings.py" -v
       - name: Verify base plus single calculator installations
