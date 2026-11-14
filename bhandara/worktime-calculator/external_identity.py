@@ -12,7 +12,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Mapping
 
-from openpyxl import load_workbook
+from python_calamine import CalamineWorkbook
 
 from bhandara.common.io.input_layout import InputLayoutError, read_sheet
 
@@ -30,13 +30,8 @@ def load_external_workers(
     No external sheet means there are no external Worktime participants.
     Any Worktime schedule/attendance referencing an unregistered worker fails.
     """
-    book = load_workbook(
-        id_map_path, read_only=True, data_only=False, keep_links=False
-    )
-    try:
-        has_sheet = EXTERNAL_SHEET in book.sheetnames
-    finally:
-        book.close()
+    with CalamineWorkbook.from_path(id_map_path) as book:
+        has_sheet = EXTERNAL_SHEET in book.sheet_names
     if not has_sheet:
         return {}
 
