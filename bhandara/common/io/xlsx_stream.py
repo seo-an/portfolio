@@ -14,6 +14,7 @@ from __future__ import annotations
 from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import date, datetime, time
+from math import isfinite
 from pathlib import Path
 from typing import Any, Iterator
 from zipfile import BadZipFile
@@ -57,6 +58,8 @@ def _normalize_value(value: Any) -> Any:
     """Restore openpyxl-like empty/date values for existing input contracts."""
     if value == "":
         return None
+    if isinstance(value, float) and isfinite(value) and value.is_integer():
+        return int(value)
     if isinstance(value, date) and not isinstance(value, datetime):
         return datetime.combine(value, time.min)
     return value
@@ -87,17 +90,27 @@ def _formula_locations(path: Path, sheet_name: str, *,
 
 def _cells(rows: list[list[Any]], first: int,
            formulas: set[tuple[int, int]]) -> Iterator[tuple[_ReadCell, ...]]:
-    for row_number, values in enumerate(rows, start=first):
-        yield tuple(
-            _ReadCell(
-                ("__UNTRUSTED_FORMULA__" if value in (None, "")
-                 else _normalize_value(value))
-                if (row_number, column) in formulas else _normalize_value(value),
-                "f" if (row_number, column) in formulas else "n",
-            )
-            for column, value in enumerate(values, start=1)
-        )
-
+    """Recreate absent cached formula cells and the original worksheet bounds."""
+    width = max((len(row) for row in rows), default=0)
+    if formulas:
+        width = max(width, max(column for _, column in formulas))
+    height = len(rows)
+    if formulas:
+        height = max(height, max(row for row, _ in formulas) - first + 1)
+    for offset in range(height):
+        row_number = first + offset
+        values = rows[offset] if offset < len(rows) else ()
+        converted = []
+        for column in range(1, width + 1):
+            value = values[column - 1] if column <= len(values) else None
+            if (row_number, column) in formulas:
+                converted.append(_ReadCell(
+                    "__UNTRUSTED_FORMULA__" if value in (None, "") else _normalize_value(value),
+                    "f",
+                ))
+            else:
+                converted.append(_ReadCell(_normalize_value(value)))
+        yield tuple(converted)
 
 @contextmanager
 def open_xlsx_rows(
