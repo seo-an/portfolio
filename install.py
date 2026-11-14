@@ -8,7 +8,7 @@ from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 MIN_PYTHON = (3, 12)
-REQUIRED_PACKAGES = {"openpyxl": "3.1.5", "korean-lunar-calendar": "0.4.0"}
+REQUIRED_PACKAGES = {"openpyxl": "3.1.5", "python-calamine": "0.9.1", "korean-lunar-calendar": "0.4.0"}
 
 
 def check_python(version: tuple[int, ...] | None = None) -> tuple[bool, str]:
