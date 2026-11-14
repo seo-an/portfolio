@@ -7039,6 +7039,22 @@
     {
       "work_date": "2026-06-30",
       "worker_id": "EP0080"
+    },
+    {
+      "work_date": "2026-06-02",
+      "worker_id": "EXT-W001"
+    },
+    {
+      "work_date": "2026-06-03",
+      "worker_id": "EXT-W001"
+    },
+    {
+      "work_date": "2026-06-02",
+      "worker_id": "EXT-W002"
+    },
+    {
+      "work_date": "2026-06-03",
+      "worker_id": "EXT-W002"
     }
   ],
   "close_receipt": null,
@@ -7123,7 +7139,9 @@
     "EP0077",
     "EP0078",
     "EP0079",
-    "EP0080"
+    "EP0080",
+    "EXT-W001",
+    "EXT-W002"
   ],
   "finalizable": false,
   "period_from": "2026-06-01",
@@ -59543,14 +59561,150 @@
       "worked_hours": "8",
       "worker_id": "EP0080",
       "worktime_system": "non_standard_review"
+    },
+    {
+      "absence_hours": "0",
+      "approval_ref": "",
+      "early_leave_minutes": 0,
+      "holiday_work_hours_over_8": "0",
+      "holiday_work_hours_within_8": "0",
+      "input_source_ref": "SYNTHETIC_CONFIRMED_CLOCK_PAIR",
+      "late_minutes": 0,
+      "night_hours": "0",
+      "ordinary_hours": "8",
+      "overtime_hours": "0",
+      "rule_ref": "EXTERNAL_SERVICE_HOURS_REVIEW_ONLY",
+      "scheduled_hours": "8",
+      "validation_flags": [
+        {
+          "code": "NON_STANDARD_SETTLEMENT_REVIEW",
+          "message": "기간제 근로시간제는 별도 법정 정산 검토 필요",
+          "severity": "REVIEW"
+        },
+        {
+          "code": "TIMESHEET_APPROVAL_MISSING",
+          "message": "근태기록 승인 근거 누락",
+          "severity": "REVIEW"
+        }
+      ],
+      "work_date": "2026-06-02",
+      "worked_hours": "8",
+      "worker_id": "EXT-W001",
+      "worktime_system": "non_standard_review"
+    },
+    {
+      "absence_hours": "0",
+      "approval_ref": "",
+      "early_leave_minutes": 0,
+      "holiday_work_hours_over_8": "0",
+      "holiday_work_hours_within_8": "0",
+      "input_source_ref": "SYNTHETIC_CONFIRMED_CLOCK_PAIR",
+      "late_minutes": 0,
+      "night_hours": "0",
+      "ordinary_hours": "8",
+      "overtime_hours": "6",
+      "rule_ref": "EXTERNAL_SERVICE_HOURS_REVIEW_ONLY",
+      "scheduled_hours": "14",
+      "validation_flags": [
+        {
+          "code": "NON_STANDARD_SETTLEMENT_REVIEW",
+          "message": "기간제 근로시간제는 별도 법정 정산 검토 필요",
+          "severity": "REVIEW"
+        },
+        {
+          "code": "LONG_SCHEDULE_REVIEW",
+          "message": "일 8시간 초과 소정시간 검토 필요",
+          "severity": "REVIEW"
+        },
+        {
+          "code": "OVERTIME_APPROVAL_MISSING",
+          "message": "연장근로 승인 근거 누락",
+          "severity": "REVIEW"
+        },
+        {
+          "code": "NIGHT_BREAK_ALLOCATION_REQUIRED",
+          "message": "휴게시간의 야간 중첩 위치 미확정",
+          "severity": "REVIEW"
+        },
+        {
+          "code": "TIMESHEET_APPROVAL_MISSING",
+          "message": "근태기록 승인 근거 누락",
+          "severity": "REVIEW"
+        }
+      ],
+      "work_date": "2026-06-03",
+      "worked_hours": "14",
+      "worker_id": "EXT-W001",
+      "worktime_system": "non_standard_review"
+    },
+    {
+      "absence_hours": "0",
+      "approval_ref": "",
+      "early_leave_minutes": 0,
+      "holiday_work_hours_over_8": "0",
+      "holiday_work_hours_within_8": "0",
+      "input_source_ref": "SYNTHETIC_CONFIRMED_CLOCK_PAIR",
+      "late_minutes": 0,
+      "night_hours": "0",
+      "ordinary_hours": "8",
+      "overtime_hours": "0",
+      "rule_ref": "EXTERNAL_SERVICE_HOURS_REVIEW_ONLY",
+      "scheduled_hours": "8",
+      "validation_flags": [
+        {
+          "code": "NON_STANDARD_SETTLEMENT_REVIEW",
+          "message": "기간제 근로시간제는 별도 법정 정산 검토 필요",
+          "severity": "REVIEW"
+        },
+        {
+          "code": "TIMESHEET_APPROVAL_MISSING",
+          "message": "근태기록 승인 근거 누락",
+          "severity": "REVIEW"
+        }
+      ],
+      "work_date": "2026-06-02",
+      "worked_hours": "8",
+      "worker_id": "EXT-W002",
+      "worktime_system": "non_standard_review"
+    },
+    {
+      "absence_hours": "0",
+      "approval_ref": "",
+      "early_leave_minutes": 0,
+      "holiday_work_hours_over_8": "0",
+      "holiday_work_hours_within_8": "0",
+      "input_source_ref": "SYNTHETIC_CONFIRMED_CLOCK_PAIR",
+      "late_minutes": 0,
+      "night_hours": "0",
+      "ordinary_hours": "8",
+      "overtime_hours": "0",
+      "rule_ref": "EXTERNAL_SERVICE_HOURS_REVIEW_ONLY",
+      "scheduled_hours": "8",
+      "validation_flags": [
+        {
+          "code": "NON_STANDARD_SETTLEMENT_REVIEW",
+          "message": "기간제 근로시간제는 별도 법정 정산 검토 필요",
+          "severity": "REVIEW"
+        },
+        {
+          "code": "TIMESHEET_APPROVAL_MISSING",
+          "message": "근태기록 승인 근거 누락",
+          "severity": "REVIEW"
+        }
+      ],
+      "work_date": "2026-06-03",
+      "worked_hours": "8",
+      "worker_id": "EXT-W002",
+      "worktime_system": "non_standard_review"
     }
   ],
   "schema_version": "0.1",
-  "source_batch_id": "shared-worktime-e929b1b02b77ef0c",
+  "source_batch_id": "shared-worktime-3702c14d9f67b75b",
   "source_hashes": {
-    "attendance": "6fe5228a3ccf91defeea5ced5ccd66fef8453975b0423fed5b0981a6889ae959",
-    "employees": "764d953abb61771755bf73b5d6b162a382e3ea22e70723ae8586fcca2d362bfa",
-    "schedule": "791822ca606ecf5e3c5b111ba7a13b0e0360ef4f25c77447715bc6937f12c656"
+    "attendance": "9d9a93f61c691b57a61ac46a4c3347e242a805187a1144d81d392be8685bed41",
+    "employees": "3bb14ab4f58f76254160b31d25ab9cf5eb9a1b7632f517e0124ce1d946ba1b31",
+    "identity_map": "c198550121c9cbddc84cb0f62ed74676194caf59ab5c6a91b561fe4c94a4fe0d",
+    "schedule": "75ab26da8de2e2e8894213c5ecace3887520a460ef367c085b68b1af6cb6a6da"
   },
   "status": "REVIEW_REQUIRED"
 }

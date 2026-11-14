@@ -29,5 +29,22 @@
       "transaction_type": "rounding_carry",
       "settlement_month": 12
     }
+  },
+  "taxability_review": {
+    "schema_version": "1.0",
+    "pay_items": {
+      "base_salary": {
+        "status": "TAXABLE",
+        "policy_ref": "SYNTHETIC_DEMO_BASE_NO_LEGAL_ASSERTION"
+      },
+      "meal_allowance": {
+        "status": "NON_TAXABLE",
+        "policy_ref": "SYNTHETIC_DEMO_MEAL_NO_LEGAL_ASSERTION",
+        "cap_per_worker_period": 100000
+      },
+      "position_allowance": {
+        "status": "REVIEW"
+      }
+    }
   }
 }
