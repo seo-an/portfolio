@@ -5,6 +5,8 @@ on:
     paths:
       - "bhandara/common/io/tabular.py"
       - "bhandara/common/io/xlsx_stream.py"
+      - "bhandara/tests/test_calamine_reader_contract.py"
+      - "requirements.txt"
       - "bhandara/common/io/xlsx.py"
       - "bhandara/tests/test_common_xlsx_validation_stream.py"
       - "bhandara/common/io/input_layout.py"
@@ -30,7 +32,7 @@ jobs:
         with:
           python-version: "3.14"
       - name: Install pinned public dependencies
-        run: python -m pip install openpyxl==3.1.5 korean-lunar-calendar==0.4.0
+        run: python -m pip install -r requirements.txt
       - name: Generic Common input and Payroll source mapping
         run: python -m unittest discover -s bhandara/tests -p "test_common_tabular_normalization.py" -v
       - name: XLSX stream formula, headers and lineage compatibility
