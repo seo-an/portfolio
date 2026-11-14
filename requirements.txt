@@ -1,5 +1,4 @@
 # Approved subset of agent-config/Hermes uv-managed Python environment (2026-11-09).
-# The public Base reads XLSX/XLSM; no cloud/agent credentials are required.
-openpyxl==3.1.5
+# The public Base reads spreadsheet values with calamine; openpyxl writes Excel\n# results and checks XLSX formula metadata for strict calculator imports.\npython-calamine==0.9.1\nopenpyxl==3.1.5
 # PTO calendar adapter uses the same Hermes-approved lunar calendar package.
 korean-lunar-calendar==0.4.0
