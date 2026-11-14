@@ -20,6 +20,10 @@ Bhandara의 입력 데이터 읽기 계층은 `python-calamine==0.9.1`을 사용
 
 **공개 샘플:** [가상 직원 80명의 실제 Excel](bhandara/examples/sample/input/) · [샘플 설명](bhandara/examples/sample/README.md)
 
+80명 통합 샘플은 **한 세트만 유지**합니다. PTO·Worktime·Payroll의
+입력 구조가 바뀌면 같은 `sample/input/` Excel을 최신 구조로 교체하며
+이전 양식을 별도 legacy/v2 샘플로 보관하지 않습니다.
+
 가장 쉬운 방법은 샘플의 `input/`을 `bhandara/data/input/`에 복사한 뒤
 계산할 **월만 지정**하는 것입니다. 세 계산기는 서로 독립적이며 공통 직원명부와
 ID 매핑을 재사용합니다.
