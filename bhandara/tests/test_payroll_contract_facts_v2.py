@@ -17,7 +17,8 @@ from bhandara.common.io.input_layout import InputLayoutError, read_id_map
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SOURCE = ROOT / "bhandara/examples/sample/input"
+from bhandara.tests._seed_fixture import SEED_INPUT
+SOURCE = SEED_INPUT
 adapter = importlib.import_module("bhandara.payroll-calculator.contract_adapter")
 terms = importlib.import_module("bhandara.payroll-calculator.contract_terms")
 
