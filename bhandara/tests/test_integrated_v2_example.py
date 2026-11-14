@@ -97,6 +97,92 @@ class IntegratedExampleTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             _load_generator().generate(self.destination)
 
+    def test_v2_pto_workbook_contains_nine_new_usage_cases(self):
+        """Verify committed legacy sample stays untouched; recommended v2 is current."""
+        source = self._generate()
+        event_book = load_workbook(source / "pto/employee-events.xlsx", read_only=True)
+        try:
+            rows = list(event_book.active.values)
+        finally:
+            event_book.close()
+        expected = {
+            "연차": 2, "오전 반차": 3, "오후 반차": 2,
+            "조기퇴근": 1, "육아기근로시간단축": 1,
+        }
+        produced = [row for row in rows[1:] if
+                    str(row[0]).startswith("INTEGRATED-V2-PTO-")]
+        self.assertEqual(len(produced), 9)
+        self.assertEqual({kind: sum(row[2] == kind for row in produced)
+                          for kind in expected}, expected)
+        self.assertEqual({row[1] for row in produced},
+                         {f"E{i:03d}" for i in range(1, 10)})
+        self.assertEqual({row[5] for row in produced}, {"APPROVED"})
+        self.assertEqual(len(rows) - 1, 11)  # preserve 2 historic review events
+        self.assertFalse((ROOT / "bhandara/examples/sample/input/pto" /
+                          "employee-events.xlsx").samefile(
+                              source / "pto/employee-events.xlsx"))
+
+        attendance = load_workbook(
+            source / "pto/work-records/2026/2026-07-attendance.xlsx",
+            read_only=True,
+        )
+        try:
+            all_rows = list(attendance.active.values)
+        finally:
+            attendance.close()
+        by_key = {(row[0], str(row[1])): row for row in all_rows[1:]}
+        for employee in ("E001", "E002"):
+            self.assertNotIn((employee, "2026-07-06"), by_key)
+        for employee in ("E003", "E004", "E005"):
+            self.assertEqual(str(by_key[(employee, "2026-07-07")][2]), "14:00")
+            self.assertEqual(by_key[(employee, "2026-07-07")][4], 0)
+        for employee in ("E006", "E007"):
+            self.assertEqual(str(by_key[(employee, "2026-07-08")][3]), "13:00")
+            self.assertEqual(by_key[(employee, "2026-07-08")][4], 0)
+        for employee, day in (("E008", "2026-07-09"),
+                              ("E009", "2026-07-10")):
+            self.assertEqual(str(by_key[(employee, day)][3]), "16:00")
+        manifest = json.loads(
+            (self.destination / "manifest.json").read_text(encoding="utf-8"))
+        self.assertEqual(manifest["pto_event_scenarios"], 9)
+        self.assertEqual(manifest["period_pto"], "2026-07")
+
+    def test_v2_pto_cli_ledger_outputs_usage_and_provisional_balances(self):
+        """Run the actual calculator, not just count source workbook rows."""
+        import subprocess
+        import sys
+        source = self._generate()
+        destination = Path(self.temp.name) / "pto-reviewed"
+        cmd = [sys.executable, str(ROOT / "run.py"), "bhandara",
+               "pto-calculator", "--period", "2026-07",
+               "--input-dir", str(source), "--output-dir", str(destination)]
+        run = subprocess.run(cmd, cwd=ROOT, text=True, capture_output=True,
+                             check=False, timeout=150)
+        self.assertIn(run.returncode, (0, 1, 2), run.stderr + run.stdout)
+        result = json.loads(
+            (destination / "pto-result.json").read_text(encoding="utf-8"))
+        by_emp = {row["employee_id"]: row for row in result["results"]}
+        self.assertEqual(len(by_emp), 80)
+        for emp in ("E001", "E002"):
+            self.assertEqual(by_emp[emp]["ledger"]["known_used_days"], "1")
+        for emp in ("E003", "E004", "E005", "E006", "E007"):
+            self.assertEqual(
+                by_emp[emp]["ledger"]["known_used_days"], "0.5")
+        for emp in ("E008", "E009"):
+            self.assertEqual(by_emp[emp]["ledger"]["known_used_days"], "0")
+            self.assertEqual(len(by_emp[emp]["ledger"]["other_events"]), 1)
+        self.assertIsNone(by_emp["E001"]["ledger"]["confirmed_balance_days"])
+        self.assertIsNone(by_emp["E001"]["ledger"]["expired_days"])
+        book = load_workbook(destination / "pto-result.xlsx", read_only=True)
+        try:
+            self.assertTrue({"Summary", "Accruals", "Usage", "Balances",
+                             "Unresolved", "Review Required", "Run Info"}
+                            <= set(book.sheetnames))
+            usage = list(book["Usage"].values)
+            self.assertEqual(len(usage) - 1, 7)
+        finally:
+            book.close()
+
     def test_real_worktime_handoff_feeds_new_payroll_contracts(self):
         from importlib import import_module
         source = self._generate()

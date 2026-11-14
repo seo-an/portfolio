@@ -191,6 +191,96 @@ def _add_synthetic_taxability_policy(input_dir: Path) -> None:
     )
 
 
+# v0.2 PTO usage examples are separate from the immutable legacy 80-person
+# regression fixture. All nine events are synthetic and unapproved for payroll.
+PTO_USAGE_CASES = (
+    ("E001", "연차", "DAY", "2026-07-06", None),
+    ("E002", "연차", "DAY", "2026-07-06", None),
+    ("E003", "오전 반차", "HALF_DAY", "2026-07-07", None),
+    ("E004", "오전 반차", "HALF_DAY", "2026-07-07", None),
+    ("E005", "오전 반차", "HALF_DAY", "2026-07-07", None),
+    ("E006", "오후 반차", "HALF_DAY", "2026-07-08", None),
+    ("E007", "오후 반차", "HALF_DAY", "2026-07-08", None),
+    ("E008", "조기퇴근", "HOURS", "2026-07-09", None),
+    ("E009", "육아기근로시간단축", "HOURS", "2026-07-10", 2),
+)
+
+
+def _apply_pto_usage_scenarios(input_dir: Path) -> None:
+    """Add the nine approved synthetic PTO events to the recommended v2 sample.
+
+    Keep the original E031 pregnancy and E044 sick-leave review events. Leave
+    use must agree with presence evidence: full leave has no punch; AM/PM half
+    retains only actually worked half; early departure/reduced hours retain
+    observed partial hours rather than claiming full attendance.
+    """
+    event_path = input_dir / "pto/employee-events.xlsx"
+    attendance_path = input_dir / "pto/work-records/2026/2026-07-attendance.xlsx"
+    event_book = load_workbook(event_path)
+    try:
+        sheet = event_book.active
+        expected = ("request_id", "employee_id", "event_type",
+                    "event_date", "unit", "status", "note", "reduced_hours")
+        if tuple(cell.value for cell in sheet[1]) != expected:
+            raise ValueError("unexpected PTO event input layout")
+        existing = {str(row[0]) for row in list(sheet.values)[1:]}
+        for index, (employee, label, unit, date, reduced) in enumerate(
+            PTO_USAGE_CASES, 1
+        ):
+            request_id = f"INTEGRATED-V2-PTO-{index:02d}"
+            if request_id in existing:
+                raise ValueError("duplicate PTO fixture event")
+            sheet.append((
+                request_id, employee, label, date, unit,
+                "APPROVED", "SYNTHETIC_REVIEW_ONLY", reduced,
+            ))
+        book = event_book
+        book.save(event_path)
+    finally:
+        event_book.close()
+
+    attendance_book = load_workbook(attendance_path)
+    try:
+        sheet = attendance_book.active
+        columns = tuple(cell.value for cell in sheet[1])
+        if columns[:6] != ("employee_id", "work_date", "clock_in",
+                           "clock_out", "break_min", "source"):
+            raise ValueError("unexpected PTO attendance input layout")
+        cases = {(employee, day): label for employee, label, _, day, _ in PTO_USAGE_CASES}
+        seen = set()
+        for row in range(sheet.max_row, 1, -1):
+            ident = sheet.cell(row, 1).value
+            day = str(sheet.cell(row, 2).value)
+            label = cases.get((ident, day))
+            if label is None:
+                continue
+            if (ident, day) in seen:
+                raise ValueError("duplicate PTO fixture attendance day")
+            seen.add((ident, day))
+            if label == "연차":
+                sheet.delete_rows(row)
+            elif label == "오전 반차":
+                sheet.cell(row, 3, "14:00")
+                sheet.cell(row, 4, "18:00")
+                sheet.cell(row, 5, 0)
+            elif label == "오후 반차":
+                sheet.cell(row, 3, "09:00")
+                sheet.cell(row, 4, "13:00")
+                sheet.cell(row, 5, 0)
+            elif label == "조기퇴근":
+                sheet.cell(row, 4, "16:00")
+                sheet.cell(row, 5, 60)
+            else:  # 육아기근로시간단축
+                sheet.cell(row, 4, "16:00")
+                sheet.cell(row, 5, 60)
+        if len(seen) != len(PTO_USAGE_CASES):
+            raise ValueError("missing dated workday in PTO synthetic fixture")
+        sheet.auto_filter.ref = sheet.dimensions
+        attendance_book.save(attendance_path)
+    finally:
+        attendance_book.close()
+
+
 def _create_worktime_handoff(input_dir: Path, working_dir: Path) -> None:
     module = importlib.import_module("bhandara.worktime-calculator.shared_excel")
     target = working_dir / "worktime-output"
@@ -226,11 +316,15 @@ def generate(destination: Path) -> Path:
         _extend_worktime(input_dir)
         _create_v2_contracts(input_dir)
         _add_synthetic_taxability_policy(input_dir)
+        _apply_pto_usage_scenarios(input_dir)
         _create_worktime_handoff(input_dir, stage)
         manifest = {
             "schema_version": "2.0",
             "fixture": "INTEGRATED_SYNTHETIC_DEMO",
             "period_worktime": "2026-06",
+            "period_pto": "2026-07",
+            "pto_event_scenarios": len(PTO_USAGE_CASES),
+            "pto_scope": "known_usage_provisional_balance_no_expiry_or_approval",
             "period_payroll": "2026-07",
             "employee_count": 80,
             "external_time_workers": 2,

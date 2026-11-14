@@ -36,7 +36,9 @@ python bhandara/examples/integrated/generate.py \
     │   ├── company-policy.json    # 예시 정책; 실제 법령 판단 아님
     │   └── worktime-result.json   # 위 Excel로 실제 계산한 6월 결과
     └── pto/
-        └── ...                    # 기존 직원 80명용 연차 테스트 자료
+        ├── employee-events.xlsx   # 승인 합성 연차 2·오전 반차 3·오후 반차 2·조퇴 1·단축 1 + 기존 검토 2건
+        ├── work-schedule.xlsx
+        └── work-records/2026/     # 해당 일자의 근태 증빙도 함께 조정
 ```
 
 **v2에는 다음 구형 파일이 생성되지 않습니다:**
@@ -55,6 +57,36 @@ python bhandara/examples/integrated/generate.py \
 - 외부 시급 `EXT-W001`과 일급 `EXT-W002`: 같은 근무표·근태를
   Worktime에서 계산. `PROJECT` 계약은 납품 증빙 없으므로 금액 미산정
 - 회사 직원 외 인력은 `common/employee.xlsx`에 넣지 않습니다.
+
+## PTO v0.2 신규 사용·잠정 잔여 샘플
+
+기존 80명 정적 샘플 `../sample/input/pto/employee-events.xlsx`는
+과거 버전 회귀 검증 기준이라 원본을 변경하지 않았습니다.
+반면 **이번 통합 v2 생성기**는 기존 E031·E044 검토 이벤트 2건을 보존하면서
+아래 승인된 **합성 이벤트 9건**을 생성합니다.
+
+| 직원 | 승인된 합성 이벤트 | 발생일 | 연차 차감 |
+|---|---|---|---|
+| E001, E002 | 연차 | 2026-07-06 | 각각 1일 |
+| E003, E004, E005 | 오전 반차 | 2026-07-07 | 각각 0.5일 |
+| E006, E007 | 오후 반차 | 2026-07-08 | 각각 0.5일 |
+| E008 | 조기퇴근 | 2026-07-09 | 연차 미차감 |
+| E009 | 육아기근로시간단축 | 2026-07-10 | 연차 미차감 |
+
+같은 날짜의 `pto/work-records/2026/2026-07-attendance.xlsx`에도
+전일 연차는 출근기록 미기재, 오전/오후 반차는 실제 근무한 반일,
+조퇴·단축은 실제 일찍 퇴근한 기록으로 반영했습니다.
+예제 데이터의 상태 `APPROVED`는 **가상 인사 이벤트 가정**이며
+실제 인사 승인이나 근로시간·휴게의 최종 검증을 뜻하지 않습니다.
+
+PTO 실행 결과 `pto-result.xlsx`에서 `Summary`, `Usage`,
+`Balances`, `Unresolved`, `Review Required` 시트를 확인하세요.
+`known_used_days`는 계산하지만 `confirmed_balance_days`,
+`expired_days`는 **미검증 `null`**로 유지합니다. `provisional_remaining_before_expiry_days`
+역시 확정 잔여가 아닙니다.
+
+**이미 생성한 /tmp/bhandara-integrated-v2 폴더는 자동 갱신되지 않습니다.**
+새 경로에 재생성해야 바뀐 Excel이 보입니다. 생성기는 덮어쓰지 않습니다.
 
 ## 3. Worktime 계산 재현
 
