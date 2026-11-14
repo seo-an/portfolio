@@ -21,13 +21,8 @@ from bhandara.common.io.input_layout import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-# Keep validating older input-adapter contracts with an in-memory-scope
-# temporary seed; the PUBLIC sample is always the CURRENT integrated layout.
-_SEED_TMP = tempfile.TemporaryDirectory(prefix="bhandara-internal-seed-")
-from bhandara.examples.sample import _seed
-_seed.build_shared_input(Path(_SEED_TMP.name))
-SAMPLE = Path(_SEED_TMP.name) / "input"
-
+from bhandara.tests._seed_fixture import SEED_INPUT
+SAMPLE = SEED_INPUT
 
 def invoke(*args) -> subprocess.CompletedProcess:
     return subprocess.run([sys.executable, str(ROOT / "run.py"), *map(str, args)],
