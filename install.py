@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import argparse
+import os
+import subprocess
 import sys
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
@@ -32,6 +34,43 @@ def check_packages(expected: dict[str, str] | None = None) -> list[str]:
     return problems
 
 
+
+def check_isolated_imports() -> list[str]:
+    """Prove the same interpreter can import readers when -E drops PYTHONPATH.
+
+    The ordinary package metadata check can give a false PASS in environments
+    that expose python-calamine only through PYTHONPATH. Public standalone
+    modules and several payroll subprocesses deliberately execute with -E.
+    This is read-only and never installs or mutates packages.
+    """
+    code = (
+        "from importlib.metadata import version; "
+        "import openpyxl, python_calamine, korean_lunar_calendar; "
+        "assert version('python-calamine') == '0.9.1'; "
+        "assert version('openpyxl') == '3.1.5'; "
+        "assert version('korean-lunar-calendar') == '0.4.0'"
+    )
+    env = {
+        "HOME": os.environ.get("HOME", "/tmp"),
+        "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        "PYTHONNOUSERSITE": "1",
+    }
+    try:
+        result = subprocess.run(
+            [sys.executable, "-E", "-c", code], env=env,
+            text=True, capture_output=True, check=False, timeout=20,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return ["Python -E isolated dependency subprocess unavailable"]
+    if result.returncode:
+        return [
+            "Python -E cannot import pinned Base packages; "
+            "install dependencies into the active interpreter's site-packages "
+            "or run with an independently provisioned uv environment"
+        ]
+    return []
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         description="Check Bhandara Base prerequisites without changing the environment."
@@ -46,6 +85,8 @@ def main(argv: list[str] | None = None) -> int:
         print(f"INCOMPATIBLE: Python {detected}; Base requires Python 3.12+", file=sys.stderr)
         return 2
     problems = check_packages()
+    if not problems:
+        problems.extend(check_isolated_imports())
     if problems:
         for problem in problems:
             print(f"DEPENDENCY_MISMATCH: {problem}", file=sys.stderr)
