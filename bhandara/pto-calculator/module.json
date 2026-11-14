@@ -1,13 +1,14 @@
 {
   "schema_version": "1.0",
   "module_id": "pto-calculator",
-  "module_version": "0.2.0",
+  "module_version": "0.2.1",
   "status": "review_only",
   "requires_base": "0.1",
   "python": ">=3.12",
   "dependencies": {
     "openpyxl": "3.1.5",
-    "korean-lunar-calendar": "0.4.0"
+    "korean-lunar-calendar": "0.4.0",
+    "python-calamine": "0.9.1"
   },
   "execution": {
     "command": "python run.py bhandara pto-calculator --config <config.json> --input-dir <input_dir> --output-dir <output_dir>",
@@ -192,5 +193,12 @@
     "provisional_remaining_before_expiry_days": "string Decimal; NOT an approved balance",
     "status": "REVIEW_REQUIRED",
     "explanation": "No inferred opening balance, leave expiry, historical usage or payroll approval"
+  },
+  "input_reader": {
+    "engine": "python-calamine",
+    "version": "0.9.1",
+    "strict_formula_guard": "openpyxl metadata for XLSX/XLSM, fail closed on uninspectable binary formats",
+    "report_writer": "openpyxl 3.1.5 unchanged",
+    "note": "Core calculation and output/report contracts preserved; dependency change requires Gearbox explicit compatibility."
   }
 }
