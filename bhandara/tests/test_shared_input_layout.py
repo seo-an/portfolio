@@ -1,6 +1,7 @@
 """Public 80-person fixture: fixed paths, Excel/ID mapping, and all three CLIs.
 
-No private Gateway/Gearbox fixtures; all tests use the checked-in sample.
+No private Gateway/Gearbox fixtures. This legacy input-contract regression
+uses a generated internal seed, not a second public sample version.
 """
 from __future__ import annotations
 
@@ -20,7 +21,12 @@ from bhandara.common.io.input_layout import (
 )
 
 ROOT = Path(__file__).resolve().parents[2]
-SAMPLE = ROOT / "bhandara/examples/sample/input"
+# Keep validating older input-adapter contracts with an in-memory-scope
+# temporary seed; the PUBLIC sample is always the CURRENT integrated layout.
+_SEED_TMP = tempfile.TemporaryDirectory(prefix="bhandara-internal-seed-")
+from bhandara.examples.sample import _seed
+_seed.build_shared_input(Path(_SEED_TMP.name))
+SAMPLE = Path(_SEED_TMP.name) / "input"
 
 
 def invoke(*args) -> subprocess.CompletedProcess:
@@ -29,7 +35,7 @@ def invoke(*args) -> subprocess.CompletedProcess:
 
 
 class SharedLayoutFixtureTests(unittest.TestCase):
-    def test_real_excel_fixtures_are_committed(self):
+    def test_internal_seed_excel_fixture_is_complete(self):
         self.assertTrue(SAMPLE.is_dir())
         files = list(SAMPLE.rglob("*.xlsx"))
         self.assertGreaterEqual(len(files), 10)
@@ -142,7 +148,7 @@ class SharedLayoutFixtureTests(unittest.TestCase):
         self.assertEqual(len({row[2] for row in mappings[1:]}), 80)
         self.assertEqual(len({row[3] for row in mappings[1:]}), 80)
 
-    def test_committed_worktime_handoff_matches_current_excel_hashes(self):
+    def test_internal_seed_worktime_handoff_matches_excel_hashes(self):
         # The sample Payroll bridge is intentionally a fixed Worktime handoff.
         # Editing source Excel without refreshing its provenance must fail here.
         handoff = json.loads(
