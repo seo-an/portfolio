@@ -16,12 +16,15 @@ import importlib.util
 import json
 import shutil
 import tempfile
+import sys
 from decimal import Decimal
 from pathlib import Path
 
 from openpyxl import load_workbook
 
 ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 SEED_GENERATOR = ROOT / "bhandara/examples/sample/_seed.py"
 
 EXTERNAL_WORKERS = (
