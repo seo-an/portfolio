@@ -32,6 +32,11 @@ class _ReadCell:
 
 
 @dataclass(frozen=True, slots=True)
+class _SheetTitle:
+    title: str
+
+
+@dataclass(frozen=True, slots=True)
 class XlsxSheetRows:
     workbook: Any
     sheet: Any
@@ -75,7 +80,9 @@ def _cells(rows: list[list[Any]], first: int,
     for row_number, values in enumerate(rows, start=first):
         yield tuple(
             _ReadCell(
-                _normalize_value(value),
+                ("__UNTRUSTED_FORMULA__" if value in (None, "")
+                 else _normalize_value(value))
+                if (row_number, column) in formulas else _normalize_value(value),
                 "f" if (row_number, column) in formulas else "n",
             )
             for column, value in enumerate(values, start=1)
@@ -100,6 +107,10 @@ def open_xlsx_rows(
     if type(header_row) is not int or header_row < 1:
         raise XlsxStreamError("header_row must be a positive integer")
     target = Path(path)
+    if not data_only and target.suffix.lower() not in (".xlsx", ".xlsm"):
+        raise XlsxStreamError(
+            "strict formula validation is unavailable for this spreadsheet format"
+        )
     workbook = CalamineWorkbook.from_path(target)
     try:
         if sheet_name is not None and sheet_name not in workbook.sheet_names:
@@ -120,6 +131,6 @@ def open_xlsx_rows(
             raise XlsxStreamError("XLSX source has no header row")
         if any(cell.data_type == "f" for cell in header_cells):
             raise XlsxStreamError("formula in header is unsupported")
-        yield XlsxSheetRows(workbook, sheet, header_cells, iterator)
+        yield XlsxSheetRows(workbook, _SheetTitle(selected), header_cells, iterator)
     finally:
         workbook.close()
