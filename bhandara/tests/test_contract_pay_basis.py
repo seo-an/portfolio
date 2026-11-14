@@ -14,7 +14,8 @@ from openpyxl import load_workbook
 from bhandara.common.io.input_layout import InputLayoutError, read_id_map
 
 ROOT = Path(__file__).resolve().parents[2]
-INPUT = ROOT / "bhandara/examples/sample/input"
+from bhandara.tests._seed_fixture import SEED_INPUT
+INPUT = SEED_INPUT
 adapter = importlib.import_module("bhandara.payroll-calculator.contract_adapter")
 
 
