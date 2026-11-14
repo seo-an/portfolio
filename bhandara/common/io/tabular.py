@@ -1,4 +1,4 @@
-"""Generic, local-only CSV/XLSX/JSON row readers for Bhandara calculators.
+"""Generic, local-only CSV/Excel/ODS/JSON row readers for Bhandara calculators.
 
 Only file structure, path containment, and primitive row/column contracts live
 here. Company-specific source aliases and business meanings are supplied by
@@ -19,7 +19,7 @@ class TabularInputError(ValueError):
 
 
 MISSING = object()
-SUPPORTED_FORMATS = frozenset(("csv", "json", "xlsx"))
+SUPPORTED_FORMATS = frozenset(("csv", "json", "xls", "xlsx", "xlsm", "xlsb", "ods"))
 
 
 def lookup_field(row: Mapping[str, Any], path: str) -> Any:
