@@ -1,6 +1,6 @@
 """Map explicitly declared source aliases into canonical Payroll facts.
 
-Generic CSV/Excel/ODS/JSON reading, path validation and scalar coercion are owned
+Generic CSV/XLSX/JSON reading, path validation and scalar coercion are owned
 by Bhandara Common. This module retains caller-selected field aliases,
 company-provided value maps, rejection lineage and source-specific findings.
 No implicit mapping, payroll computation, or approval is performed here.
@@ -48,7 +48,7 @@ def _read_rows(root: Path, source: str, spec: Mapping[str, Any]):
         fmt = str(spec.get("format", path.suffix.lstrip("."))).lower()
         if fmt not in _SUPPORTED:
             raise SourceMappingError(f"{source}: unsupported source format {fmt}")
-        readers = {"csv": _read_csv, "json": _read_json, **{extension: _read_xlsx for extension in ("xls", "xlsx", "xlsm", "xlsb", "ods")}}
+        readers = {"csv": _read_csv, "json": _read_json, "xlsx": _read_xlsx}
         return path, readers[fmt](path, spec)
     except TabularInputError as exc:
         raise SourceMappingError(str(exc)) from exc
