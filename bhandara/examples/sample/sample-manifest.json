@@ -1,22 +1,17 @@
 {
-  "schema_version": "1.0",
-  "seed": 20261112,
-  "employees": 80,
-  "note": "Synthetic inputs. Raw reader layouts are illustrative, not vendor-certified.",
-  "worktime_month": "2026-06",
-  "pto_month": "2026-07",
-  "payroll_month": "2026-07",
-  "identity_map": "input/common/id-map.xlsx",
-  "source_files": {
-    "pto_schedule": 2469,
-    "pto_attendance": 1831,
-    "worktime_schedule": 2400,
-    "worktime_attendance": 1760,
-    "raw_security_events": 1201,
-    "contracts": 80,
-    "contract_components": 20,
-    "service_contracts_excluded": 8,
-    "service_delivery_records": 16
-  },
-  "test_case_index": "test-cases.json"
+  "schema_version": "2.0",
+  "fixture": "CURRENT_80_PERSON_SYNTHETIC_SAMPLE",
+  "period_worktime": "2026-06",
+  "period_pto": "2026-07",
+  "pto_event_scenarios": 9,
+  "pto_scope": "known_usage_provisional_balance_no_expiry_or_approval",
+  "period_payroll": "2026-07",
+  "employee_count": 80,
+  "external_time_workers": 2,
+  "service_contracts": 3,
+  "contract_layout": "payroll/pay-contract.xlsx: Contracts+Components",
+  "worktime_handoff": "payroll/worktime-result.json",
+  "approved": false,
+  "finalizable": false,
+  "note": "Synthetic only; no employment, vendor billing or tax approval"
 }

@@ -1,0 +1,56 @@
+name: Refresh canonical 80-person Excel sample
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - "bhandara/examples/sample/**"
+      - "bhandara/tests/test_integrated_v2_example.py"
+      - "bhandara/tests/test_shared_input_layout.py"
+      - "bhandara/tests/_seed_fixture.py"
+      - ".github/workflows/refresh-canonical-sample.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: canonical-80-person-sample-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  regenerate:
+    if: github.repository == 'seo-an/portfolio'
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout branch (never main)
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Install test Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - name: Install pinned Bhandara dependencies
+        run: python -m pip install -r requirements.txt
+      - name: Update the ONE tracked sample/input directory
+        run: python bhandara/examples/sample/refresh.py --apply
+      - name: Validate all calculators and workbook contracts
+        run: python -m unittest discover -s bhandara/tests -p "test_*.py" -v
+      - name: Commit refreshed Excel files on PR branch only
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "${GITHUB_REF_NAME}" != main
+          git add -A bhandara/examples/sample/input \
+            bhandara/examples/sample/test-cases.json \
+            bhandara/examples/sample/sample-manifest.json
+          if git diff --cached --quiet; then
+            echo "SAMPLE_80_ALREADY_CURRENT"
+          else
+            git -c user.name='github-actions[bot]' \
+                -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+                commit -m "data(sample): refresh the sole canonical 80-person synthetic XLSX set"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

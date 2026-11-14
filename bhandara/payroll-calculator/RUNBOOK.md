@@ -191,9 +191,10 @@ ID의 `E`, `SVC` 같은 접두어로 법적 관계를 추정하지 않습니다.
 
 ### 기존 샘플 사용자에게
 
-현재 [80명 공통 샘플](../examples/sample/input/)은 여전히 **구형 단일 시트**
-`pay-contract.xlsx` + `pay-contract-components.xlsx` 구조입니다.
-호환성을 유지하기 위해 기존 방식도 그대로 지원합니다.
+현재 [80명 공통 샘플](../examples/sample/input/)은 **최신 통합 계약 구조**입니다.
+`pay-contract.xlsx`의 `Contracts`, `Components` 시트에 직원 80명과
+용역계약을 함께 구분해 기록합니다. 구형 단일 시트 입력 방식은
+기존 사용자 호환을 위해 지원할 뿐, 별도 공개 80명 샘플로 관리하지 않습니다.
 
 새로운 두 시트 방식에서는 `pay-contract-components.xlsx`가 필요 없으며, **같은 입력 폴더에 구형 수당 파일이 남아 있거나 파일 경로를 별도 지정하면 충돌로 차단합니다.**
 기존 자료의 `contract_amount`를 새 방식으로 옮길 때에는 계약서 원문이
@@ -298,7 +299,7 @@ ID의 `E`, `SVC` 같은 접두어로 법적 관계를 추정하지 않습니다.
 
 ## 5. 구형 단일 시트 프리랜서/용역계약 안내
 
-**아래 내용은 구형 단일 시트(legacy) 입력에만 적용됩니다.** 공통 80명 샘플의 선택 파일 `service-contracts.xlsx`에 가상 용역계약 8건이 들어 있습니다.
+**아래 내용은 구형 단일 시트(legacy) 입력 호환용 설명입니다.** 현재 80명 통합 샘플에는 별도 `service-contracts.xlsx` 파일이 없으며, 하나의 `pay-contract.xlsx`에서 관계 유형에 따라 구분합니다.
 `service_contract_id`, `external_vendor_id`, `pay_basis`,
 `contract_amount`, `effective_from`, `effective_to` 등을 기록합니다.
 근로자 급여와 용역대가, 원천징수, 실질 근로자성 판단은 서로 다른 문제입니다.

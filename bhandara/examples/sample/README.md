@@ -1,109 +1,140 @@
-# 반다라 공통 입력 샘플 (가상 직원 80명)
+# 반다라 통합 샘플 — 직원 80명 + 외부 인력 2명
 
-> **새로 시작한다면 [통합 v2 샘플](../integrated/README.md)을 사용하세요.**
-> 이 폴더는 구형 단일 시트 계약과 별도 용역파일을 이용하는
-> **회귀 검증용 legacy 예제**로 보존합니다. 새 통합 예제는
-> `Contracts + Components`와 Worktime 외부 인력 연결을 사용합니다.
+**정식 공개 샘플은 이 폴더의 `input/` 한 세트뿐입니다.**
+같은 80명 자료의 데이터 구조를 고칠 때마다 기존 Excel을 최신 구조로
+교체합니다. 별도의 구형·신형 샘플이나 이전 Excel 복사본을 보관하지 않습니다.
 
-이 디렉터리의 **실제 Excel 파일**은 [generate.py](generate.py)로 재현되며,
-운영 데이터가 아닙니다. 80명의 직원이 공통 ID 매핑으로 세 계산기에 연결됩니다.
+`input/`에 있는 파일은 그대로 열어 보고 복사해 실행할 수 있습니다.
+필요할 때 [생성기](generate.py)로 다른 경로에 동일한 가상 자료를 만들거나,
+프로젝트 유지관리자가 `refresh.py --apply`로 이 폴더의 정식 Excel을
+갱신할 수 있습니다. 기존 `input/` 전체를 교체하므로
+오래된 형식의 용역계약 파일도 함께 정리됩니다.
 
-## 실행하기
+샘플 생성기는 실제 `.xlsx` 파일과 `worktime-result.json`을 생성합니다.
+**데이터는 전부 합성 자료이며 실제 직원·계약·승인·세금 자료가 아닙니다.**
 
-프로젝트 루트에서:
+## 1. 한 번만 실행해서 샘플 만들기
 
-1. `bhandara/examples/sample/input/` **폴더 안의 파일과 디렉터리**를
-   `bhandara/data/input/`에 그대로 복사합니다. 기본 실행은 해당 폴더에서
-   파일을 찾으므로 JSON 파일 경로를 직접 편집할 필요가 없습니다.
-2. 아래 명령을 실행합니다. 결과는 기본적으로 `bhandara/data/output/` 아래에 생깁니다.
+프로젝트 루트에서 실행합니다. 생성 경로는 **Git 저장소 바깥**의
+새 폴더여야 하고, 기존 폴더가 있으면 덮어쓰지 않습니다.
 
 ```bash
-python run.py bhandara worktime-calculator --period 2026-06
-python run.py bhandara pto-calculator --period 2026-07
-python run.py bhandara payroll-calculator --period 2026-07
+python bhandara/examples/sample/generate.py \
+  --output-dir /tmp/bhandara-sample-80
 ```
 
-Worktime과 Payroll 결과는 첫 실행 시 `bhandara/data/output/<모듈명>/`에 저장되며,
-같은 이름의 결과 폴더가 이미 있으면 `<모듈명>-001/`, `-002/`로 새 폴더를 만듭니다.
-따라서 이전 계산 결과를 덮어쓰지 않습니다.
+생성한 폴더의 구성:
 
-Worktime은 출퇴근 인증이나 근무시간을 자동 승인하지 않습니다.
-Payroll의 기본 샘플 `payroll/worktime-result.json`은 **Worktime 샘플의
-2026-06 실행 결과(미마감)**를 보관한 것입니다.
-Worktime을 다시 실행하고 그 결과를 급여 계산에 사용하려면
-`--worktime-result /실제경로/worktime-result.json`을 지정합니다.
-계산 결과가 검토 필요 상태라면 0이 아닌 종료 코드가 나오는 게 정상일 수 있습니다.
+```text
+/tmp/bhandara-sample-80/
+├── manifest.json
+└── input/
+    ├── common/
+    │   ├── employee.xlsx          # 사내 직원 80명만
+    │   └── id-map.xlsx            # ID_MAP 직원 80명, EXTERNAL 외부 2명
+    ├── worktime/
+    │   ├── work-schedule.xlsx     # 예정근무: 직원 + 외부 서비스
+    │   ├── attendance.xlsx        # 실제 근태: 직원 + 외부 서비스
+    │   └── security-raw-*.xlsx    # 합성 출입기 원본, 자동 승인 금지
+    ├── payroll/
+    │   ├── pay-contract.xlsx      # Contracts + Components (통합)
+    │   ├── payroll-input.xlsx     # 가상 성과급
+    │   ├── company-policy.json    # 예시 정책; 실제 법령 판단 아님
+    │   └── worktime-result.json   # 위 Excel로 실제 계산한 6월 결과
+    └── pto/
+        ├── employee-events.xlsx   # 승인 합성 연차 2·오전 반차 3·오후 반차 2·조퇴 1·단축 1 + 기존 검토 2건
+        ├── work-schedule.xlsx
+        └── work-records/2026/     # 해당 일자의 근태 증빙도 함께 조정
+```
 
-## 고정 경로
+**최신 통합 형식에는 다음 별도 파일이 없습니다:**
+`pay-contract-components.xlsx`, `service-contracts.xlsx`,
+`service-work-records.xlsx`.
 
-| 모듈 | 실제 입력 파일명(샘플 `input/` 기준) |
-|---|---|
-| 공통 | `common/employee.xlsx`, `common/id-map.xlsx` (`ID_MAP` 시트) |
-| PTO | `pto/work-schedule.xlsx`, `pto/work-schedule-assignment.xlsx`, `pto/work-records/2026/2026-07-schedule.xlsx`, `pto/work-records/2026/2026-07-attendance.xlsx`, `pto/employee-events.xlsx` |
-| Worktime | `worktime/work-schedule.xlsx`, `worktime/attendance.xlsx` |
-| Payroll | `payroll/pay-contract.xlsx`, `payroll/pay-contract-components.xlsx`, `payroll/payroll-input.xlsx`, `payroll/company-policy.json`, `payroll/worktime-result.json` 및 선택 `payroll/service-contracts.xlsx` |
+## 2. 파일 열어보기
 
-## 공통 직원·식별자 입력과 테스트 시나리오의 분리
+- `pay-contract.xlsx`의 **Contracts**: 직원 계약 80개와 외부 용역
+  계약 3개. `relationship_type`으로 법적 계약 분기를 분명하게 입력
+- **Components**: 고정 지급항목과 `base_salary`를 명시적으로 분리
+- `E006` 직원: 월 기본급 350만 원(**BASE**) + 직책수당 15만 원
+  + 식대 10만 원 = 월 지급 계약 구성 합계 **375만 원**
+- 나머지 연봉/월급 계약: 계약금액은 **TOTAL**, 구성 수당을 포함하며
+  `base_salary + allowances == monthly contract amount` 검증
+- 외부 시급 `EXT-W001`과 일급 `EXT-W002`: 같은 근무표·근태를
+  Worktime에서 계산. `PROJECT` 계약은 납품 증빙 없으므로 금액 미산정
+- 회사 직원 외 인력은 `common/employee.xlsx`에 넣지 않습니다.
 
-실제로 계산기에 넣는 공통 Excel은 필요한 정보만 포함합니다.
+## 연차 사용·잠정 잔여 샘플
 
-| 파일 | 열 | 역할 |
-|---|---|---|
-| `input/common/employee.xlsx` | `employee_id`, `hire_date`, `termination_date`, `work_system` | 직원의 고용·근로제 사실 |
-| `input/common/id-map.xlsx` (`ID_MAP` 시트) | `employee_id`, `security_id`, `worker_id`, `payroll_id` | 시스템별 직원 식별자 대응 |
+현재 `input/`의 80명 직원 중 기존 E031·E044 검토 이벤트 2건에 더해
+아래 승인된 **합성 이벤트 9건**을 생성합니다.
 
-`work_system`은 직원명부에서만 관리합니다. 식별자 대응표에 중복 기록하지 않습니다.
-`case_id`는 **두 Excel 모두에서 제거**했습니다. 계산에 쓰는 입력값이 아니라
-가상 직원에게 부여한 테스트 시나리오 설명이기 때문입니다.
+| 직원 | 승인된 합성 이벤트 | 발생일 | 연차 차감 |
+|---|---|---|---|
+| E001, E002 | 연차 | 2026-07-06 | 각각 1일 |
+| E003, E004, E005 | 오전 반차 | 2026-07-07 | 각각 0.5일 |
+| E006, E007 | 오후 반차 | 2026-07-08 | 각각 0.5일 |
+| E008 | 조기퇴근 | 2026-07-09 | 연차 미차감 |
+| E009 | 육아기근로시간단축 | 2026-07-10 | 연차 미차감 |
 
-별도 `test-cases.json`은 이 샘플의 **`input/` 바깥**에 있으며 테스트에서만
-시나리오별 직원 ID를 확인합니다. 예를 들어
-`"LOW_ATTENDANCE": ["E002"]`이며, 일반·근로제 검토 사례는
-`NORMAL_OR_WORKSYSTEM_REVIEW`로 묶습니다.
-이 JSON은 계산기의 입력·설정에 넣거나 수정할 필요가 없습니다.
-Excel의 실제 근태·스케줄을 수정해도 테스트 시나리오 분류가 자동으로 바뀌지는 않습니다.
+같은 날짜의 `pto/work-records/2026/2026-07-attendance.xlsx`에도
+전일 연차는 출근기록 미기재, 오전/오후 반차는 실제 근무한 반일,
+조퇴·단축은 실제 일찍 퇴근한 기록으로 반영했습니다.
+예제 데이터의 상태 `APPROVED`는 **가상 인사 이벤트 가정**이며
+실제 인사 승인이나 근로시간·휴게의 최종 검증을 뜻하지 않습니다.
 
-## 계약 유형이 섞인 급여 샘플
+PTO 실행 결과 `pto-result.xlsx`에서 `Summary`, `Usage`,
+`Balances`, `Unresolved`, `Review Required` 시트를 확인하세요.
+`known_used_days`는 계산하지만 `confirmed_balance_days`,
+`expired_days`는 **미검증 `null`**로 유지합니다. `provisional_remaining_before_expiry_days`
+역시 확정 잔여가 아닙니다.
 
-`payroll/pay-contract.xlsx`에는 가상 직원 80명의 원 계약금액이 있습니다:
-**연봉 20명, 월급 20명, 시급 20명, 일급 20명**. 연봉은 12회 균등분할이라는 가정이며 결과에 이를 검토 표시로 남깁니다.
-이는 이미 계산된 월 기본급이 아니라 **연/월/시간/일 단위 계약금액**입니다.
+**이미 생성한 /tmp/bhandara-sample-80 폴더는 자동 갱신되지 않습니다.**
+새 경로에 재생성해야 바뀐 Excel이 보입니다. 생성기는 덮어쓰지 않습니다.
 
-`payroll/pay-contract-components.xlsx`에는 연봉·월급 계약에 **포함된 월 고정수당**을 따로 기록했습니다.
-급여 계산기는 이 금액을 계약 총액에서 빼서 기본급을 도출하고, 수당을 별도 항목으로 전달합니다.
+## 3. Worktime 계산 재현
 
-`payroll/service-work-records.xlsx`에는 용역제공 16행이 있어 8건에 대한 **시급×시간 / 일급×일수 추정액**을 별도 확인할 수 있습니다. 단, 실제 지급 및 원천징수 승인 없이 검토 결과로만 표시합니다.
+`worktime-result.json`은 실제 Worktime 계산기로 생성한
+**2026년 6월의 미마감 결과**입니다. 입력 Excel을 변경했다면 반드시
+새 Worktime 결과를 생성하고 그것을 Payroll에 다시 전달하세요.
 
-`payroll/service-contracts.xlsx`의 가상 프리랜서 8건은 직원 80명과 **별개**이며
-직원 급여대장에 합산되지 않습니다. 이 파일은 없으면 생략할 수 있습니다.
-계약 구성 수당이 없는 회사도 `pay-contract-components.xlsx`의 헤더는 남겨 두어야 합니다.
+```bash
+python run.py bhandara worktime-calculator \
+  --period 2026-06 \
+  --input-dir /tmp/bhandara-sample-80/input \
+  --output-dir /tmp/bhandara-sample-80/recalculated-worktime
+```
 
-급여 결과의 `contract-basis-review.xlsx`에는 계약 단가·시간/일수·기본급·계산 규칙이,
-`contract-derived-compensation.xlsx`에는 기존 Payroll 엔진에 실제로 넘긴 월 기준 보상액이 남습니다.
-**시급·일급의 가산수당과 유급주휴는 아직 자동 계산하지 않습니다.**
-검토 결과가 나왔다고 실지급액이 확정된 것은 아닙니다.
-[급여 Excel 사용 안내](../../payroll-calculator/RUNBOOK.md)를 참고하세요.
+`recalculated-worktime`은 아직 존재하지 않아야 합니다.
+Workbench는 변경된 데이터의 Worktime 결과를 임의로 찾아 대신 사용하지 않습니다.
 
-`common/id-map.xlsx`는 사내 직원번호, 출입기 식별자, 계산용
-`worker_id`, 급여 시스템별 ID를 눈에 보이게 연결합니다.
-**다른 회사의 식별 체계는 매핑 열 값을 바꿔야 하며 실제 사번을 Git에 올리면 안 됩니다.**
+## 4. Payroll·PTO 사용
 
-추가로 다음 가상 출입 인증자료가 있습니다.
+```bash
+python run.py bhandara payroll-calculator \
+  --period 2026-07 \
+  --input-dir /tmp/bhandara-sample-80/input \
+  --worktime-result /tmp/bhandara-sample-80/input/payroll/worktime-result.json \
+  --output-dir /tmp/bhandara-sample-80/payroll-review
 
-- `worktime/security-raw-caps-synthetic.xlsx`
-- `worktime/security-raw-s1-synthetic.xlsx`
-- `worktime/security-raw-kt-synthetic.xlsx`
+python run.py bhandara pto-calculator \
+  --period 2026-07 \
+  --input-dir /tmp/bhandara-sample-80/input \
+  --output-dir /tmp/bhandara-sample-80/pto-review
+```
 
-**공식 업체 내보내기 양식이라고 확인된 파일이 아닙니다.**
-단말기 인증·중복 태그·메뉴 미선택 이벤트를 보존한 **재현 예제**입니다.
-이들 원본은 Worktime에서 자동으로 출근·퇴근으로 확정하지 않습니다.
-확인된 근태만 `worktime/attendance.xlsx`에 들어갑니다.
+출력 폴더는 각각 새 이름이어야 합니다. 실제 근무 승인·용역 검수·
+급여 지급·원천세/사회보험 판정은 **어느 계산기도 자동 확정하지 않습니다**.
 
-## 안전 기준
+## 5. 과세·비과세 구분은 별도 검토
 
-- 샘플에는 실제 직원·급여·승인자료가 없습니다.
-- 직원 수는 80명이며, 다양한 근로제·중도퇴사·누락/중복 인증 사례가 섞여 있습니다.
-- 계산기는 `approved`, `finalizable`, `ledger_committed` 상태를
-  실제 결재 완료로 바꾸지 않습니다.
-- `bhandara/data/input`와 `bhandara/data/output`는 Git 제외 폴더입니다.
-- 필수 파일이나 ID 매핑이 없다면 다른 위치의 비슷한 파일을 임의로 찾아서 쓰지 않습니다.
+이 통합 샘플의 `company-policy.json`에는 **세무 검토 후보 분류**가
+포함되어 있습니다. `base_salary`는 과세 후보, `meal_allowance`는
+비과세 후보(예시 100,000원 한도), `position_allowance`는
+판정 보류로 설정합니다. **100,000원은 법정 한도가 아닌 임의의 합성 테스트 숫자입니다.**
+실제 세법상 비과세 자격·한도를 확정하거나 원천세를 계산하는 기능이 아닙니다.
+
+Payroll 0.3.2 이상에서는 `taxability-review.json/xlsx`로 후보 분류와
+보류 금액을 별도 출력합니다. 이전 버전에서는 이 설정을 지급액에
+반영하지 않으며, 외부 인력의 용역대가는 세무 분류에 포함되지 않습니다.
+[분류 규칙 사용 안내](../../payroll-calculator/RUNBOOK.md)를 확인하세요.

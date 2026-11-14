@@ -22,7 +22,8 @@ from bhandara.common.io.input_layout import (
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SAMPLE = ROOT / "bhandara/examples/sample/input"
+from bhandara.tests._seed_fixture import SEED_INPUT
+SAMPLE = SEED_INPUT
 worktime = importlib.import_module("bhandara.worktime-calculator.shared_excel")
 payroll = importlib.import_module("bhandara.payroll-calculator.contract_adapter")
 configurator = importlib.import_module("bhandara.payroll-calculator.shared_excel")

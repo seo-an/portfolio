@@ -1,50 +1,65 @@
 #!/usr/bin/env python3
-"""Reproducible 80-employee SHARED input fixtures.
+"""Generate the one canonical 80-person Bhandara sample with current layouts.
 
-Use only for publication/testing. The security-reader examples reconstruct
-illustrative formats; they are NOT authoritative exports from ADT/S1/KT.
+A private deterministic seed is created in a temporary directory and then
+upgraded to the current integrated input contracts. No stale checked-in Excel
+files or parallel legacy/v2 sample trees are used as generator inputs.
+
+The Worktime module is used only by this example generator. Production modules
+remain independent and exchange the documented JSON handoff.
 """
 from __future__ import annotations
 
 import argparse
+import importlib
+import importlib.util
 import json
-import random
-from datetime import date, time, timedelta
+import shutil
+import tempfile
+import sys
+from decimal import Decimal
 from pathlib import Path
 
-from openpyxl import Workbook
+from openpyxl import load_workbook
 
-SEED = 20261112
-EMPLOYEES = 80
-SCHEDULES = ("FIXED", "STAGGERED", "TWO_SHIFT", "THREE_SHIFT", "DAY_NIGHT", "FLEXIBLE")
-CASE_OVERRIDES = {
-    2: "LOW_ATTENDANCE",
-    5: "MISSING_RAW_EVENT",
-    7: "TERMINATED_JUL20",
-    12: "NIGHT_SHIFT",
-    19: "TERMINATED_JUL31",
-    31: "CHILDCARE_REDUCED",
-    44: "DUPLICATE_RAW_TAG",
-    67: "FLEXIBLE_REVIEW",
-}
-DEFAULT_CASE = "NORMAL_OR_WORKSYSTEM_REVIEW"
+ROOT = Path(__file__).resolve().parents[3]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+SEED_GENERATOR = ROOT / "bhandara/examples/sample/_seed.py"
 
-START = date(2026, 6, 1)
-END = date(2026, 7, 31)
+EXTERNAL_WORKERS = (
+    ("EXT-W001", "SEC-EXT-001"),
+    ("EXT-W002", "SEC-EXT-002"),
+)
+EXTERNAL_WORKTIME = (
+    ("EXT-W001", "2026-06-02", "09:00", "18:00", 60),
+    ("EXT-W001", "2026-06-03", "08:00", "23:00", 60),
+    ("EXT-W002", "2026-06-02", "09:00", "18:00", 60),
+    ("EXT-W002", "2026-06-03", "09:00", "18:00", 60),
+)
+SERVICE_CONTRACTS = (
+    ("SVC-H001", None, "HOURLY", 37000, "2026-01-01", None, None,
+     "Synthetic hourly independent service, not payroll", "RATE",
+     "INDEPENDENT_SERVICE", "PARTY-001", "EXT-W001"),
+    ("SVC-D002", None, "DAILY", 230000, "2026-01-01", None, 8,
+     "Synthetic daily vendor, not payroll", "RATE",
+     "CORPORATE_VENDOR", "PARTY-002", "EXT-W002"),
+    ("SVC-P003", None, "PROJECT", 5000000, "2026-01-01", None, None,
+     "Project settlement requires evidence", "TOTAL",
+     "CORPORATE_VENDOR", "PARTY-003", None),
+)
 
 
-def save_xlsx(path: Path, headers: tuple[str, ...], records: list[tuple], *,
-              sheet_name: str = "Sheet1") -> None:
-    if path.exists():
-        raise FileExistsError(f"refusing to overwrite existing fixture: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    book = Workbook()
+def _install_external_mapping(input_dir: Path) -> None:
+    path = input_dir / "common/id-map.xlsx"
+    book = load_workbook(path)
     try:
-        sheet = book.active
-        sheet.title = sheet_name
-        sheet.append(headers)
-        for record in records:
-            sheet.append(record)
+        if "EXTERNAL" in book.sheetnames:
+            raise ValueError("unexpected existing EXTERNAL sheet in legacy input")
+        sheet = book.create_sheet("EXTERNAL")
+        sheet.append(("worker_id", "security_id"))
+        for identity in EXTERNAL_WORKERS:
+            sheet.append(identity)
         sheet.freeze_panes = "A2"
         sheet.auto_filter.ref = sheet.dimensions
         book.save(path)
@@ -52,346 +67,308 @@ def save_xlsx(path: Path, headers: tuple[str, ...], records: list[tuple], *,
         book.close()
 
 
-def write_json(path: Path, content: object) -> None:
-    if path.exists():
-        raise FileExistsError(f"refusing to overwrite existing fixture: {path}")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(content, ensure_ascii=False, indent=2) + "\n",
-                    encoding="utf-8")
+def _extend_worktime(input_dir: Path) -> None:
+    for filename in ("work-schedule.xlsx", "attendance.xlsx"):
+        path = input_dir / "worktime" / filename
+        book = load_workbook(path)
+        try:
+            sheet = book.active
+            headers = [cell.value for cell in sheet[1]]
+            if "worker_id" in headers:
+                raise ValueError(f"unexpected worker_id column in legacy {filename}")
+            sheet.cell(1, len(headers) + 1, "worker_id")
+            for worker_id, day, start, end, pause in EXTERNAL_WORKTIME:
+                row = {
+                    "employee_id": None, "worker_id": worker_id,
+                    "work_date": day, "break_min": pause,
+                }
+                if filename == "work-schedule.xlsx":
+                    row.update(
+                        day_type="WORK", scheduled_start=start,
+                        scheduled_end=end, scheduled_work_hours=14 if
+                        (worker_id, day) == ("EXT-W001", "2026-06-03") else 8,
+                        note="SYNTHETIC_EXTERNAL_SCHEDULE",
+                    )
+                else:
+                    row.update(
+                        clock_in=start, clock_out=end,
+                        source="SYNTHETIC_CONFIRMED_CLOCK_PAIR",
+                        note="REVIEW_ONLY_NO_APPROVAL",
+                    )
+                sheet.append([row.get(header) for header in (*headers, "worker_id")])
+            sheet.freeze_panes = "A2"
+            sheet.auto_filter.ref = sheet.dimensions
+            book.save(path)
+        finally:
+            book.close()
 
 
-def dates(first: date, last: date):
-    current = first
-    while current <= last:
-        yield current
-        current += timedelta(days=1)
+def _monthly_components(legacy_components: Path) -> dict[str, dict[str, Decimal]]:
+    book = load_workbook(legacy_components, read_only=True, data_only=True)
+    try:
+        rows = list(book.active.values)
+    finally:
+        book.close()
+    components: dict[str, dict[str, Decimal]] = {}
+    for contract_id, code, amount in rows[1:]:
+        components.setdefault(str(contract_id), {})[str(code)] = Decimal(str(amount))
+    return components
 
 
-def roster() -> list[dict]:
-    result = []
-    for i in range(1, EMPLOYEES + 1):
-        schedule = SCHEDULES[(i - 1) // 14 % len(SCHEDULES)]
-        result.append({
-            "employee_id": f"E{i:03d}",
-            "worker_id": f"EP{i:04d}",
-            "security_id": f"SEC-{i:04d}",
-            "payroll_id": f"PAY-{i:04d}",
-            "hire_date": date(2024 + ((i // 35) % 2), (i % 12) + 1, min((i % 26) + 1, 28)),
-            "termination_date": date(2026, 7, 20) if i == 7 else
-                                date(2026, 7, 31) if i == 19 else None,
-            "work_system": schedule,
-        })
-    return result
-
-
-def test_case_groups(people: list[dict]) -> dict[str, list[str]]:
-    """Synthetic fixture metadata only: never part of calculator input."""
-    groups: dict[str, list[str]] = {}
-    for person in people:
-        employee_id = person["employee_id"]
-        label = CASE_OVERRIDES.get(int(employee_id[1:]), DEFAULT_CASE)
-        groups.setdefault(label, []).append(employee_id)
-    return groups
-
-
-def day_schedule(employee: dict, day: date):
-    if day.weekday() >= 5:
-        return False, None, None, 0, 0
-    idx = int(employee["employee_id"][1:])
-    system = employee["work_system"]
-    if system in ("TWO_SHIFT", "THREE_SHIFT", "DAY_NIGHT") and (idx + day.day) % 4 == 0:
-        start, end = time(21), time(6)
-    elif system == "STAGGERED":
-        start, end = time(10), time(19)
-    elif system == "FLEXIBLE":
-        start, end = time(8), time(17)
-    else:
-        start, end = time(9), time(18)
-    return True, start, end, 60, 8
-
-
-def build_shared_input(root: Path) -> dict[str, int]:
-    people = roster()
-    rng = random.Random(SEED)
-    input_dir = root / "input"
-    employee_rows = [
-        (x["employee_id"], x["hire_date"].isoformat(),
-         x["termination_date"].isoformat() if x["termination_date"] else None,
-         x["work_system"])
-        for x in people
-    ]
-    ids = [
-        (x["employee_id"], x["security_id"], x["worker_id"],
-         x["payroll_id"])
-        for x in people
-    ]
-    rng.shuffle(employee_rows)
-    rng.shuffle(ids)
-    save_xlsx(input_dir / "common/employee.xlsx",
-              ("employee_id", "hire_date", "termination_date", "work_system"),
-              employee_rows)
-    save_xlsx(input_dir / "common/id-map.xlsx",
-              ("employee_id", "security_id", "worker_id", "payroll_id"),
-              ids, sheet_name="ID_MAP")
-
-    master, assignments = [], []
-    cycle_anchor = "2026-06-01"
-    for system in SCHEDULES:
-        for sequence in range(1, 8):
-            work = sequence <= 5
-            start, end = (
-                (time(10), time(19)) if system == "STAGGERED"
-                else (time(8), time(17)) if system == "FLEXIBLE"
-                else (time(9), time(18))
-            )
-            master.append((
-                f"{system}_7", system, sequence, "WORK" if work else "OFF",
-                "DAY" if work else None, start if work else None,
-                end if work else None, 60 if work else None, 8 if work else 0,
-                "Synthetic recurring template",
+def _create_v2_contracts(input_dir: Path) -> None:
+    path = input_dir / "payroll/pay-contract.xlsx"
+    components_path = input_dir / "payroll/pay-contract-components.xlsx"
+    old_items = _monthly_components(components_path)
+    book = load_workbook(path)
+    try:
+        source = book.active
+        previous = list(source.values)
+        original_headers = [cell.value for cell in source[1]]
+        if "amount_type" in original_headers:
+            raise ValueError("expected original 80-person legacy contract input")
+        source.title = "Contracts"
+        source.delete_rows(1, source.max_row)
+        source.append((
+            *original_headers, "amount_type", "relationship_type",
+            "party_id", "worker_id",
+        ))
+        items = book.create_sheet("Components")
+        items.append(("contract_id", "pay_item_code", "monthly_amount"))
+        for old in previous[1:]:
+            cid, employee_id, pay_basis, contract_amount = old[:4]
+            # v2 explicitly distinguishes contract base from included total.
+            kind = "TOTAL" if pay_basis in {"ANNUAL", "MONTHLY"} else "RATE"
+            if employee_id == "E006":
+                kind = "BASE"
+            if pay_basis in {"ANNUAL", "MONTHLY"}:
+                monthly = Decimal(str(contract_amount)) / (
+                    Decimal("12") if pay_basis == "ANNUAL" else Decimal("1")
+                )
+                allowances = old_items.get(cid, {})
+                base = monthly if kind == "BASE" else (
+                    monthly - sum(allowances.values(), Decimal("0"))
+                )
+                items.append((cid, "base_salary", int(base)))
+                for code, amount in sorted(allowances.items()):
+                    items.append((cid, code, int(amount)))
+            source.append((
+                *old, kind, "REGULAR_EMPLOYEE", None, None,
             ))
-    for person in people:
-        assignments.append((
-            person["employee_id"], f"{person['work_system']}_7",
-            "2024-01-01", None, cycle_anchor, 1, "Synthetic assignment",
-        ))
-    rng.shuffle(assignments)
-    save_xlsx(input_dir / "pto/work-schedule.xlsx",
-              ("schedule_id", "work_system", "sequence", "day_type", "shift_code",
-               "start_time", "end_time", "break_min", "scheduled_work_hours", "note"),
-              master)
-    save_xlsx(input_dir / "pto/work-schedule-assignment.xlsx",
-              ("employee_id", "schedule_id", "effective_from", "effective_to",
-               "cycle_anchor_date", "start_sequence", "note"),
-              assignments)
+        for row in SERVICE_CONTRACTS:
+            source.append(row)
+        source.freeze_panes = "A2"
+        source.auto_filter.ref = source.dimensions
+        items.freeze_panes = "A2"
+        items.auto_filter.ref = items.dimensions
+        book.save(path)
+    finally:
+        book.close()
+    components_path.unlink()
+    for name in ("service-contracts.xlsx", "service-work-records.xlsx"):
+        (input_dir / "payroll" / name).unlink()
 
-    pto_schedules, pto_attendance, work_schedule, work_attendance = [], [], [], []
-    for person in people:
-        for day in dates(START, END):
-            if person["termination_date"] and day > person["termination_date"]:
-                continue
-            work, start, end, rest, scheduled_hours = day_schedule(person, day)
-            code = f"{person['work_system']}_7"
-            record = (
-                person["employee_id"], day.isoformat(), code,
-                "NIGHT" if work and start == time(21) else "DAY" if work else None,
-                start, end, rest if work else None, scheduled_hours,
-                "WORK" if work else "OFF", "Synthetic case",
-            )
-            if day.month == 7:
-                pto_schedules.append(record)
-                if work:
-                    pto_attendance.append((
-                        person["employee_id"], day.isoformat(), start, end,
-                        rest, "SYNTHETIC_ADJUDICATED", "Synthetic confirmed clock pair",
-                    ))
-            if day.month == 6:
-                work_schedule.append((
-                    person["employee_id"], day.isoformat(), "WORK" if work else "OFF",
-                    start, end, rest if work else None, scheduled_hours,
-                    "Synthetic schedule",
-                ))
-                if work:
-                    work_attendance.append((
-                        person["employee_id"], day.isoformat(), start, end,
-                        rest, "SYNTHETIC_ADJUDICATED", "Synthetic confirmed clock pair",
-                    ))
-    for rows in (pto_schedules, pto_attendance, work_schedule, work_attendance):
-        rng.shuffle(rows)
-    save_xlsx(input_dir / "pto/work-records/2026/2026-07-schedule.xlsx",
-              ("employee_id", "work_date", "schedule_id", "shift_code",
-               "scheduled_start", "scheduled_end", "break_min",
-               "scheduled_work_hours", "day_type", "note"), pto_schedules)
-    save_xlsx(input_dir / "pto/work-records/2026/2026-07-attendance.xlsx",
-              ("employee_id", "work_date", "clock_in", "clock_out", "break_min",
-               "source", "note"), pto_attendance)
-    save_xlsx(input_dir / "worktime/work-schedule.xlsx",
-              ("employee_id", "work_date", "day_type", "scheduled_start",
-               "scheduled_end", "break_min", "scheduled_work_hours", "note"),
-              work_schedule)
-    save_xlsx(input_dir / "worktime/attendance.xlsx",
-              ("employee_id", "work_date", "clock_in", "clock_out", "break_min",
-               "source", "note"), work_attendance)
 
-    events = [
-        ("CASE-031-2026-07-01", "E031", "PREGNANCY_REDUCED_HOURS",
-         "2026-07-01", "HOURS", "APPROVED", "Synthetic event only", 2),
-        ("CASE-044-2026-07-12", "E044", "SICK_LEAVE",
-         "2026-07-12", "DAY", "APPROVED", "Company policy review", None),
-    ]
-    save_xlsx(input_dir / "pto/employee-events.xlsx",
-              ("request_id", "employee_id", "event_type", "event_date",
-               "unit", "status", "note", "reduced_hours"), events)
-
-    # Mocked raw security data are separate evidence, not canonical attendance.
-    # They preserve ambiguous events, duplicate tags and device differences.
-    raw = {"caps": [], "s1": [], "kt": []}
-    candidates = []
-    for person in people:
-        for day in dates(START, date(2026, 6, 10)):
-            work, start, end, *_ = day_schedule(person, day)
-            if not work:
-                continue
-            candidates.append((person["security_id"], day, start, end))
-    rng.shuffle(candidates)
-    for index, (security_id, day, start, end) in enumerate(candidates[:600]):
-        vendor = ("caps", "s1", "kt")[index % 3]
-        if vendor == "caps":
-            raw[vendor].extend([
-                (security_id, day.isoformat(), start, "인증", "CAPS-DEMO-01"),
-                (security_id, day.isoformat(), end, "퇴근", "CAPS-DEMO-01"),
-            ])
-        elif vendor == "s1":
-            raw[vendor].extend([
-                (security_id, day.isoformat(), start, "출근", "S1-DEMO-02"),
-                (security_id, day.isoformat(), end, "인증", "S1-DEMO-02"),
-            ])
-        else:
-            raw[vendor].extend([
-                (security_id, day.isoformat(), start, "IN", "KT-DEMO-03"),
-                (security_id, day.isoformat(), end, "OUT", "KT-DEMO-03"),
-            ])
-    if raw["caps"]:
-        raw["caps"].append(raw["caps"][0])  # intentional duplicate evidence
-    raw_specs = (
-        ("caps", "security-raw-caps-synthetic.xlsx"),
-        ("s1", "security-raw-s1-synthetic.xlsx"),
-        ("kt", "security-raw-kt-synthetic.xlsx"),
-    )
-    for vendor, filename in raw_specs:
-        rng.shuffle(raw[vendor])
-        save_xlsx(input_dir / "worktime" / filename,
-                  ("source_person_id", "event_date", "event_time", "raw_event",
-                   "device_id"), raw[vendor])
-
-    # Employee contracts are not monthly base_salary cells. They encode
-    # actual annual/monthly wage totals or hourly/daily rates; the new
-    # contract adapter derives basic pay using worktime facts and component
-    # splits, leaving a traceable audit for every worker.
-    contracts, components = [], []
-    bases = ("ANNUAL", "MONTHLY", "HOURLY", "DAILY")
-    for i, person in enumerate(people, start=1):
-        basis = bases[(i - 1) % len(bases)]
-        contract_id = f"CTR-{i:04d}"
-        if basis == "ANNUAL":
-            amount = (3600 + (i % 17) * 120) * 10000
-        elif basis == "MONTHLY":
-            amount = (260 + (i % 13) * 15) * 10000
-        elif basis == "HOURLY":
-            amount = 11500 + (i % 16) * 650
-        else:
-            amount = 110000 + (i % 14) * 6500
-        contracts.append((
-            contract_id, person["employee_id"], basis, amount,
-            "2026-01-01", None, 8 if basis in ("HOURLY", "DAILY") else None,
-            "Synthetic employment contract; not signed or approved",
-        ))
-        if basis in ("ANNUAL", "MONTHLY") and i % 3 == 0:
-            components.append((contract_id, "position_allowance", 150000))
-            if i % 6 == 0:
-                components.append((contract_id, "meal_allowance", 100000))
-    rng.shuffle(contracts)
-    rng.shuffle(components)
-    save_xlsx(input_dir / "payroll/pay-contract.xlsx",
-              ("contract_id", "employee_id", "pay_basis", "contract_amount",
-               "effective_from", "effective_to", "standard_day_hours", "note"),
-              contracts)
-    save_xlsx(input_dir / "payroll/pay-contract-components.xlsx",
-              ("contract_id", "pay_item_code", "monthly_amount"), components)
-    services = [
-        (f"SVC-{n:03d}", f"VENDOR-{n:03d}",
-         "DAILY" if n % 2 else "HOURLY",
-         220000 + n * 10000 if n % 2 else 35000 + n * 1000,
-         "2026-06-01", None, "Synthetic independent service contract: payroll EXCLUDED")
-        for n in range(1, 9)
-    ]
-    save_xlsx(input_dir / "payroll/service-contracts.xlsx",
-              ("service_contract_id", "external_vendor_id", "pay_basis",
-               "contract_amount", "effective_from", "effective_to", "note"),
-              services)
-    service_records = []
-    for n in range(1, 9):
-        sid = f"SVC-{n:03d}"
-        if n % 2:
-            service_records.extend([
-                (sid, f"2026-07-{n+1:02d}", None, 1,
-                 f"SYNTHETIC-SERVICE-{n:03d}-A"),
-                (sid, f"2026-07-{n+14:02d}", None, 2,
-                 f"SYNTHETIC-SERVICE-{n:03d}-B"),
-            ])
-        else:
-            service_records.extend([
-                (sid, f"2026-07-{n+1:02d}", 8, None,
-                 f"SYNTHETIC-SERVICE-{n:03d}-A"),
-                (sid, f"2026-07-{n+14:02d}", 14, None,
-                 f"SYNTHETIC-SERVICE-{n:03d}-B"),
-            ])
-    rng.shuffle(service_records)
-    save_xlsx(input_dir / "payroll/service-work-records.xlsx",
-              ("service_contract_id", "service_date", "billable_hours",
-               "billable_days", "source_reference"), service_records)
-    variable = [
-        (x["worker_id"], "performance_bonus", 100000, None,
-         None, None, None, "Synthetic one-off bonus")
-        for i, x in enumerate(people, start=1) if i % 9 == 0
-    ]
-    rng.shuffle(variable)
-    save_xlsx(input_dir / "payroll/payroll-input.xlsx",
-              ("worker_id", "pay_item_code", "amount", "quantity",
-               "origin_pay_item_code", "origin_from", "origin_to", "note"),
-              variable)
-    write_json(input_dir / "payroll/company-policy.json", {
-        "proration": {
-            "base_salary": {"method": "역일수"},
-            "position_allowance": {"method": "역일수"},
-            "meal_allowance": {"method": "역일수"},
-        },
-        "ordinary_wage": {
-            "monthly_basis_hours": 200,
-            "pay_items": {"position_allowance": "산입", "meal_allowance": "미산입"},
-        },
-        "worktime_pay": {"base_component_policy": {}},
-        "amount_processing": {
-            "unit": 10, "method": "절사", "apply_at": "최종지급액",
-            "remainder": {
-                "handling": "settlement_ledger",
-                "transaction_type": "rounding_carry",
-                "settlement_month": 12,
+def _add_synthetic_taxability_policy(input_dir: Path) -> None:
+    """Demonstrate the NEW review buckets without asserting legal eligibility."""
+    path = input_dir / "payroll/company-policy.json"
+    policy = json.loads(path.read_text(encoding="utf-8"))
+    policy["taxability_review"] = {
+        "schema_version": "1.0",
+        "pay_items": {
+            "base_salary": {
+                "status": "TAXABLE",
+                "policy_ref": "SYNTHETIC_DEMO_BASE_NO_LEGAL_ASSERTION",
+            },
+            "meal_allowance": {
+                "status": "NON_TAXABLE",
+                "policy_ref": "SYNTHETIC_DEMO_MEAL_NO_LEGAL_ASSERTION",
+                "cap_per_worker_period": 100000,
+            },
+            "position_allowance": {
+                "status": "REVIEW",
             },
         },
-    })
-    # Stored outside input/: calculators only consume the four-column employee
-    # roster and ID mapping files; the test suite owns this scenario index.
-    write_json(root / "test-cases.json", test_case_groups(people))
-    write_json(root / "sample-manifest.json", {
-        "schema_version": "1.0", "seed": SEED, "employees": EMPLOYEES,
-        "note": "Synthetic inputs. Raw reader layouts are illustrative, not vendor-certified.",
-        "worktime_month": "2026-06", "pto_month": "2026-07",
-        "payroll_month": "2026-07",
-        "identity_map": "input/common/id-map.xlsx",
-        "test_case_index": "test-cases.json",
-        "source_files": {
-            "pto_schedule": len(pto_schedules),
-            "pto_attendance": len(pto_attendance),
-            "worktime_schedule": len(work_schedule),
-            "worktime_attendance": len(work_attendance),
-            "raw_security_events": sum(len(v) for v in raw.values()),
-            "contracts": len(contracts),
-            "contract_components": len(components),
-            "service_contracts_excluded": len(services),
-            "service_delivery_records": len(service_records),
-        },
-    })
-    return {"employees": EMPLOYEES, "worktime_days": len(work_attendance),
-            "pto_days": len(pto_attendance)}
+    }
+    path.write_text(
+        json.dumps(policy, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--output-dir", required=True)
+# v0.2 PTO usage examples are separate from the immutable legacy 80-person
+# regression fixture. All nine events are synthetic and unapproved for payroll.
+PTO_USAGE_CASES = (
+    ("E001", "연차", "DAY", "2026-07-06", None),
+    ("E002", "연차", "DAY", "2026-07-06", None),
+    ("E003", "오전 반차", "HALF_DAY", "2026-07-07", None),
+    ("E004", "오전 반차", "HALF_DAY", "2026-07-07", None),
+    ("E005", "오전 반차", "HALF_DAY", "2026-07-07", None),
+    ("E006", "오후 반차", "HALF_DAY", "2026-07-08", None),
+    ("E007", "오후 반차", "HALF_DAY", "2026-07-08", None),
+    ("E008", "조기퇴근", "HOURS", "2026-07-09", None),
+    ("E009", "육아기근로시간단축", "HOURS", "2026-07-10", 2),
+)
+
+
+def _apply_pto_usage_scenarios(input_dir: Path) -> None:
+    """Add the nine approved synthetic PTO events to the recommended v2 sample.
+
+    Keep the original E031 pregnancy and E044 sick-leave review events. Leave
+    use must agree with presence evidence: full leave has no punch; AM/PM half
+    retains only actually worked half; early departure/reduced hours retain
+    observed partial hours rather than claiming full attendance.
+    """
+    event_path = input_dir / "pto/employee-events.xlsx"
+    attendance_path = input_dir / "pto/work-records/2026/2026-07-attendance.xlsx"
+    event_book = load_workbook(event_path)
+    try:
+        sheet = event_book.active
+        expected = ("request_id", "employee_id", "event_type",
+                    "event_date", "unit", "status", "note", "reduced_hours")
+        if tuple(cell.value for cell in sheet[1]) != expected:
+            raise ValueError("unexpected PTO event input layout")
+        existing = {str(row[0]) for row in list(sheet.values)[1:]}
+        for index, (employee, label, unit, date, reduced) in enumerate(
+            PTO_USAGE_CASES, 1
+        ):
+            request_id = f"INTEGRATED-V2-PTO-{index:02d}"
+            if request_id in existing:
+                raise ValueError("duplicate PTO fixture event")
+            sheet.append((
+                request_id, employee, label, date, unit,
+                "APPROVED", "SYNTHETIC_REVIEW_ONLY", reduced,
+            ))
+        book = event_book
+        book.save(event_path)
+    finally:
+        event_book.close()
+
+    attendance_book = load_workbook(attendance_path)
+    try:
+        sheet = attendance_book.active
+        columns = tuple(cell.value for cell in sheet[1])
+        if columns[:6] != ("employee_id", "work_date", "clock_in",
+                           "clock_out", "break_min", "source"):
+            raise ValueError("unexpected PTO attendance input layout")
+        cases = {(employee, day): label for employee, label, _, day, _ in PTO_USAGE_CASES}
+        seen = set()
+        for row in range(sheet.max_row, 1, -1):
+            ident = sheet.cell(row, 1).value
+            day = str(sheet.cell(row, 2).value)
+            label = cases.get((ident, day))
+            if label is None:
+                continue
+            if (ident, day) in seen:
+                raise ValueError("duplicate PTO fixture attendance day")
+            seen.add((ident, day))
+            if label == "연차":
+                sheet.delete_rows(row)
+            elif label == "오전 반차":
+                sheet.cell(row, 3, "14:00")
+                sheet.cell(row, 4, "18:00")
+                sheet.cell(row, 5, 0)
+            elif label == "오후 반차":
+                sheet.cell(row, 3, "09:00")
+                sheet.cell(row, 4, "13:00")
+                sheet.cell(row, 5, 0)
+            elif label == "조기퇴근":
+                sheet.cell(row, 4, "16:00")
+                sheet.cell(row, 5, 60)
+            else:  # 육아기근로시간단축
+                sheet.cell(row, 4, "16:00")
+                sheet.cell(row, 5, 60)
+        if len(seen) != len(PTO_USAGE_CASES):
+            raise ValueError("missing dated workday in PTO synthetic fixture")
+        sheet.auto_filter.ref = sheet.dimensions
+        attendance_book.save(attendance_path)
+    finally:
+        attendance_book.close()
+
+
+def _create_worktime_handoff(input_dir: Path, working_dir: Path) -> None:
+    module = importlib.import_module("bhandara.worktime-calculator.shared_excel")
+    target = working_dir / "worktime-output"
+    result_code = module.run_shared_excel(input_dir, "2026-06", target)
+    if result_code not in (0, 2):
+        raise RuntimeError("Worktime generation failed")
+    result = json.loads((target / "worktime-result.json").read_text(encoding="utf-8"))
+    expected = {f"EP{i:04d}" for i in range(1, 81)}
+    expected.update(worker for worker, _ in EXTERNAL_WORKERS)
+    if set(result["covered_worker_ids"]) != expected:
+        raise RuntimeError("unexpected Worktime roster")
+    if result["finalizable"] or result["coverage_verified"]:
+        raise RuntimeError("Worktime sample must remain unclosed")
+    shutil.copy2(
+        target / "worktime-result.json",
+        input_dir / "payroll/worktime-result.json",
+    )
+
+
+def generate(destination: Path) -> Path:
+    """Generate all public v2 Excel/JSON sample inputs without overwrites."""
+    target = destination.resolve()
+    if target.exists():
+        raise FileExistsError(f"refusing to overwrite destination: {target}")
+    if target == ROOT or target.is_relative_to(ROOT):
+        raise ValueError("create the sample outside the Git repository")
+    with tempfile.TemporaryDirectory(prefix="bhandara-v2-generator-") as tmp:
+        stage = Path(tmp)
+        payload = stage / "sample"
+        input_dir = payload / "input"
+        spec = importlib.util.spec_from_file_location(
+            "bhandara_sample_seed", SEED_GENERATOR
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError("sample seed generator unavailable")
+        seed = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(seed)
+        seed_root = stage / "seed"
+        seed.build_shared_input(seed_root)
+        shutil.copytree(seed_root / "input", input_dir)
+        shutil.copy2(seed_root / "test-cases.json", payload / "test-cases.json")
+        _install_external_mapping(input_dir)
+        _extend_worktime(input_dir)
+        _create_v2_contracts(input_dir)
+        _add_synthetic_taxability_policy(input_dir)
+        _apply_pto_usage_scenarios(input_dir)
+        _create_worktime_handoff(input_dir, stage)
+        manifest = {
+            "schema_version": "2.0",
+            "fixture": "CURRENT_80_PERSON_SYNTHETIC_SAMPLE",
+            "period_worktime": "2026-06",
+            "period_pto": "2026-07",
+            "pto_event_scenarios": len(PTO_USAGE_CASES),
+            "pto_scope": "known_usage_provisional_balance_no_expiry_or_approval",
+            "period_payroll": "2026-07",
+            "employee_count": 80,
+            "external_time_workers": 2,
+            "service_contracts": 3,
+            "contract_layout": "payroll/pay-contract.xlsx: Contracts+Components",
+            "worktime_handoff": "payroll/worktime-result.json",
+            "approved": False,
+            "finalizable": False,
+            "note": "Synthetic only; no employment, vendor billing or tax approval",
+        }
+        (payload / "manifest.json").write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
+        target.parent.mkdir(parents=True, exist_ok=True)
+        # Atomic only at the directory level: destination must be nonexistent.
+        shutil.move(str(payload), str(target))
+    return target
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--output-dir", required=True, type=Path)
     args = parser.parse_args()
-    print(json.dumps(build_shared_input(Path(args.output_dir)), ensure_ascii=False))
+    generated = generate(args.output_dir)
+    print(f"SAMPLE_80=READY {generated}")
+    print("EMPLOYEES=80 EXTERNAL_WORKERS=2 CURRENT_CONTRACT_LAYOUT=Contracts+Components")
+    print("PAYROLL_REVIEW_ONLY=True")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

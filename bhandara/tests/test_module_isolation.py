@@ -129,7 +129,8 @@ class ModuleIsolationTests(unittest.TestCase):
 
     def test_module_local_defaults_run_in_single_module_install(self):
         """No JSON required and no imports of another calculator."""
-        samples = ROOT / "bhandara/examples/sample/input"
+        from bhandara.tests._seed_fixture import SEED_INPUT
+        samples = SEED_INPUT
         expected = {
             "pto-calculator": ("pto-result.json", "REVIEW_REQUIRED", 1),
             "worktime-calculator": ("worktime-result.json", "REVIEW_REQUIRED", 2),

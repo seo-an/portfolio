@@ -17,7 +17,8 @@ from bhandara.common.config.resolver import (
 
 
 ROOT = Path(__file__).resolve().parents[2]
-SAMPLE = ROOT / "bhandara/examples/sample/input"
+from bhandara.tests._seed_fixture import SEED_INPUT
+SAMPLE = SEED_INPUT
 
 spec = importlib.util.spec_from_file_location("portfolio_settings_entrypoint", ROOT / "run.py")
 assert spec is not None and spec.loader is not None

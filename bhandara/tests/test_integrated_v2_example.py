@@ -1,4 +1,4 @@
-"""New recommended v2 example, preserving the old 80-person regression sample."""
+"""One canonical 80-person workbook sample using current module contracts."""
 from __future__ import annotations
 
 import importlib.util
@@ -13,12 +13,12 @@ from openpyxl import load_workbook
 from bhandara.common.io.input_layout import InputLayoutError, read_id_map
 
 ROOT = Path(__file__).resolve().parents[2]
-GENERATOR = ROOT / "bhandara/examples/integrated/generate.py"
+GENERATOR = ROOT / "bhandara/examples/sample/generate.py"
 
 
 def _load_generator():
     spec = importlib.util.spec_from_file_location(
-        "bhandara_integrated_example_generator", GENERATOR
+        "bhandara_current_sample_generator", GENERATOR
     )
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -29,7 +29,7 @@ class IntegratedExampleTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory(prefix="bhandara-example-")
         self.addCleanup(self.temp.cleanup)
-        self.destination = Path(self.temp.name) / "v2-demo"
+        self.destination = Path(self.temp.name) / "sample-80"
 
     def _generate(self):
         demo = _load_generator().generate(self.destination)
@@ -219,14 +219,32 @@ class IntegratedExampleTests(unittest.TestCase):
         self.assertFalse({"EXT-W001", "EXT-W002"} &
                          {x[0] for x in rows[1:]})
 
-    def test_fixture_preserves_legacy_reproduction_data(self):
+    def test_single_checked_in_sample_is_current_structure(self):
+        """The only publicly committed 80-person Excel must match the builder."""
         baseline = ROOT / "bhandara/examples/sample/input"
-        for file in (
-            "payroll/pay-contract-components.xlsx",
-            "payroll/service-contracts.xlsx",
-            "payroll/service-work-records.xlsx",
-        ):
-            self.assertTrue((baseline / file).is_file())
+        self.assertTrue((baseline / "common/employee.xlsx").is_file())
+        self.assertFalse((baseline / "payroll/pay-contract-components.xlsx").exists())
+        self.assertFalse((baseline / "payroll/service-contracts.xlsx").exists())
+        self.assertFalse((baseline / "payroll/service-work-records.xlsx").exists())
+        contracts = load_workbook(baseline / "payroll/pay-contract.xlsx",
+                                  read_only=True)
+        try:
+            self.assertEqual(contracts.sheetnames, ["Contracts", "Components"])
+            rows = list(contracts["Contracts"].values)
+            self.assertEqual(len(rows) - 1, 83)
+        finally:
+            contracts.close()
+        events = load_workbook(baseline / "pto/employee-events.xlsx",
+                               read_only=True)
+        try:
+            source = list(events.active.values)
+            self.assertEqual(len(source) - 1, 11)
+            synthetic = [row for row in source[1:]
+                         if str(row[0]).startswith("INTEGRATED-V2-PTO-")]
+            self.assertEqual(len(synthetic), 9)
+        finally:
+            events.close()
+
 
 
 if __name__ == "__main__":
