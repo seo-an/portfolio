@@ -57,6 +57,12 @@ class PTOStandaloneTests(unittest.TestCase):
         value = self.result_json()
         self.assertEqual(value["schema_version"], "1.0")
         self.assertEqual(value["module_id"], "pto-calculator")
+        declared_version = json.loads(
+            (ROOT / "bhandara/pto-calculator/module.json").read_text(encoding="utf-8")
+        )["module_version"]
+        runner = importlib.import_module("bhandara.pto-calculator.runner")
+        self.assertEqual(runner.MODULE_VERSION, declared_version)
+        self.assertEqual(value["module_version"], declared_version)
         self.assertFalse(value["approved"])
         self.assertFalse(value["finalizable"])
         self.assertEqual(len(value["results"]), 2)
@@ -66,6 +72,7 @@ class PTOStandaloneTests(unittest.TestCase):
         self.assertTrue((self.output / "pto-review.json").is_file())
         receipt = json.loads((self.output / "pto-run.json").read_text())
         self.assertFalse(receipt["approved"])
+        self.assertEqual(receipt["module_version"], declared_version)
         self.assertFalse(receipt["finalizable"])
         self.assertEqual(len(receipt["output_sha256"]), 3)
 
