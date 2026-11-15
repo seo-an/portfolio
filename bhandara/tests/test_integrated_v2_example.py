@@ -1,6 +1,7 @@
 """One canonical 80-person workbook sample using current module contracts."""
 from __future__ import annotations
 
+import hashlib
 import importlib.util
 import json
 import tempfile
@@ -163,6 +164,37 @@ class IntegratedExampleTests(unittest.TestCase):
             (destination / "pto-result.json").read_text(encoding="utf-8"))
         by_emp = {row["employee_id"]: row for row in result["results"]}
         self.assertEqual(len(by_emp), 80)
+        self.assertEqual(set(by_emp), {f"E{i:03d}" for i in range(1, 81)})
+        self.assertEqual(len(result["results"]), 80)
+        self.assertEqual(len(result["employee_statuses"]), 80)
+
+        # The public Bhandara module alone owns the calculation and receipt
+        # contracts. Legacy Gearbox numeric outputs are not a baseline.
+        declaration = json.loads(
+            (ROOT / "bhandara/pto-calculator/module.json").read_text(encoding="utf-8")
+        )
+        review = json.loads(
+            (destination / "pto-review.json").read_text(encoding="utf-8")
+        )
+        receipt = json.loads(
+            (destination / "pto-run.json").read_text(encoding="utf-8")
+        )
+        self.assertEqual(result["module_id"], declaration["module_id"])
+        self.assertEqual(result["module_version"], declaration["module_version"])
+        self.assertEqual(receipt["module_version"], declaration["module_version"])
+        self.assertEqual(receipt["module_id"], declaration["module_id"])
+        self.assertEqual(result["status"], review["status"])
+        self.assertEqual(result["status"], receipt["status"])
+        self.assertEqual(review["finding_count"], len(review["findings"]))
+        self.assertEqual(receipt["finding_count"], len(review["findings"]))
+        for doc in (result, review, receipt):
+            self.assertIs(doc["approved"], False)
+            self.assertIs(doc["finalizable"], False)
+        for name in ("pto-result.json", "pto-review.json", "pto-result.xlsx"):
+            self.assertEqual(
+                receipt["output_sha256"][name],
+                hashlib.sha256((destination / name).read_bytes()).hexdigest(),
+            )
         for emp in ("E001", "E002"):
             self.assertEqual(by_emp[emp]["ledger"]["known_used_days"], "1")
         for emp in ("E003", "E004", "E005", "E006", "E007"):
