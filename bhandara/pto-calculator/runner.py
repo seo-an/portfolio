@@ -18,7 +18,7 @@ from .src.input_adapter import PTOInputError, load_pto_inputs
 
 
 MODULE_ID = "pto-calculator"
-MODULE_VERSION = "0.2.0"
+MODULE_VERSION = "0.2.1"
 MODULE_DIR = Path(__file__).resolve().parent
 LOCAL_DATA_DIR = MODULE_DIR.parent / "data" / MODULE_ID
 LEGAL_BASIS_FILE = MODULE_DIR / "resources" / "legal-basis.json"
