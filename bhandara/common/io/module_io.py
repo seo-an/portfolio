@@ -137,6 +137,9 @@ def load_module_io_contract(
 
 def _module_space(private_data_root: Path, module_id: str) -> Path:
     root = Path(private_data_root).resolve()
+    # Runtime inputs and outputs must not live in the public source checkout.
+    if root.is_relative_to(_BHANDARA_ROOT.parent):
+        raise ModuleIOError("private data root must be outside the public Git checkout")
     module = root / module_id
     if module.is_symlink():
         raise ModuleIOError("module workspace must not be a symlink")
