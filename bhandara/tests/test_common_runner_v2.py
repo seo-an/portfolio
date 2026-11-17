@@ -217,7 +217,7 @@ class CommonRunnerTests(unittest.TestCase):
         def mutate(rows, mapping):
             accepted, issues = original(rows, mapping)
             self.source.write_text(
-                "staff_number,worked_minutes\\nCHANGED,2\\n", encoding="utf-8"
+                "staff_number,worked_minutes\nCHANGED,2\n", encoding="utf-8"
             )
             return accepted, issues
 
