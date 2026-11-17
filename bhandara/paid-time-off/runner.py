@@ -45,7 +45,8 @@ def _cell(value: Any, *, column: str) -> Any:
 
 
 def _read_rows(path: Path, sheet_name: str,
-               required: tuple[str, ...]) -> list[dict[str, Any]]:
+               required: tuple[str, ...],
+               *, allow_blank: tuple[str, ...] = ()) -> list[dict[str, Any]]:
     if not path.is_file() or path.suffix.lower() not in (".xlsx", ".xlsm"):
         raise EntitlementInputError(f"필수 Excel 파일이 없습니다: {path.name}")
     try:
@@ -83,6 +84,8 @@ def _read_rows(path: Path, sheet_name: str,
             values = {name: _cell(cells[i].value if i < len(cells) else None,
                                   column=name) for name, i in positions.items()}
             for name in required:
+                if name in allow_blank:
+                    continue
                 if values[name] is None or values[name] == "":
                     raise EntitlementInputError(
                         f"{sheet_name} {row_number}행: {name} 값이 없습니다"
@@ -118,7 +121,12 @@ def read_employee_roster(path: Path) -> list[dict[str, Any]]:
 
 
 def _read_attendance(path: Path) -> list[dict[str, Any]]:
-    return _read_rows(path, "근태결과", ATTENDANCE_COLUMNS)
+    rows = _read_rows(path, "근태결과", ATTENDANCE_COLUMNS,
+                      allow_blank=("attendance_flag",))
+    for row in rows:
+        if row["attendance_flag"] is None or row["attendance_flag"] == "":
+            row["attendance_flag"] = "판정 안됨"
+    return rows
 
 
 def _read_proration(path: Path) -> dict[str, dict[str, Any]]:
