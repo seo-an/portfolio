@@ -125,7 +125,7 @@ class ModuleIsolationTests(unittest.TestCase):
                     result = _check_installed_dependencies(root)
                     self.assertEqual(result.returncode, 0, result.stderr)
                     self.assertIn("BASE_CHECK_OK", result.stdout)
-                    self.assertIn(f"Available modules: common, {selected}.", result.stdout)
+                    self.assertIn(f"Available modules: common-normalizer, {selected}.", result.stdout)
 
     def test_module_local_defaults_run_in_single_module_install(self):
         """No JSON required and no imports of another calculator."""
