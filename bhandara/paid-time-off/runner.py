@@ -213,7 +213,7 @@ def run_entitlement(
     """Explicit local invocation. Never falls back from invalid explicit paths."""
     if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", run_id):
         raise EntitlementInputError("run_id는 영문·숫자·하이픈·밑줄만 허용합니다")
-    if not policy_id or not isinstance(policy_id, str):
+    if not isinstance(policy_id, str) or not policy_id.strip():
         raise EntitlementInputError("policy_id가 필요합니다")
     input_root = Path(input_root)
     employee_path = Path(employee_file) if employee_file is not None else input_root / EMPLOYEE_RELATIVE
@@ -222,6 +222,8 @@ def run_entitlement(
     roster = read_employee_roster(employee_path)
     attendance = _read_attendance(attendance_path)
     index = _entitlement.build_flag_index(attendance)
+    if basis == "회계연도 기준" and proration_file is not None and not proration_path.is_file():
+        raise EntitlementInputError("명시적으로 전달한 비례자료 파일이 없습니다")
     proration = _read_proration(proration_path) if basis == "회계연도 기준" else {}
     summaries, details = [], []
     for person in roster:
