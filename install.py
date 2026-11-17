@@ -95,7 +95,7 @@ def main(argv: list[str] | None = None) -> int:
     for name, required in REQUIRED_PACKAGES.items():
         print(f"DEPENDENCY_CHECK_OK: {name}=={required}")
     available = [
-        module_id for module_id in ("pto-calculator", "worktime-calculator", "payroll-calculator")
+        module_id for module_id in ("common", "pto-calculator", "worktime-calculator", "payroll-calculator")
         if (Path(__file__).resolve().parent / "bhandara" / module_id / "module.json").is_file()
     ]
     print("No packages were installed or changed. Available modules: "
