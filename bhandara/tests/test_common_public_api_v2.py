@@ -106,6 +106,38 @@ class CommonPublicApiAcceptance(unittest.TestCase):
         self.assertFalse((self.private / "worktime-calculator").exists())
         self.assertFalse((self.private / "payroll-calculator").exists())
 
+    def test_single_calculator_can_use_normalizer_and_common_libraries(self) -> None:
+        """An isolated calculator has io, validation and normalizer API together."""
+        installed = self.root / "pto-only"
+        package = installed / "bhandara"
+        package.mkdir(parents=True)
+        shutil.copy2(ROOT / "bhandara" / "__init__.py", package / "__init__.py")
+        ignore = shutil.ignore_patterns("__pycache__", "*.pyc")
+        shutil.copytree(ROOT / "bhandara" / "common", package / "common",
+                        ignore=ignore)
+        shutil.copytree(ROOT / "bhandara" / "pto-calculator",
+                        package / "pto-calculator", ignore=ignore)
+        self.assertFalse((package / "worktime-calculator").exists())
+        self.assertFalse((package / "payroll-calculator").exists())
+        probe = r"""
+import sys
+sys.path.insert(0, sys.argv[1])
+from bhandara.common.io import tabular
+from bhandara.common.validation import scalars
+from bhandara.common.module.normalizer import load_mapping, read_source, transform
+assert callable(tabular.read_csv_rows)
+assert scalars.convert_scalar(" 42 ", kind="str") == "42"
+assert callable(load_mapping) and callable(read_source) and callable(transform)
+print("CALCULATOR_AND_COMMON_NORMALIZER_IMPORT=PASS")
+"""
+        command = subprocess.run(
+            [sys.executable, "-I", "-B", "-c", probe, str(installed)],
+            cwd=installed, text=True, capture_output=True, check=False, timeout=40,
+        )
+        self.assertEqual(command.returncode, 0, command.stderr)
+        self.assertIn("CALCULATOR_AND_COMMON_NORMALIZER_IMPORT=PASS",
+                      command.stdout)
+
     def test_normalizer_works_when_only_its_package_is_installed(self) -> None:
         """No Common io/validation/runtime libs, other calculators or Gearbox."""
         installed = self.root / "standalone"
