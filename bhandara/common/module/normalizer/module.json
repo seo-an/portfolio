@@ -1,0 +1,47 @@
+{
+  "schema_version": "1.0",
+  "module_id": "common-normalizer",
+  "module_version": "0.1.0",
+  "status": "review_only",
+  "requires_base": "0.1",
+  "python": ">=3.12",
+  "input_roles": {
+    "source": "source.csv",
+    "mapping": "mapping.json"
+  },
+  "output_files": [
+    "normalizer-result.json",
+    "normalizer-review.json",
+    "normalizer-run.json"
+  ],
+  "execution": {
+    "command": "python run.py bhandara common-normalizer --data-root <private-data-root> --run-id <run-id> [--source <file-path>] [--config <mapping-json-path>]",
+    "network_access": false,
+    "requires_authentication": false,
+    "default_input": "<private-data-root>/common-normalizer/input/",
+    "default_output": "<private-data-root>/common-normalizer/output/<run-id>/",
+    "independent": true
+  },
+  "source_contract": {
+    "mapping_schema_version": "1.0",
+    "supported_source_formats": [
+      "csv",
+      "xlsx",
+      "json"
+    ],
+    "maps": "Exact caller-defined source columns to output fields; no inferred business rules or source aliases",
+    "input_precedence": "explicit role path, otherwise declared default; invalid explicit path never falls back",
+    "handoff": "Other modules may read normalizer-result.json by explicit path only if their own declared input schema accepts it; not an automatic Worktime/PTO/Payroll schema adapter"
+  },
+  "non_finalization_guards": {
+    "approved": false,
+    "finalizable": false
+  },
+  "limitations": [
+    "Generic row mapping, not a company-policy normalizer or payroll calculation",
+    "Raw values and identifiers in the result require private storage and caller authorization",
+    "The result does not automatically satisfy PTO/Worktime/Payroll input schemas",
+    "No implicit Workflow invocation, predecessor or successor module imports",
+    "Gearbox integration and actual cross-module E2E remain for stages 3 and 4"
+  ]
+}
