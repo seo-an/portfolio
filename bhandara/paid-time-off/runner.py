@@ -50,7 +50,7 @@ def _read_rows(path: Path, sheet_name: str,
         raise EntitlementInputError(f"필수 Excel 파일이 없습니다: {path.name}")
     try:
         book = load_workbook(path, read_only=True, data_only=False)
-    except (OSError, ValueError, Exception) as exc:
+    except Exception as exc:
         raise EntitlementInputError(f"Excel 열기 실패: {path.name}") from exc
     try:
         if sheet_name not in book.sheetnames:
@@ -67,7 +67,7 @@ def _read_rows(path: Path, sheet_name: str,
             raise EntitlementInputError(f"{sheet_name}: 중복 헤더가 있습니다")
         positions = {name: headers.index(name) for name in required}
         # Preserve optional employee columns from a shared roster when present.
-        optional = ("work_system", "base_days")
+        optional = ("work_system", "termination_date", "base_days")
         for name in optional:
             if name in headers and name not in positions:
                 positions[name] = headers.index(name)
