@@ -1,0 +1,3 @@
+# Tool default input only. Never commit real employee data.
+*
+!.gitignore
