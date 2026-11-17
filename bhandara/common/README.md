@@ -2,6 +2,19 @@
 
 `common/`은 PTO·Worktime·Payroll 중 어떤 계산기 하나만 설치해도 사용할 수 있는 **범용 기능**을 담습니다. 특정 회사의 급여 규칙, 직원 개인정보 처리 정책, 운영 승인 권한은 이 폴더에서 결정하지 않습니다.
 
+## 라이브러리와 독립 실행 모듈 구분
+
+- 이 `common/` 아래의 `io/`, `config/`, `contracts/`,
+  `runtime/`, `utils/`, `validation/`는 **다른 계산기들이 import하는 라이브러리**입니다.
+- `common/module/normalizer/`는 자체 `module.json`,
+  `user_settings.py`, **실제 `input/`, `output/` 디렉터리**를 갖는
+  독립 실행 도구입니다. 데이터 정리 결과를 파일로 출력하고,
+  다른 계산기 또는 Common 라이브러리 코드에 의존하지 않습니다.
+- 계산기에서 재사용하는 Common 함수 호출과 Normalizer의 **데이터 파일 인계**는
+  다릅니다. 함수 import는 파일 인계를 대신하지 않습니다.
+- [Normalizer RUNBOOK](module/normalizer/RUNBOOK.md)에서 입력 파일,
+  기본 폴더, 비공개 경로 및 실행 방법을 확인하세요.
+
 ## 입력 파일을 읽고 검증하는 기능
 
 | 기능 | 모듈 | 하는 일 |
