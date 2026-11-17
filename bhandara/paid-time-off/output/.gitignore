@@ -1,0 +1,3 @@
+# Tool default outputs only. Never commit calculation results.
+*
+!.gitignore
