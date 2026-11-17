@@ -65,7 +65,7 @@ class CommonPublicApiAcceptance(unittest.TestCase):
         )
         from bhandara.common.module.normalizer import runner
         self.assertTrue(callable(tabular.read_csv_rows))
-        self.assertTrue(callable(scalars.is_blank_value))
+        self.assertTrue(callable(scalars.convert_scalar))
         self.assertEqual(set(normalizer.__all__), EXPECTED_PUBLIC_API)
         self.assertIs(load_mapping, runner.load_mapping)
         self.assertIs(read_source, runner.read_source)
