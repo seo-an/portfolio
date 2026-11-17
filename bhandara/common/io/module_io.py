@@ -102,12 +102,21 @@ def load_module_io_contract(
     if not isinstance(version, str) or not version.strip():
         raise ModuleIOError(f"{module_id}: invalid module_version")
 
-    shared = data.get("shared_excel_input")
-    if not isinstance(shared, dict) or shared.get("supported") is not True:
-        raise ModuleIOError(f"{module_id}: shared input roles are not declared")
+    # V2 manifests declare their own roles directly. Existing calculators
+    # keep the original shared Excel declarations until migrated separately.
+    direct = data.get("input_roles")
+    if direct is not None:
+        if not isinstance(direct, dict):
+            raise ModuleIOError(f"{module_id}: input_roles must be an object")
+        sections = (("input_roles", direct),)
+    else:
+        shared = data.get("shared_excel_input")
+        if not isinstance(shared, dict) or shared.get("supported") is not True:
+            raise ModuleIOError(f"{module_id}: input roles are not declared")
+        sections = tuple((section, shared.get(section))
+                         for section in ("common_roles", "roles"))
     roles: dict[str, str] = {}
-    for section in ("common_roles", "roles"):
-        declared = shared.get(section)
+    for section, declared in sections:
         if not isinstance(declared, dict):
             raise ModuleIOError(f"{module_id}: missing {section}")
         for role, filename in declared.items():
