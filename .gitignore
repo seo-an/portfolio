@@ -18,3 +18,9 @@ venv/
 
 # Local external source clones never belong in this repository.
 /.external/
+
+# Runnable Common modules own input/output directories; never commit run data.
+/bhandara/common/module/*/input/**
+!/bhandara/common/module/*/input/.gitkeep
+/bhandara/common/module/*/output/**
+!/bhandara/common/module/*/output/.gitkeep
