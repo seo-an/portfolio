@@ -167,8 +167,10 @@ def _first_fiscal_boundary(hire_date: date, fiscal_year_start: str) -> date:
             raise ValueError
     except (ValueError, TypeError) as exc:
         raise ValueError("회계연도 시작일은 MM-DD 형식이어야 합니다") from exc
-    if hire_date <= year_start:
-        return date(hire_date.year + 1, month, day)
+    # A hire before the fiscal boundary in the same calendar year reaches
+    # that boundary first; on/after it reaches next year's boundary.
+    if hire_date < year_start:
+        return year_start
     return date(hire_date.year + 1, month, day)
 
 
