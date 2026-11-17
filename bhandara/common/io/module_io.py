@@ -18,7 +18,7 @@ class ModuleIOError(ValueError):
     """A module's declared file role or concrete input/output path is invalid."""
 
 
-_MODULE_NAME = re.compile(r"[a-z][a-z0-9-]*-calculator\Z")
+_MODULE_NAME = re.compile(r"(?:common|[a-z][a-z0-9-]*-calculator)\Z")
 _ROLE_NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
 _RUN_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}\Z")
 _BHANDARA_ROOT = Path(__file__).resolve().parents[2]
@@ -53,7 +53,7 @@ def _relative_file(value: object, label: str) -> str:
 
 def _module_name(module_id: str) -> str:
     if not isinstance(module_id, str) or not _MODULE_NAME.fullmatch(module_id):
-        raise ModuleIOError("invalid calculator module_id")
+        raise ModuleIOError("invalid Bhandara module_id")
     return module_id
 
 
@@ -81,7 +81,7 @@ def _declared_outputs(raw: object) -> frozenset[str]:
 def load_module_io_contract(
     module_id: str, *, bhandara_root: Path | None = None,
 ) -> ModuleIOContract:
-    """Read only this calculator's manifest, not other installed calculators.
+    """Read only the requested module's manifest, not other installed modules.
 
     The legacy shared_excel_input.default_root describes the old CLI. V2 paths
     instead use the caller-supplied private_data_root / module_id / input.
