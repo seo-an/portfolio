@@ -1,21 +1,23 @@
 # Portfolio · Bhandara(반다라)
 
-## 2단계: Common도 독립 실행 모듈입니다 (v0.1.0)
+## 2단계: Common 라이브러리 / Normalizer 독립 모듈 분리
 
-기존 Common Python 유틸리티를 유지하면서, **Common 자체도 입력 파일을 읽고
-검증·매핑한 뒤 자기 전용 출력 폴더에 결과를 생산하는 독립 모듈**로 등록했습니다.
-다른 계산기는 필요할 때 Common 결과 파일의 경로를 명시적으로 전달받으며,
-Common이나 다른 계산기를 자동 실행하지 않습니다.
+Common의 `io/`·`validation/`·`runtime/` 등은 계산기 내부에서 재사용하는 **라이브러리**입니다.
+데이터 정규화처럼 단독 호출할 가치가 있는 기능은
+`common/module/normalizer/`에 **별도 실행 모듈**로 둡니다.
+이 모듈은 다른 계산기와 Common 라이브러리를 import하지 않고,
+실제 `input/`, `output/` 폴더 및 `module.json`을 직접 소유합니다.
 
 ```text
-<private-data-root>/common/input/{source.csv,mapping.json}
-    → Common 실행 → <private-data-root>/common/output/<run-id>/
+bhandara/common/module/normalizer/
+├── input/                  # 기본 입력: source.csv, mapping.json
+└── output/<run-id>/        # 기본 출력: 결과·검토·실행 기록
 ```
 
-사용자가 직접 작성할 입력 파일과 매핑 JSON 예시는
-[Common 사용 안내](bhandara/common/RUNBOOK.md)를 참고하세요.
-실제 자료는 공개 Git 체크아웃 밖에 둡니다. 기존 계산기의 80명 샘플
-및 구형 `bhandara/data/input` 실행 방법은 호환성을 위해 유지합니다.
+합성자료 실습은 위 기본 폴더에서 가능하며, 실제 직원·급여 자료는
+`--data-root`를 통해 **Git 밖의 비공개 작업 공간**에 둡니다.
+[Normalizer 독립 실행 안내](bhandara/common/module/normalizer/RUNBOOK.md)를 참고하세요.
+
 
 ---
 
@@ -78,7 +80,7 @@ cp -R bhandara/examples/sample/input/. bhandara/data/input/
 
 | 모듈 | 하는 일 | 입력 | 결과 | 실행 상태 |
 |---|---|---|---|---|
-| [Common](bhandara/common/RUNBOOK.md) | 지정한 원본 열을 명시적 매핑에 따라 정리·검증 | CSV/XLSX/JSON 원본 + mapping.json | 정리 결과·검토 JSON·실행 기록 | **독립 실행 (2단계)** |
+| [Normalizer](bhandara/common/module/normalizer/RUNBOOK.md) | 지정한 원본 열을 명시적 매핑에 따라 정리·검증 | CSV/XLSX/JSON 원본 + mapping.json | 정리 결과·검토 JSON·실행 기록 | **독립 실행 (2단계)** |
 | [PTO Calculator](bhandara/pto-calculator/README.md) | 입사일 기준 연차 **발생 내역** 계산·검토 | 직원·근무표·근태 등의 Excel, 설정 JSON | 연차 결과·검토 JSON/XLSX·실행 기록 | 독립 실행 검증 완료 |
 | [Worktime Calculator](bhandara/worktime-calculator/README.md) | 정규화된 근무표·근태로 일별 근무시간 계산 | 고정 경로 Excel 자동 입력 또는 정규화 JSON(고급) | 근무시간 결과·검토 JSON/XLSX | 독립 실행 검증 완료 |
 | [Payroll Calculator](bhandara/payroll-calculator/README.md) | 연봉·월급·시급·일급 계약·근태를 이용한 **검토용** 기본급·급여 계산 | 계약·고정수당·변동급여 Excel 또는 기존 설정 JSON | 급여 계산·검토 JSON/XLSX | 독립 실행 검증 완료 |
