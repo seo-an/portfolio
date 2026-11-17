@@ -2,13 +2,13 @@
 
 **구현 상태 (2026-11-10):** Base의 입력·진단·SHA-256·산출물·실행 기록, PTO·Worktime·Payroll 세 계산기 공개 이전 및 **Base+계산기 하나만 남긴 상호배타 검증**까지 완료했다. Payroll이 Worktime 패키지를 직접 참조하던 두 경로는 바이트 동일한 Base 공통 검증기로 연결했다. 최상위 CLI는 명시적 분기를 사용하며 모듈의 자동 검색·설치는 하지 않는다. [단독 설치 안내](../README.md)와 [운영 실행서](RUNBOOK.md)를 참고한다.
 
-> **2단계 구조 보충(2026-11-17):** `bhandara/common/`에는
-> 기존 계산기가 재사용하는 Base 함수와 별개로, `common/module.json`으로
-> 선언된 **독립 Common 실행 기능**이 공존합니다.
-> Common의 데이터 변환 결과는 `<private-data-root>/common/output/<run-id>/`에
-> 기록하고, 다른 모듈이 이용할 때는 그 파일 경로와 입력 규격으로 인계합니다.
-> 기존 계산기의 함수 import를 업무 데이터 인계로 간주하지 않습니다.
-> 상세 내용은 [Common RUNBOOK](common/RUNBOOK.md)을 참고하세요.
+> **2단계 구조 보충:** `bhandara/common/`의 재사용 Python 함수와
+> `common/module/normalizer/`의 독립 실행기는 구분합니다. Normalizer는
+> `module.json`, `input/`, `output/`을 직접 소유하며, Common 라이브러리
+> 함수를 import하지 않습니다. 기본 입출력 폴더는 소스 아래에 제공하지만,
+> 민감자료 운영은 Git 밖의 비공개 `--data-root`를 사용합니다.
+> [Normalizer 독립 실행 안내](common/module/normalizer/RUNBOOK.md)
+>
 
 ## 1. 소유권과 환경
 
