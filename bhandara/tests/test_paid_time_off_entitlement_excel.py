@@ -173,11 +173,11 @@ class EntitlementCalculationTests(unittest.TestCase):
             ("E001", "연간", date(2025, 7, 15), date(2026, 7, 14)): "ELIGIBLE",
         }
         summary, detail = calc.calculate_employee(
-            employee_id="E001", hire_date=date(2025, 7, 15),
+            employee_id="E001", hire_date=date(2023, 7, 15),
             as_of_date=date(2026, 12, 31), basis="입사일 기준",
             flag_index=idx,
         )
-        self.assertEqual(summary["calculation_result"], "15")
+        self.assertEqual(summary["calculation_result"], "16")
         self.assertEqual([r["grant_date"] for r in detail], ["2026-07-15"])
         self.assertEqual(summary["status"], "계산 완료")
 
@@ -201,6 +201,10 @@ class EntitlementCalculationTests(unittest.TestCase):
         idx = {
             ("E001", "연간", date(2025, 7, 1), date(2026, 6, 30)): "ELIGIBLE",
         }
+        for offset in range(11):
+            start = calc.add_months(date(2025, 7, 1), offset)
+            end = calc.add_months(date(2025, 7, 1), offset + 1) - __import__("datetime").timedelta(days=1)
+            idx[("E001", "월간", start, end)] = "NOT_ELIGIBLE"
         before, before_rows = calc.calculate_employee(
             employee_id="E001", hire_date=date(2025, 7, 1),
             as_of_date=date(2026, 6, 30), basis="입사일 기준",
