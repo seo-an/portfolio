@@ -122,6 +122,7 @@ def publish(
     *,
     directory: Path, contract_version: str, run_id: str,
     source: Path, mapping_path: Path,
+    input_hashes: Mapping[str, str],
     accepted: list[dict[str, Any]], issues: list[dict[str, Any]],
 ) -> dict[str, Path]:
     """Publish a new run only; reuse of a run ID never overwrites artifacts."""
@@ -136,7 +137,7 @@ def publish(
                 "status": status,
                 "approved": False, "finalizable": False,
                 "records": accepted,
-                "source_sha256": sha256_file(source),
+                "source_sha256": input_hashes["source"],
                 "accepted_count": len(accepted),
                 "rejected_count": len(issues),
             })
@@ -156,13 +157,13 @@ def publish(
                 "recorded_at": datetime.now(timezone.utc).isoformat(),
                 "status": status,
                 "approved": False, "finalizable": False,
-                "input_sha256": {
-                    "source": sha256_file(source),
-                    "mapping": sha256_file(mapping_path),
-                },
+                "input_sha256": dict(input_hashes),
                 # No recursive hash of the receipt itself.
                 "output_sha256": batch.staged_hashes(),
             })
+            if (sha256_file(source) != input_hashes["source"]
+                    or sha256_file(mapping_path) != input_hashes["mapping"]):
+                raise CommonRunError("input file changed during Common processing")
             return batch.commit()
     except BaseException:
         # Only remove an empty directory created by this invocation.
@@ -188,6 +189,10 @@ def run_common(
     mapping_file = resolve_input(
         contract, Path(private_data_root), "mapping", explicit_path=mapping_path
     )
+    input_hashes = {
+        "source": sha256_file(source.path),
+        "mapping": sha256_file(mapping_file.path),
+    }
     config = load_mapping(mapping_file.path)
     rows = read_source(source.path, config)
     accepted, issues = transform(rows, config)
@@ -197,6 +202,7 @@ def run_common(
         run_id=chosen_id,
         source=source.path,
         mapping_path=mapping_file.path,
+        input_hashes=input_hashes,
         accepted=accepted,
         issues=issues,
     )
