@@ -335,6 +335,44 @@ class EntitlementWorkbookTests(unittest.TestCase):
         finally:
             book.close()
 
+    def test_workbook_cutoff_year_is_single_policy_period(self):
+        write_excel(self.root / "common" / "employee.xlsx", {
+            "재직자": [
+                ["employee_id", "hire_date", "termination_date"],
+                ["E001", "2023-01-01", None],
+            ],
+            "퇴사자": [
+                ["employee_id", "hire_date", "termination_date"],
+                ["E002", "2024-01-01", "2024-05-01"],
+            ],
+        })
+        write_excel(self.root / "paid-time-off" / "attendance-result.xlsx", {
+            "근태결과": [
+                list(runner.ATTENDANCE_COLUMNS),
+                ["E001", "2025-01-01", "2025-12-31", "연간", "80% 충족"],
+            ],
+        })
+        result = runner.run_entitlement(
+            as_of_date=date(2026, 12, 31), basis="입사일 기준",
+            policy_id="TEST-2026", run_id="year-scope",
+            input_root=self.root, output_root=self.root / "output",
+        )
+        book = load_workbook(result["path"], read_only=True)
+        try:
+            summary = list(book["발생요약"].values)
+            self.assertEqual(summary[1][0], "E001")
+            self.assertEqual(summary[1][2], "16")
+            self.assertEqual(summary[1][3], "16.0")
+            detail = list(book["발생상세"].values)
+            self.assertEqual(len(detail), 2)
+            self.assertEqual(detail[1][5], "2026-01-01")
+            policy = dict(list(book["정책정보"].values)[1:])
+            self.assertEqual(policy["산정 기준일"], "2026-12-31")
+            self.assertEqual(policy["산정 기간 시작일"], "2026-01-01")
+            self.assertEqual(policy["산정 기간 종료일"], "2026-12-31")
+        finally:
+            book.close()
+
     def test_same_run_id_never_overwrites(self):
         kwargs = dict(as_of_date=date(2025, 3, 1), basis="1년 미만 기준",
                       policy_id="TEST", run_id="same",
