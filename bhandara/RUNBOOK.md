@@ -1,5 +1,11 @@
 # 반다라 사용 안내서 — 처음 사용하는 사람을 위한 설명
 
+Common은 계산 전에 반드시 실행해야 하는 단계가 아닙니다.
+해당 계산기가 이미 읽을 수 있는 파일이라면 바로 PTO·Worktime·Payroll을 실행하세요.
+Common을 따로 실행할 경우 결과를 `common/output/<run-id>/`에 기록하고,
+다른 계산기에 쓰려면 **입력 규격을 확인한 뒤 결과 파일 경로를 명시적으로 전달**합니다.
+[Common 안내](common/RUNBOOK.md)를 참고하세요.
+
 ## 가장 쉬운 첫 실행
 
 [공통 80명 실물 Excel 샘플](examples/sample/input/)의 파일을
@@ -29,6 +35,7 @@ python run.py bhandara payroll-calculator --period 2026-07
 
 | 하고 싶은 일 | 선택할 계산기 | 내가 준비할 파일 | 자세한 사용 안내 |
 |---|---|---|---|
+| 원본 데이터의 **열 이름 정리·필수값 검토** | Common(공통 데이터 정리) | CSV/XLSX/JSON 원본과 `mapping.json` | [Common 사용 안내](common/RUNBOOK.md) |
 | 직원별 연차 **발생 내역** 확인 | PTO(연차) | `.xlsx` 직원명부·근무표 등과 `config.json` | [연차 사용 안내](pto-calculator/RUNBOOK.md) |
 | 근태로 일별 **근무시간** 계산 | Worktime(근무시간) | 공통 Excel 파일과 ID_MAP (고급: 정규화 JSON) | [근무시간 사용 안내](worktime-calculator/RUNBOOK.md) |
 | 직원별 **급여 계산 초안** 확인 | Payroll(급여) | 계약금액 Excel과 ID_MAP (고급: 기존 월 보상 JSON) | [급여 사용 안내](payroll-calculator/RUNBOOK.md) |
