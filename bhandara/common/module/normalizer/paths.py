@@ -45,7 +45,7 @@ def _input_path(input_dir: Path, role: str, declared: str, supplied: str | Path 
         raise NormalizerPathError(f"{role}: invalid input path")
     path = Path(raw)
     if not path.is_absolute():
-        if ("\" in raw or ":" in raw
+        if ("\\" in raw or ":" in raw
                 or any(item in (".", "..", "") for item in raw.split("/"))):
             raise NormalizerPathError(f"{role}: unsafe relative input path")
         path = input_dir / path
