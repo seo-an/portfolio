@@ -15,12 +15,15 @@
     "normalizer-run.json"
   ],
   "execution": {
-    "command": "python run.py bhandara common-normalizer --data-root <private-data-root> --run-id <run-id> [--source <file-path>] [--config <mapping-json-path>]",
+    "command": "python run.py bhandara common-normalizer [--data-root <private-data-root>] [--run-id <run-id>] [--source <file-path>] [--config <mapping-json-path>]",
     "network_access": false,
     "requires_authentication": false,
-    "default_input": "<private-data-root>/common-normalizer/input/",
-    "default_output": "<private-data-root>/common-normalizer/output/<run-id>/",
-    "independent": true
+    "default_input": "bhandara/common/module/normalizer/input/",
+    "default_output": "bhandara/common/module/normalizer/output/<run-id>/",
+    "independent": true,
+    "private_input_override": "<private-data-root>/common-normalizer/input/",
+    "private_output_override": "<private-data-root>/common-normalizer/output/<run-id>/",
+    "source_checkout_caution": "Default source folders are for synthetic/local data; real HR/payroll data must use private --data-root; forced Git sync deletes ignored files"
   },
   "source_contract": {
     "mapping_schema_version": "1.0",
