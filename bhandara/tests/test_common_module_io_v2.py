@@ -215,5 +215,12 @@ class ModuleIOContractTests(unittest.TestCase):
                     load_module_io_contract(name)
 
 
+
+    def test_public_checkout_is_never_a_private_runtime_root(self):
+        contract = self._contract("common")
+        with self.assertRaisesRegex(ModuleIOError, "outside the public Git checkout"):
+            output_directory(contract, ROOT.parent, "unsafe")
+
+
 if __name__ == "__main__":
     unittest.main()
