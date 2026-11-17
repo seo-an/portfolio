@@ -235,6 +235,22 @@ class EntitlementWorkbookTests(unittest.TestCase):
                                         period_end="2025-01-31", check_type="월간",
                                         attendance_flag="ELIGIBLE")])
 
+    def test_empty_attendance_flag_becomes_undetermined(self):
+        write_excel(self.root / "paid-time-off" / "attendance-result.xlsx", {
+            "근태결과": [
+                list(runner.ATTENDANCE_COLUMNS),
+                ["E001", "2025-01-01", "2025-01-31", "월간", None],
+            ],
+        })
+        result = runner.run_entitlement(
+            as_of_date=date(2025, 2, 1), basis="1년 미만 기준",
+            policy_id="T", run_id="empty-flag",
+            input_root=self.root, output_root=self.root / "output",
+        )
+        e001 = next(row for row in result["summaries"] if row["employee_id"] == "E001")
+        self.assertEqual(e001["status"], "판정 안됨")
+        self.assertIsNone(e001["granted_days"])
+
     def test_no_explicit_file_fallback(self):
         with self.assertRaises(runner.EntitlementInputError):
             runner.run_entitlement(
