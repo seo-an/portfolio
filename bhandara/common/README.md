@@ -2,6 +2,27 @@
 
 `common/`은 PTO·Worktime·Payroll 중 어떤 계산기 하나만 설치해도 사용할 수 있는 **범용 기능**을 담습니다. 특정 회사의 급여 규칙, 직원 개인정보 처리 정책, 운영 승인 권한은 이 폴더에서 결정하지 않습니다.
 
+## Common도 독립 실행하는 모듈입니다 (v0.1.0)
+
+Common은 기존 계산기들이 import하는 **공통 Python 함수 모음**인 동시에,
+사용자가 요청할 때만 실행하는 **독립적인 데이터 정리 모듈**입니다.
+공통 함수 import는 기존 계산기의 내부 구현 호환성을 위해 유지하지만,
+**Common이 데이터를 다듬어 생산한 결과를 다른 계산기가 사용할 때는
+함수나 내부 상태를 직접 공유하지 않고 `Common/output/<run-id>/`의
+실제 결과 파일 경로를 전달합니다.** 처리 순서를 Common이 결정하지 않습니다.
+
+- 자체 선언: `common/module.json` (입력 `source.csv`, `mapping.json`)
+- 출력: `common-result.json`, `common-review.json`, `common-run.json`
+- 실제 데이터 위치: Git 체크아웃 밖의 `<private-data-root>/common/input/` 및
+  `<private-data-root>/common/output/<run-id>/`
+- 기본 동작: 정확한 헤더 매핑, 필수값 확인, 원본 행번호 및 SHA-256 보존
+- 실행: `python run.py bhandara common --data-root <private-root> --run-id <run-id>`
+- 자세한 사용자 안내: [Common RUNBOOK](RUNBOOK.md)
+
+PTO·Worktime·Payroll은 Common의 전처리를 **필수 단계로 요구하지 않습니다.**
+기존 결과와 계산 로직은 변경하지 않았고, 실제 모듈 간 형식 연결은
+3·4단계에서 계약 검증 후 진행합니다.
+
 ## 입력 파일을 읽고 검증하는 기능
 
 | 기능 | 모듈 | 하는 일 |
