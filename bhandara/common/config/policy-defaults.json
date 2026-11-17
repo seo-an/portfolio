@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0",
+  "description": "Verified public reference resources only; no private company policies or inferred defaults",
+  "modules": {
+    "pto-calculator": {
+      "legal_basis": {
+        "kind": "file",
+        "root": "portfolio",
+        "path": "bhandara/pto-calculator/resources/legal-basis.json"
+      }
+    },
+    "worktime-calculator": {},
+    "payroll-calculator": {
+      "pay_item_registry": {
+        "kind": "file",
+        "root": "portfolio",
+        "path": "bhandara/payroll-calculator/resources/pay-item-registry.json"
+      },
+      "operating_config": {
+        "kind": "file",
+        "root": "portfolio",
+        "path": "bhandara/payroll-calculator/operating-config.json"
+      },
+      "legal_policy_2026": {
+        "kind": "file",
+        "root": "portfolio",
+        "path": "bhandara/payroll-calculator/resources/policy/2026.json"
+      }
+    }
+  }
+}
