@@ -18,7 +18,7 @@ class ModuleIOError(ValueError):
     """A module's declared file role or concrete input/output path is invalid."""
 
 
-_MODULE_NAME = re.compile(r"(?:common-normalizer|[a-z][a-z0-9-]*-calculator)\Z")
+_MODULE_NAME = re.compile(r"[a-z][a-z0-9-]*-calculator\Z")
 _ROLE_NAME = re.compile(r"[a-z][a-z0-9_]*\Z")
 _RUN_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9_-]{0,127}\Z")
 _BHANDARA_ROOT = Path(__file__).resolve().parents[2]
@@ -89,13 +89,7 @@ def load_module_io_contract(
     """
     module_id = _module_name(module_id)
     root = Path(bhandara_root or _BHANDARA_ROOT).resolve()
-    # Runnable Common modules are nested separately from shared Python APIs.
-    # Every public module still owns exactly one manifest and one workspace.
-    manifest = (
-        root / "common" / "module" / "normalizer" / "module.json"
-        if module_id == "common-normalizer"
-        else root / module_id / "module.json"
-    )
+    manifest = root / module_id / "module.json"
     if not manifest.resolve().is_relative_to(root) or not manifest.is_file():
         raise ModuleIOError(f"{module_id}: module.json not found in Bhandara root")
     try:
