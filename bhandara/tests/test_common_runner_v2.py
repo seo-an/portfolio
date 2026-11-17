@@ -8,8 +8,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from bhandara.common.io.module_io import load_module_io_contract, resolve_input
-from bhandara.common.runner import CommonRunError, load_mapping, run_common
+from bhandara.common.module.normalizer.paths import MODULE_DIR, resolve_paths
+from bhandara.common.module.normalizer.runner import NormalizerRunError, load_mapping, run_normalizer
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -20,7 +20,7 @@ class CommonRunnerTests(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory(prefix="bhandara-common-standalone-")
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name) / "private"
-        self.input = self.root / "common" / "input"
+        self.input = self.root / "common-normalizer" / "input"
         self.input.mkdir(parents=True)
         self.source = self.input / "source.csv"
         self.mapping = self.input / "mapping.json"
@@ -38,40 +38,53 @@ class CommonRunnerTests(unittest.TestCase):
 
     def _cli(self, *args):
         return subprocess.run(
-            [sys.executable, str(ROOT / "run.py"), "bhandara", "common",
+            [sys.executable, str(ROOT / "run.py"), "bhandara", "common-normalizer",
              "--data-root", str(self.root), *args],
             cwd=ROOT, capture_output=True, text=True, check=False, timeout=30,
         )
 
-    def test_common_is_a_declared_module_with_own_input_and_output(self):
-        contract = load_module_io_contract("common")
-        self.assertEqual(contract.module_version, "0.1.0")
+    def test_module_has_own_real_input_and_output_directories(self):
+        self.assertTrue((MODULE_DIR / "input").is_dir())
+        self.assertTrue((MODULE_DIR / "output").is_dir())
+        self.assertTrue((MODULE_DIR / "input" / ".gitkeep").is_file())
+        self.assertTrue((MODULE_DIR / "output" / ".gitkeep").is_file())
         self.assertEqual(
-            dict(contract.input_roles),
-            {"source": "source.csv", "mapping": "mapping.json"},
+            resolve_paths(run_id="synthetic", source_path=self.source,
+                          mapping_path=self.mapping).output,
+            MODULE_DIR / "output" / "synthetic",
         )
+        selected = resolve_paths(self.root, run_id="synthetic")
+        self.assertEqual(selected.source, self.source)
+        self.assertEqual(selected.mapping, self.mapping)
         self.assertEqual(
-            resolve_input(contract, self.root, "source").path, self.source
+            selected.output, self.root / "common-normalizer" / "output" / "synthetic",
         )
-        self.assertEqual(
-            contract.output_files,
-            frozenset(("common-result.json", "common-review.json",
-                       "common-run.json")),
-        )
+        self.assertFalse(selected.output.exists())
+
+    def test_module_runner_avoids_common_shared_library_imports(self):
+        import ast
+        for filename in ("runner.py", "paths.py", "user_settings.py"):
+            tree = ast.parse((MODULE_DIR / filename).read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if isinstance(node, ast.ImportFrom) and node.module:
+                    self.assertFalse(
+                        node.module.startswith("bhandara.common."),
+                        (filename, node.module),
+                    )
 
     def test_standalone_default_input_and_private_output(self):
-        status, paths = run_common(self.root, run_id="common-001")
+        status, paths = run_normalizer(self.root, run_id="common-001")
         self.assertEqual(status, "PASS")
         self.assertEqual(set(paths), {
-            "common-result.json", "common-review.json", "common-run.json",
+            "normalizer-result.json", "normalizer-review.json", "normalizer-run.json",
         })
         for path in paths.values():
             self.assertEqual(
-                path.parent, self.root / "common" / "output" / "common-001"
+                path.parent, self.root / "common-normalizer" / "output" / "common-001"
             )
             self.assertTrue(path.is_file())
-        result = json.loads(paths["common-result.json"].read_text())
-        self.assertEqual(result["module_id"], "common")
+        result = json.loads(paths["normalizer-result.json"].read_text())
+        self.assertEqual(result["module_id"], "common-normalizer")
         self.assertEqual(result["status"], "PASS")
         self.assertEqual(result["accepted_count"], 2)
         self.assertEqual(
@@ -79,19 +92,19 @@ class CommonRunnerTests(unittest.TestCase):
             {"source_row": 2, "values": {"employee_id": "E001", "minutes": "450"}},
         )
         self.assertFalse(result["finalizable"])
-        receipt = json.loads(paths["common-run.json"].read_text())
+        receipt = json.loads(paths["normalizer-run.json"].read_text())
         self.assertEqual(receipt["run_id"], "common-001")
         self.assertEqual(set(receipt["output_sha256"]),
-                         {"common-result.json", "common-review.json"})
-        self.assertNotIn("common-run.json", receipt["output_sha256"])
+                         {"normalizer-result.json", "normalizer-review.json"})
+        self.assertNotIn("normalizer-run.json", receipt["output_sha256"])
         self.assertFalse((self.root / "pto-calculator").exists())
         self.assertFalse((self.root / "payroll-calculator").exists())
 
     def test_cli_runs_common_and_prints_only_own_artifact_paths(self):
         run = self._cli("--run-id", "c2")
         self.assertEqual(run.returncode, 0, run.stderr)
-        self.assertIn("COMMON_STATUS: PASS", run.stdout)
-        self.assertIn("common/output/c2/common-result.json", run.stdout)
+        self.assertIn("NORMALIZER_STATUS: PASS", run.stdout)
+        self.assertIn("common-normalizer/output/c2/normalizer-result.json", run.stdout)
         self.assertFalse((self.root / "worktime-calculator").exists())
 
     def test_explicit_external_file_works_without_copy_to_common_input(self):
@@ -99,11 +112,11 @@ class CommonRunnerTests(unittest.TestCase):
         external.write_text(
             "staff_number,worked_minutes\nZ99,60\n", encoding="utf-8"
         )
-        status, outputs = run_common(
+        status, outputs = run_normalizer(
             self.root, run_id="external", source_path=external,
         )
         self.assertEqual(status, "PASS")
-        result = json.loads(outputs["common-result.json"].read_text())
+        result = json.loads(outputs["normalizer-result.json"].read_text())
         self.assertEqual(result["records"][0]["values"]["employee_id"], "Z99")
         self.assertEqual(self.source.read_text(encoding="utf-8").splitlines()[1],
                          "E001,450")
@@ -111,9 +124,9 @@ class CommonRunnerTests(unittest.TestCase):
     def test_invalid_explicit_input_never_falls_back(self):
         run = self._cli("--source", "missing.csv", "--run-id", "missing")
         self.assertEqual(run.returncode, 2)
-        self.assertIn("COMMON_INVALID", run.stderr)
+        self.assertIn("NORMALIZER_INVALID", run.stderr)
         self.assertFalse(
-            (self.root / "common" / "output" / "missing").exists()
+            (self.root / "common-normalizer" / "output" / "missing").exists()
         )
         self.assertTrue(self.source.exists())
 
@@ -127,33 +140,33 @@ class CommonRunnerTests(unittest.TestCase):
         run = self._cli("--config", str(bad), "--run-id", "invalid")
         self.assertEqual(run.returncode, 2)
         self.assertIn("missing declared source column", run.stderr)
-        self.assertFalse((self.root / "common/output/invalid").exists())
+        self.assertFalse((self.root / "common-normalizer/output/invalid").exists())
 
     def test_rejected_row_blocks_result_without_leaking_source_values_to_review(self):
         self.source.write_text(
             "staff_number,worked_minutes\nE001,450\n,990\n",
             encoding="utf-8",
         )
-        status, outputs = run_common(self.root, run_id="review")
+        status, outputs = run_normalizer(self.root, run_id="review")
         self.assertEqual(status, "BLOCKED")
-        result = json.loads(outputs["common-result.json"].read_text())
+        result = json.loads(outputs["normalizer-result.json"].read_text())
         self.assertEqual(result["accepted_count"], 1)
         self.assertEqual(result["rejected_count"], 1)
         self.assertFalse(result["approved"])
-        review = outputs["common-review.json"].read_text(encoding="utf-8")
-        self.assertIn("COMMON_REQUIRED_VALUE_MISSING", review)
+        review = outputs["normalizer-review.json"].read_text(encoding="utf-8")
+        self.assertIn("NORMALIZER_REQUIRED_VALUE_MISSING", review)
         self.assertNotIn("990", review)
         self.assertNotIn("E001", review)
 
     def test_run_id_is_immutable_and_previous_result_is_unchanged(self):
-        _, first = run_common(self.root, run_id="immutable")
-        before = first["common-result.json"].read_bytes()
+        _, first = run_normalizer(self.root, run_id="immutable")
+        before = first["normalizer-result.json"].read_bytes()
         self.source.write_text(
             "staff_number,worked_minutes\nE099,3\n", encoding="utf-8"
         )
         with self.assertRaises(FileExistsError):
-            run_common(self.root, run_id="immutable")
-        self.assertEqual(first["common-result.json"].read_bytes(), before)
+            run_normalizer(self.root, run_id="immutable")
+        self.assertEqual(first["normalizer-result.json"].read_bytes(), before)
 
     def test_json_source_with_declared_field_map(self):
         source = self.input / "raw.json"
@@ -167,31 +180,31 @@ class CommonRunnerTests(unittest.TestCase):
             "fields": {"employee_id": "original"},
             "required": ["employee_id"],
         }), encoding="utf-8")
-        status, outputs = run_common(self.root, run_id="json", source_path=source)
+        status, outputs = run_normalizer(self.root, run_id="json", source_path=source)
         self.assertEqual(status, "PASS")
-        result = json.loads(outputs["common-result.json"].read_text())
+        result = json.loads(outputs["normalizer-result.json"].read_text())
         self.assertEqual(result["records"][0]["values"], {"employee_id": "E103"})
 
     def test_missing_source_rows_is_explicit_error(self):
         self.source.write_text("staff_number,worked_minutes\n", encoding="utf-8")
-        with self.assertRaisesRegex(CommonRunError, "no data rows"):
-            run_common(self.root, run_id="empty")
-        self.assertFalse((self.root / "common/output/empty").exists())
+        with self.assertRaisesRegex(NormalizerRunError, "no data rows"):
+            run_normalizer(self.root, run_id="empty")
+        self.assertFalse((self.root / "common-normalizer/output/empty").exists())
 
     def test_explicit_format_mismatch_fails(self):
         external = self.input / "wrong.json"
         external.write_text("[]", encoding="utf-8")
-        with self.assertRaisesRegex(CommonRunError, "source extension"):
-            run_common(self.root, run_id="wrong", source_path=external)
-        self.assertFalse((self.root / "common/output/wrong").exists())
+        with self.assertRaisesRegex(NormalizerRunError, "source extension"):
+            run_normalizer(self.root, run_id="wrong", source_path=external)
+        self.assertFalse((self.root / "common-normalizer/output/wrong").exists())
 
     def test_missing_data_root_or_mixed_calculator_arguments_fails(self):
         run = subprocess.run(
-            [sys.executable, str(ROOT / "run.py"), "bhandara", "common"],
+            [sys.executable, str(ROOT / "run.py"), "bhandara", "common-normalizer"],
             cwd=ROOT, capture_output=True, text=True, check=False,
         )
         self.assertEqual(run.returncode, 2)
-        self.assertIn("COMMON_INVALID", run.stderr)
+        self.assertIn("NORMALIZER_INVALID", run.stderr)
         self.assertEqual(
             self._cli("--period", "2026-07").returncode, 2
         )
@@ -203,16 +216,16 @@ class CommonRunnerTests(unittest.TestCase):
             "fields": {"employee_id": "staff_number"},
             "required": ["unknown"],
         }), encoding="utf-8")
-        with self.assertRaisesRegex(CommonRunError, "required"):
+        with self.assertRaisesRegex(NormalizerRunError, "required"):
             load_mapping(self.mapping)
 
 
 
     def test_changed_source_during_run_rolls_back_new_outputs(self):
         from unittest.mock import patch
-        from bhandara.common import runner as common_runner
+        from bhandara.common.module.normalizer import runner as normalizer_runner
 
-        original = common_runner.transform
+        original = normalizer_runner.transform
 
         def mutate(rows, mapping):
             accepted, issues = original(rows, mapping)
@@ -221,10 +234,10 @@ class CommonRunnerTests(unittest.TestCase):
             )
             return accepted, issues
 
-        with patch.object(common_runner, "transform", side_effect=mutate):
-            with self.assertRaisesRegex(CommonRunError, "changed during"):
-                run_common(self.root, run_id="mutated")
-        self.assertFalse((self.root / "common/output/mutated").exists())
+        with patch.object(normalizer_runner, "transform", side_effect=mutate):
+            with self.assertRaisesRegex(NormalizerRunError, "changed during"):
+                run_normalizer(self.root, run_id="mutated")
+        self.assertFalse((self.root / "common-normalizer/output/mutated").exists())
 
 
 if __name__ == "__main__":
