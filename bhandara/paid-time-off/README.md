@@ -1,34 +1,86 @@
-# Paid Time Off — Tool v3 재설계 (부분 구현)
+# Paid Time Off — 한국 연차유급휴가 도구 (재설계 중)
 
-`paid-time-off`는 한국 연차유급휴가를 대상으로 한 Bhandara의 새로운 업무 Tool입니다. 현재 2-2 이행 중이며, **아직 CLI로 실행하거나 실제 직원 파일을 계산하는 Tool이 아닙니다.** 기존 `pto-calculator`는 변경 없이 그대로 유지됩니다.
+> **현재 상태: Entitlement(연차 발생) 독립 계산 및 Excel 출력 시범 구현.**
+> 전체 Tool CLI, Gearbox 연결, 이월·만료·사용·마감과의 통합은 아직 제공하지 않습니다.
+> 기존 `pto-calculator` v0.2.1은 변경하지 않았습니다.
 
-## 현재 가능한 것
+## 1. Entitlement(연차 발생)에서 하는 일
 
-독립 Python API 세 가지를 **합성 자료로** 테스트할 수 있습니다.
+- 입사일 기준 연차 발생량: 근속 가산분은 산식 안에서 처리합니다.
+- 1년 미만 월별 연차 발생량: **근태관리에서 이미 판정한 '개근/미개근/판정 안됨'**만 읽습니다.
+- 회계연도 기준 **최초 비례연차 + 후속 정기 부여**: 최초 비례연차는 소정근로일 기준을 기본으로 하며 달력일·월수 방식도 선택할 수 있습니다. 이후에는 직전 회계연도 근태 판정과 **실제 입사일 기준 근속 가산연차**를 반영합니다.
+- 연차 발생 건별 상세와 직원별 발생요약을 **한 번에 두 시트로 출력**합니다.
+- 발생요건을 재판정하지 않고 `eligibility` Module을 호출하지 않습니다.
+- 사용·이월·만료·수당·잔여연차는 계산하지 않습니다.
 
-- `entitlement`: 입사일 기준 월별·연간 발생일 계산. 기간별 출근요건 판정 결과를 **반드시** 입력해야 하며, 근거 없으면 발생일수를 확정하지 않습니다.
-- `eligibility`: 검증된 기간 집계에서 월 개근 및 연간 80% 출근율 판정. 증빙이 불완전하면 `UNDETERMINED`.
-- `deduction-quantity`: 전일·반차·반반차·시간차 차감량 산정. 시간차는 회사 정책상 1일 시간을 명시해야 하며 누락 시 검토 상태가 됩니다.
+**연도별 계산:** `as_of_date` 한 개로 범위를 정합니다. 예: `2026-12-31` 입력 시 **2026-01-01 ~ 2026-12-31**에 발생한 건만 계산·합산합니다. 전년도 근태 판정은 당년 발생의 근거로 참조하되, 전년도 발생량을 더하지 않습니다. 연중 기준일이면 해당 해 1월 1일부터 그 기준일까지 계산합니다.
 
-`expiry-carryover`, `use-promotion`, `closing`은 폴더와 담당 범위만 정의한 **미구현 Module**입니다. 재설계 진행 사항과 상세한 미확정 요건은 [ARCHITECTURE.md](ARCHITECTURE.md)에서 확인하세요.
+**회계연도 정기 발생:** 최초 회계연도 비례 부여 이후에는 회계연도 경계마다 직전 회계연도 '80% 충족' 플래그를 확인하고, 실제 입사일의 완료 근속연수를 기준으로 15~25일을 산정합니다. 직전 회계연도 '80% 미충족'이면 해당 기간의 월간 개근 플래그를 사용합니다. 첫해 11개월분과 겹치는 월별 권리는 중복 산정하지 않으며, 월간 기간이 첫해 권리와 겹쳐 정확히 판정할 수 없는 경우 '판정 안됨'으로 남깁니다. 근태 판정이 누락·미확정인 경우에도 숫자를 추정하지 않습니다. 최초 비례 부여는 해당기간의 연간 근태 플래그와 비례 집계가 있어야 합니다.
 
-## 간단한 독립 API 예시
+## 2. Excel 입력
+
+기본 공유 입력 루트: `bhandara/data/input/`
+
+| 파일 | 시트 | 필수 열(영문 snake_case) | 비고 |
+|---|---|---|---|
+| `common/employee.xlsx` | `재직자`, `퇴사자` | `employee_id`, `hire_date` | `termination_date`는 퇴사자 필수; `work_system`은 기존 자료 유지 |
+| `paid-time-off/attendance-result.xlsx` | `근태결과` | `employee_id`, `period_start`, `period_end`, `check_type`, `attendance_flag` | 출퇴근 원본이 아닌 근태 판정 결과 |
+| `paid-time-off/proration.xlsx` | `비례자료` | `employee_id`, `period_start`, `period_end`, `method`, `numerator`, `denominator` | 회계연도 최초 비례 계산할 때 필요; `base_days` 선택, 기본 15일 |
+
+**호환성:** 기존 `pto-calculator`는 `active` 시트를 사용합니다. 새 시트를 준비하더라도 기존 기능의 이관·검증 전에는 `active` 시트를 삭제하지 마세요. 새 Entitlement 실행기는 `재직자`·`퇴사자` 두 시트를 읽습니다.
+
+Excel은 사람이 읽는 **셀 값에 한국어**를 사용합니다.
+
+- `check_type`: `월간` 또는 `연간`
+- 월간 `attendance_flag`: `개근`, `미개근`, `판정 안됨`
+- 연간 `attendance_flag`: `80% 충족`, `80% 미충족`, `판정 안됨`
+- `method`: `소정근로일 기준`(기본), `달력일 기준`, `월수 기준`
+
+근태 판정 기간은 반드시 `period_start`, `period_end`의 **두 열**로 나누어 기재합니다. 날짜 값은 `YYYY-MM-DD` 형식입니다. 근태 플래그가 없으면 `개근`이라고 추정하지 않고 `판정 안됨`으로 표시합니다.
+
+소정근로일 수는 일반 연차 발생 계산에는 불필요합니다. **회계연도 비례연차**의 산식에만 명시적인 분자·분모 집계를 요구합니다. 이 두 수치는 근태·스케줄 처리에서 가져오는 값이며 Entitlement가 출근율을 다시 계산하지 않습니다.
+
+## 3. 결과 Excel
+
+한 번 실행하면 `<output_root>/<run_id>/entitlement-result.xlsx` 파일이 생깁니다.
+
+1. **발생요약:** 직원별 한 행. `employee_id`, `basis`, `계산결과`(반올림 전 합계), `발생연차`(최종 반올림), `상태`
+2. **발생상세:** 발생 건별 한 행. 발생일, 산정기간의 시작일·종료일, 구분, `계산결과`, 상태와 사유. **발생 건마다 반올림하지 않습니다.**
+3. **정책정보:** 마지막 시트. 정책 ID, 산정 기준일, **당해 연도 시작일·종료일**, 입력 파일·SHA256, 비례 산정 방식, 최종 반올림 자릿수 등. 직원별 행에 반복 기록하지 않습니다.
+
+어느 한 건의 필수 근태 판정이 누락·미확정이면 그 직원의 요약 `발생연차`는 빈 값이고 상태는 `판정 안됨`입니다. 다른 직원의 자료와 혼동하지 않습니다.
+
+**소수점 규칙:** 중간 계산은 유리수로 정확히 유지하고 반올림하지 않습니다. 무한소수는 상세·요약의 원본 표기 시 소수점 아래 **7자리에서 절사**합니다. 모든 발생 건을 합산한 뒤 **마지막에만 한 번 반올림**하며, 결과 자릿수는 정수(`0`) 또는 소수점 첫째 자리(`1`, 기본) 중 선택합니다.
+
+## 4. 라이브러리 방식으로 시범 실행
+
+Python 실행 환경에 루트 `requirements.txt`의 의존성이 설치되어 있어야 합니다.
 
 ```python
+from datetime import date
 from importlib import import_module
+from pathlib import Path
 
-deduction = import_module("bhandara.paid-time-off.deduction-quantity")
-result = deduction.calculate_deduction_quantity(unit="QUARTER_DAY")
-assert result["quantity_days"] == "0.25"
-assert result["approved"] is False
+runner = import_module("bhandara.paid-time-off.runner")
+result = runner.run_entitlement(
+    as_of_date=date(2026, 12, 31),
+    basis="입사일 기준",  # 또는 "1년 미만 기준", "회계연도 기준"
+    policy_id="회사연차-2026",
+    run_id="sample-2026",
+    input_root=Path("bhandara/data/input"),
+    rounding_digits=1,  # 0=정수, 1=소수점 첫째 자리
+)
+print(result["path"])
 ```
 
-현재 입력 자료를 주고받는 파일·Tool Runner·명령어는 **아직 제공하지 않습니다**. `bhandara/data/input/`은 그대로 유지하며, 향후 Tool의 `input/`·`output/`은 공통 1세트만 사용합니다. 실제 직원 자료는 Git 체크아웃 밖에 보관해야 합니다.
+이 예제는 **대상 파일을 준비한 뒤 실행하는 라이브러리 호출**입니다. 아직 최상위 `bhandara/run.py`의 공개 Tool CLI 명령으로 연결되지 않았습니다. 같은 `run_id`의 출력은 덮어쓰지 않습니다. 실제 직원자료는 Git 체크아웃 외부의 비공개 입력 루트를 명시하여 사용하십시오.
 
-## 개발자 검증
+## 5. 검증
 
 ```bash
 python3 -m unittest bhandara.tests.test_paid_time_off_v3_core -v
+python3 -m unittest bhandara.tests.test_paid_time_off_entitlement_excel -v
+python3 -m unittest discover -s bhandara/tests -p 'test_*.py'
 ```
 
-위 테스트는 독립 순수 API의 최소 계약만 검증합니다. 구형 PTO 통합 실행, 사용촉진·이월·마감·법적 지급·실제 Slack/Gearbox 호출 검증이 아닙니다. 사용자용 Excel 실행 RUNBOOK은 Tool 실행 기능 구현 후 제공할 예정입니다.
+다른 Module의 정책 및 전체 Workflow는 계속 설계 중입니다. `ARCHITECTURE.md`에 이관 경계가 설명되어 있습니다.
