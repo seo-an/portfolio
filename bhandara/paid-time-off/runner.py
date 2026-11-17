@@ -246,6 +246,8 @@ def run_entitlement(
     metadata = {
         "정책 ID": policy_id,
         "산정 기준일": _entitlement.strict_date(as_of_date, "as_of_date").isoformat(),
+        "산정 기간 시작일": date(_entitlement.strict_date(as_of_date, "as_of_date").year, 1, 1).isoformat(),
+        "산정 기간 종료일": _entitlement.strict_date(as_of_date, "as_of_date").isoformat(),
         "산정 기준": basis,
         "비례연차 방식": proration_method,
         "최종 반올림 자릿수": rounding_digits,
