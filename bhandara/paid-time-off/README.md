@@ -25,6 +25,8 @@
 | `paid-time-off/attendance-result.xlsx` | `근태결과` | `employee_id`, `period_start`, `period_end`, `check_type`, `attendance_flag` | 출퇴근 원본이 아닌 근태 판정 결과 |
 | `paid-time-off/proration.xlsx` | `비례자료` | `employee_id`, `period_start`, `period_end`, `method`, `numerator`, `denominator` | 회계연도 최초 비례 계산할 때 필요; `base_days` 선택, 기본 15일 |
 
+**호환성:** 기존 `pto-calculator`는 `active` 시트를 사용합니다. 새 시트를 준비하더라도 기존 기능의 이관·검증 전에는 `active` 시트를 삭제하지 마세요. 새 Entitlement 실행기는 `재직자`·`퇴사자` 두 시트를 읽습니다.
+
 Excel은 사람이 읽는 **셀 값에 한국어**를 사용합니다.
 
 - `check_type`: `월간` 또는 `연간`
