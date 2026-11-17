@@ -217,7 +217,7 @@ class ModuleIOContractTests(unittest.TestCase):
 
 
     def test_public_checkout_is_never_a_private_runtime_root(self):
-        contract = self._contract("common")
+        contract = self._contract("pto-calculator")
         with self.assertRaisesRegex(ModuleIOError, "outside the public Git checkout"):
             output_directory(contract, ROOT.parent, "unsafe")
 
