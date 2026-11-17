@@ -102,11 +102,56 @@ python run.py bhandara common-normalizer \
 
 `PASS`는 구조 검증만 통과했다는 뜻이며 승인이나 최종 확정이 아닙니다. `BLOCKED` 산출물은 다른 계산기로 자동 전달하지 않습니다. **다른 계산기가 이 결과를 사용하려면, 해당 계산기의 입력 스키마에 적합한지 검증하고 결과 파일 경로를 명시적으로 전달**해야 합니다.
 
-## 5. 개발자 검증
+## 5. 다른 계산기에서 Common을 라이브러리로 사용할 때
 
-```bash
-python -m unittest discover -s bhandara/tests -p 'test_common_runner_v2.py' -v
-python -m unittest discover -s bhandara/tests -p 'test_common_module_io_v2.py' -v
+Normalizer도 `io`, `validation`처럼 **필요한 함수만 import**할 수 있습니다.
+`common/module/normalizer/` 폴더를 import해도 독립 실행이 자동으로 시작되거나
+`input/`, `output/`의 파일을 읽고 쓰지 않습니다.
+
+공통 기능을 가져와서 함께 사용하는 예시입니다.
+
+```python
+from bhandara.common.io import tabular
+from bhandara.common.validation import scalars
 ```
 
-이 모듈은 `common/io`, `common/runtime`, `common/validation`의 함수에 의존하지 않으며, 다른 계산기 설치도 필요하지 않습니다. 에이전트가 실제 호출하기 위한 Gearbox 연결 검증은 후속 단계입니다.
+```python
+from bhandara.common.module.normalizer import (
+    load_mapping,
+    read_source,
+    transform,
+    run_normalizer,
+)
+```
+
+`load_mapping(path)`은 매핑 JSON을 검증해 반환합니다.
+`read_source(path, mapping)`은 원본 행을 읽고,
+`transform(rows, mapping)`은 **결과 행과 오류 목록을 반환**할 뿐 출력 파일을 만들지 않습니다.
+반면 `run_normalizer(private_data_root, ...)`는 자체 입출력 계약에 따라
+`normalizer-result.json` 등의 결과 파일을 씁니다.
+
+| 사용 방식 | 데이터 파일 생성 | 다른 Common 라이브러리 필요 |
+|---|---|---|
+| `io`, `validation` 함수 import | 함수에 따라 다름 | 해당 기능만 |
+| Normalizer `transform()` 호출 | 없음 | 없음 |
+| Normalizer `run_normalizer()` 호출 | 있음, 모듈의 `output/<run-id>/` | 없음 |
+| `common-normalizer` CLI 실행 | 있음, 모듈의 `output/<run-id>/` | 없음 |
+
+Normalizer 내부는 계산기나 Common 라이브러리를 import하지 않습니다.
+반대로 계산기는 Normalizer가 필요하지 않으면 import하지 않아도 됩니다.
+이는 **코드 사용 방식**과 **독립 실행 모듈의 파일 전달 계약**을 동시에 지원하기 위한 구조입니다.
+
+## 6. 한 번에 테스트하기
+
+저장소 루트에서 전체 기능과 계산기 회귀 검증을 한 번에 실행합니다.
+
+```bash
+python -m unittest discover -s bhandara/tests -p 'test_*.py' -v
+```
+
+새로 추가된 검증에는 Common 함수와 Normalizer 동시 import,
+Normalizer 공개 API와 CLI 결과 비교, Common 라이브러리 없이 Normalizer만
+설치한 격리 실행이 포함됩니다. GitHub Actions에서도 같은 종합 검증을 실행합니다.
+
+별도 `Gearbox`를 통한 Ananda 호출은 **연결 전**이며 위 테스트는
+이를 검증하거나 실제 HR 자료를 처리하지 않습니다.
