@@ -207,5 +207,25 @@ class CommonRunnerTests(unittest.TestCase):
             load_mapping(self.mapping)
 
 
+
+    def test_changed_source_during_run_rolls_back_new_outputs(self):
+        from unittest.mock import patch
+        from bhandara.common import runner as common_runner
+
+        original = common_runner.transform
+
+        def mutate(rows, mapping):
+            accepted, issues = original(rows, mapping)
+            self.source.write_text(
+                "staff_number,worked_minutes\\nCHANGED,2\\n", encoding="utf-8"
+            )
+            return accepted, issues
+
+        with patch.object(common_runner, "transform", side_effect=mutate):
+            with self.assertRaisesRegex(CommonRunError, "changed during"):
+                run_common(self.root, run_id="mutated")
+        self.assertFalse((self.root / "common/output/mutated").exists())
+
+
 if __name__ == "__main__":
     unittest.main()
