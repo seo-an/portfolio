@@ -174,6 +174,81 @@ def _first_fiscal_boundary(hire_date: date, fiscal_year_start: str) -> date:
     return date(hire_date.year + 1, month, day)
 
 
+
+def completed_service_years(hire_date: date, grant_date: date) -> int:
+    """Completed years measured from the real hire anniversary, not fiscal years."""
+    years = grant_date.year - hire_date.year
+    if years <= 0:
+        return 0
+    return years - int(add_months(hire_date, years * 12) > grant_date)
+
+
+def _fiscal_regular_grants(
+    *,
+    employee_id: str,
+    hire_date: date,
+    start: date,
+    boundary: date,
+    annual,
+    monthly,
+) -> list[tuple[dict[str, Any], Fraction | None]]:
+    """Annual fiscal grant or the monthly-completion fallback for <80% attendance.
+
+    The first eleven monthly first-year entitlements must never be counted a
+    second time as a fiscal-year <80% fallback.
+    """
+    end = boundary - timedelta(days=1)
+    status = annual(start, end)
+    if status == ELIGIBLE:
+        from . import annual_days_for_service_year
+        service_year = completed_service_years(hire_date, boundary)
+        if service_year < 1:
+            return [_make_event(
+                employee_id, BASIS_FISCAL, "회계연도 정기 발생",
+                boundary, start, end, "판정 안됨", None,
+                "연간 부여 시점의 근속기간 확인 필요",
+            )]
+        return [_make_event(
+            employee_id, BASIS_FISCAL, "회계연도 정기 발생",
+            boundary, start, end, "계산 완료",
+            Fraction(annual_days_for_service_year(service_year)),
+        )]
+    if status == UNDETERMINED:
+        return [_make_event(
+            employee_id, BASIS_FISCAL, "회계연도 정기 발생",
+            boundary, start, end, "판정 안됨", None,
+            "직전 회계연도의 연간 근태 판정 누락·미확정",
+        )]
+
+    # Annual attendance below 80%: use prior-period monthly attendance flags.
+    # For first-year monthly rights (months 1..11), do not re-award them.
+    first_year_monthly_cutoff = add_months(hire_date, 11)
+    entries: list[tuple[dict[str, Any], Fraction | None]] = []
+    for offset in range(12):
+        month_start = add_months(start, offset)
+        month_end = add_months(start, offset + 1) - timedelta(days=1)
+        if month_end < first_year_monthly_cutoff:
+            continue
+        if month_start < first_year_monthly_cutoff <= month_end:
+            entries.append(_make_event(
+                employee_id, BASIS_FISCAL, "80% 미달 월별 발생",
+                boundary, month_start, month_end, "판정 안됨", None,
+                "첫해 월별 발생기간과 회계연도 월간기간이 겹침",
+            ))
+            continue
+        monthly_status = monthly(month_start, month_end)
+        if monthly_status == NOT_ELIGIBLE:
+            continue
+        entries.append(_make_event(
+            employee_id, BASIS_FISCAL, "80% 미달 월별 발생",
+            boundary, month_start, month_end,
+            "계산 완료" if monthly_status == ELIGIBLE else "판정 안됨",
+            Fraction(1) if monthly_status == ELIGIBLE else None,
+            "월간 근태 판정 누락·미확정" if monthly_status == UNDETERMINED else "",
+        ))
+    return entries
+
+
 def calculate_employee(
     *,
     employee_id: str,
@@ -189,8 +264,10 @@ def calculate_employee(
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """Return one employee summary + dated details, with no rounding of events.
 
-    Fiscal mode currently supports only the first partial fiscal-year grant.
-    Later fiscal grants intentionally remain '판정 안됨' until policy is agreed.
+    as_of_date is the cutoff of its calendar-year calculation window:
+    01-01 through as_of_date. Previous years may supply attendance evidence but
+    their entitlement amounts are never added to this year's summary.
+    Fiscal mode uses first proration, then regular prior-fiscal-year grants.
     """
     if not employee_id or not isinstance(employee_id, str):
         raise ValueError("employee_id가 필요합니다")
@@ -204,16 +281,21 @@ def calculate_employee(
     if terminated and terminated < hire:
         raise ValueError("퇴사일이 입사일보다 빠릅니다")
     effective_as_of = min(as_of, terminated) if terminated else as_of
+    calculation_start = date(as_of.year, 1, 1)
     results: list[tuple[dict[str, Any], Fraction | None]] = []
     monthly = _resolver(flag_index, employee_id, "월간")
     annual = _resolver(flag_index, employee_id, "연간")
 
     if basis in (BASIS_ANNIVERSARY, BASIS_MONTHLY):
+        # Historical periods are evaluated only to locate anniversary grants.
+        # They do not enter this calendar year's output or uncertainty status.
         grants = calculate_anniversary_grants(
             hire_date=hire, as_of_date=effective_as_of,
             monthly_eligibility=monthly, annual_eligibility=annual,
         )
         for grant in grants:
+            if not calculation_start <= grant["grant_date"] <= effective_as_of:
+                continue
             if basis == BASIS_MONTHLY and grant["grant_type"] != "monthly":
                 continue
             raw = (Fraction(grant["raw_days"])
@@ -227,46 +309,54 @@ def calculate_employee(
                 status, raw, "근태 판정 누락·미확정" if raw is None else "",
             ))
     else:
-        boundary = _first_fiscal_boundary(hire, fiscal_year_start)
-        if boundary <= effective_as_of:
-            start, end = hire, boundary - timedelta(days=1)
-            flag = annual(start, end)
-            if flag != ELIGIBLE:
-                results.append(_make_event(
-                    employee_id, basis, "최초 회계연도 비례",
-                    boundary, start, end, "판정 안됨", None,
-                    "해당기간 근태 판정 누락·미확정 또는 요건 미충족",
-                ))
-            elif proration_facts is None:
-                results.append(_make_event(
-                    employee_id, basis, "최초 회계연도 비례",
-                    boundary, start, end, "판정 안됨", None,
-                    "비례 산정용 소정근로일·달력일·월수 집계 누락",
-                ))
-            else:
-                fact_start = strict_date(proration_facts.get("period_start"), "period_start")
-                fact_end = strict_date(proration_facts.get("period_end"), "period_end")
-                if (fact_start, fact_end) != (start, end):
-                    raise ValueError("비례 산정기간이 근속기간과 일치하지 않습니다")
-                if proration_facts.get("method") != proration_method:
-                    raise ValueError("비례 산정방식이 입력 집계와 다릅니다")
-                raw = prorated_quantity(
-                    base_days=proration_facts.get("base_days", 15),
-                    numerator=proration_facts.get("numerator"),
-                    denominator=proration_facts.get("denominator"),
-                    method=proration_method,
-                )
-                results.append(_make_event(
-                    employee_id, basis, "최초 회계연도 비례",
-                    boundary, start, end, "계산 완료", raw,
-                ))
-            next_boundary = date(boundary.year + 1, boundary.month, boundary.day)
-            if next_boundary <= effective_as_of:
-                results.append(_make_event(
-                    employee_id, basis, "회계연도 후속 발생",
-                    next_boundary, boundary, next_boundary - timedelta(days=1),
-                    "판정 안됨", None, "후속 회계연도 산정 정책 미확정",
-                ))
+        first_boundary = _first_fiscal_boundary(hire, fiscal_year_start)
+        boundary = first_boundary
+        previous_boundary = hire
+        while boundary <= effective_as_of:
+            # Fiscal grants from older calendar years are not recalculated or
+            # added to this year's report. In particular, historical first-year
+            # proration evidence is NOT required for later regular-year runs.
+            if boundary >= calculation_start:
+                start, end = previous_boundary, boundary - timedelta(days=1)
+                if boundary == first_boundary:
+                    flag = annual(start, end)
+                    if flag != ELIGIBLE:
+                        results.append(_make_event(
+                            employee_id, basis, "최초 회계연도 비례",
+                            boundary, start, end, "판정 안됨", None,
+                            "해당기간 근태 판정 누락·미확정 또는 요건 미충족",
+                        ))
+                    elif proration_facts is None:
+                        results.append(_make_event(
+                            employee_id, basis, "최초 회계연도 비례",
+                            boundary, start, end, "판정 안됨", None,
+                            "비례 산정용 소정근로일·달력일·월수 집계 누락",
+                        ))
+                    else:
+                        fact_start = strict_date(proration_facts.get("period_start"), "period_start")
+                        fact_end = strict_date(proration_facts.get("period_end"), "period_end")
+                        if (fact_start, fact_end) != (start, end):
+                            raise ValueError("비례 산정기간이 근속기간과 일치하지 않습니다")
+                        if proration_facts.get("method") != proration_method:
+                            raise ValueError("비례 산정방식이 입력 집계와 다릅니다")
+                        raw = prorated_quantity(
+                            base_days=proration_facts.get("base_days", 15),
+                            numerator=proration_facts.get("numerator"),
+                            denominator=proration_facts.get("denominator"),
+                            method=proration_method,
+                        )
+                        results.append(_make_event(
+                            employee_id, basis, "최초 회계연도 비례",
+                            boundary, start, end, "계산 완료", raw,
+                        ))
+                else:
+                    results.extend(_fiscal_regular_grants(
+                        employee_id=employee_id, hire_date=hire,
+                        start=start, boundary=boundary,
+                        annual=annual, monthly=monthly,
+                    ))
+            previous_boundary = boundary
+            boundary = date(boundary.year + 1, boundary.month, boundary.day)
     unresolved = any(raw is None for _, raw in results)
     total = sum((raw for _, raw in results if raw is not None), Fraction(0))
     summary = {
