@@ -83,9 +83,9 @@ def build_parser() -> argparse.ArgumentParser:
     )
     bhandara.add_argument("module_id", help="Requested module identifier")
     bhandara.add_argument("--config", help="Path to module config JSON")
-    bhandara.add_argument("--data-root", help="Private module workspace root (Common v2)")
-    bhandara.add_argument("--run-id", help="Caller-chosen isolated Common run ID")
-    bhandara.add_argument("--source", help="Explicit Common source file path")
+    bhandara.add_argument("--data-root", help="Optional private workspace root for common-normalizer")
+    bhandara.add_argument("--run-id", help="Isolated common-normalizer run ID")
+    bhandara.add_argument("--source", help="Explicit common-normalizer source file path")
     bhandara.add_argument("--input-dir", help="Local Excel input directory")
     bhandara.add_argument("--normalized", help="Worktime canonical normalized-input.json")
     bhandara.add_argument("--output-dir", help="Local output directory")
@@ -117,37 +117,35 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.collection == "bhandara":
-        if args.module_id == "common":
-            if not args.data_root or any((
+        if args.module_id == "common-normalizer":
+            if any((
                 args.input_dir, args.normalized, args.output_dir,
                 args.operation, args.manifest, args.scenario_id,
                 args.isolate_worker_failures, args.period, args.paths_config,
                 args.worktime_result,
             )):
-                print("COMMON_INVALID: use --data-root, optional --run-id, "
-                      "--source and --config only", file=sys.stderr)
+                print("NORMALIZER_INVALID: use --run-id, --source, --config "
+                      "and optional --data-root only", file=sys.stderr)
                 return 2
-            from bhandara.common.runner import CommonRunError, run_common
-            from bhandara.common.io.input_layout import InputLayoutError
-            from bhandara.common.io.module_io import ModuleIOError
-            from bhandara.common.io.tabular import TabularInputError
-            from bhandara.common.runtime.artifacts import ArtifactError
+            from bhandara.common.module.normalizer.runner import (
+                NormalizerRunError, run_normalizer,
+            )
+            from bhandara.common.module.normalizer.paths import NormalizerPathError
             try:
-                status, paths = run_common(
+                status, paths = run_normalizer(
                     args.data_root, run_id=args.run_id,
                     source_path=args.source, mapping_path=args.config,
                 )
-            except (CommonRunError, InputLayoutError, ModuleIOError,
-                    TabularInputError, ArtifactError, OSError, ValueError) as exc:
-                print(f"COMMON_INVALID: {type(exc).__name__}: {exc}",
+            except (NormalizerRunError, NormalizerPathError, OSError, ValueError) as exc:
+                print(f"NORMALIZER_INVALID: {type(exc).__name__}: {exc}",
                       file=sys.stderr)
                 return 2
-            print(f"COMMON_STATUS: {status}")
+            print(f"NORMALIZER_STATUS: {status}")
             for name, path in paths.items():
-                print(f"COMMON_ARTIFACT: {name} -> {path}")
+                print(f"NORMALIZER_ARTIFACT: {name} -> {path}")
             return 0 if status == "PASS" else 2
         if any((args.data_root, args.run_id, args.source)):
-            print("INPUT_INVALID: --data-root, --run-id and --source are Common-only",
+            print("INPUT_INVALID: --data-root, --run-id and --source are common-normalizer-only",
                   file=sys.stderr)
             return 2
         if args.isolate_worker_failures and (
