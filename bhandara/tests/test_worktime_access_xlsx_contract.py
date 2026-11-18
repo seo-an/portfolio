@@ -9,7 +9,7 @@ from pathlib import Path
 from openpyxl import load_workbook
 
 from bhandara.worktime.access_source import (
-    ACCESS_SHEET, EVENT_COLUMNS, META_SHEET, META_COLUMNS,
+    ACCESS_SHEET, EVENT_COLUMNS, CANDIDATE_SHEET, CANDIDATE_COLUMNS, META_SHEET, META_COLUMNS,
     REVIEW_COLUMNS, REVIEW_SHEET, AccessWorkbookError,
     read_access_events_xlsx, write_access_events_xlsx, verify_attendance_xlsx,
 )
@@ -61,8 +61,9 @@ class AccessExcelContractTests(unittest.TestCase):
         path = self.write()
         book = load_workbook(path, read_only=True)
         try:
-            self.assertEqual(book.sheetnames, [ACCESS_SHEET, REVIEW_SHEET, META_SHEET])
+            self.assertEqual(book.sheetnames, [ACCESS_SHEET, CANDIDATE_SHEET, REVIEW_SHEET, META_SHEET])
             self.assertEqual(tuple(cell.value for cell in book[ACCESS_SHEET][1]), EVENT_COLUMNS)
+            self.assertEqual(tuple(cell.value for cell in book[CANDIDATE_SHEET][1]), CANDIDATE_COLUMNS)
             self.assertEqual(tuple(cell.value for cell in book[REVIEW_SHEET][1]), REVIEW_COLUMNS)
             self.assertEqual(tuple(cell.value for cell in book[META_SHEET][1]), META_COLUMNS)
         finally:
@@ -92,6 +93,8 @@ class AccessExcelContractTests(unittest.TestCase):
         self.assertEqual(result["events"][0]["normalized_row_number"], 2)
         self.assertEqual(result["metadata"]["source_sha256"], "a" * 64)
         self.assertEqual(result["metadata"]["timezone"], "Asia/Seoul")
+        self.assertEqual(result["schema_version"], "0.2")
+        self.assertEqual(result["attendance_candidates"][0]["candidate_status"], "EXPLICIT_PAIR")
 
     def test_normalized_events_feed_attendance_verification_as_is(self):
         events = read_access_events_xlsx(self.write())["events"]
@@ -202,6 +205,52 @@ class AccessExcelContractTests(unittest.TestCase):
         book = load_workbook(path)
         try:
             book[META_SHEET]["B6"] = "999"
+            book.save(path)
+        finally:
+            book.close()
+        with self.assertRaises(AccessWorkbookError):
+            read_access_events_xlsx(path)
+
+    def test_only_generic_access_produces_first_and_last_candidates(self):
+        path = self.write(events=[
+            self.event(event_id="middle", mode="ACCESS",
+                       event_time="2026-11-16T12:00", source_row_number=2,
+                       event_timestamp="2026-11-16T12:00:45"),
+            self.event(event_id="first", mode="ACCESS",
+                       event_time="2026-11-16T08:50", source_row_number=3,
+                       event_timestamp="2026-11-16T08:50:11"),
+            self.event(event_id="last", mode="ACCESS",
+                       event_time="2026-11-16T18:10", source_row_number=4,
+                       event_timestamp="2026-11-16T18:10:59"),
+        ])
+        data = read_access_events_xlsx(path)
+        candidate = data["attendance_candidates"][0]
+        self.assertEqual(candidate["arrival_time"], "2026-11-16T08:50:11")
+        self.assertEqual(candidate["departure_time"], "2026-11-16T18:10:59")
+        self.assertEqual(candidate["candidate_status"], "INFERRED_PAIR")
+        self.assertFalse(candidate["confirmed"])
+
+    def test_source_exclusions_do_not_block_normalized_success(self):
+        excluded = self.review()
+        excluded["status"] = "EXCLUDED"
+        excluded["issue_codes"] = "SECURITY_SET_EXCLUDED"
+        path = self.write(reviews=[excluded])
+        normalized = read_access_events_xlsx(path)
+        self.assertEqual(normalized["status"], "PASS")
+        ledger = [{"employee_id": "E001", "worker_id": "EP0001",
+                   "work_date": "2026-11-16", "clock_in": "09:00",
+                   "clock_out": "18:00"}]
+        handoff = verify_attendance_xlsx(
+            ledger, path, period_from="2026-11-16", period_to="2026-11-16",
+        )
+        self.assertEqual(handoff["status"], "PASS")
+        self.assertEqual(handoff["normalized_source"]["excluded_count"], 1)
+
+    def test_candidate_tampering_fails_closed(self):
+        path = self.write()
+        book = load_workbook(path)
+        try:
+            book[CANDIDATE_SHEET]["D2"] = "2026-11-16T05:30:00"
             book.save(path)
         finally:
             book.close()
