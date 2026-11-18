@@ -356,12 +356,16 @@ def make_deduction_workbook(
         _append_table(
             detail,
             ("원본행", "request_id", "employee_id", "leave_date",
-             "leave_type", "사용시간", "차감일수", "상태", "사유"),
+             "leave_type", "사용시간", "차감일수", "상태", "사유",
+             "_exact_numerator", "_exact_denominator"),
             details,
             ("excel_row", "request_id", "employee_id", "leave_date",
              "leave_type", "duration_hours", "deduction_days", "status",
-             "reason"),
+             "reason", "exact_numerator", "exact_denominator"),
         )
+        # Exact fraction transport; hide internals from the human Excel view.
+        detail.column_dimensions["J"].hidden = True
+        detail.column_dimensions["K"].hidden = True
         policy = book.create_sheet("정책정보")
         _append_table(
             policy, ("항목", "값"),
