@@ -7,7 +7,7 @@ including zero balances, so reruns cannot accidentally resurrect spent grants.
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from fractions import Fraction
 from typing import Any, Iterable, Mapping
 
@@ -19,7 +19,9 @@ def _identifier(value: Any, name: str) -> str:
 
 
 def _iso_date(value: Any, name: str) -> date:
-    if isinstance(value, date) and not hasattr(value, "hour"):
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, date):
         return value
     if not isinstance(value, str) or len(value.strip()) != 10:
         raise ValueError(f"{name}: YYYY-MM-DD 형식 필요")
