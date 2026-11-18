@@ -11,6 +11,8 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable, Mapping
 
 TIME_FIELDS = (("scheduled_start", "clock_in"), ("scheduled_end", "clock_out"))
+REASON_FIELDS = {"clock_in": "clock_in_reason", "clock_out": "clock_out_reason",
+                 "break_min": "break_reason"}
 NON_WORK_TYPES = frozenset({"OFF", "HOLIDAY"})
 
 
@@ -124,6 +126,67 @@ def _normalized(row: Mapping[str, Any], kind: str) -> tuple[dict[str, Any], list
     return result, sorted(set(problems))
 
 
+def _delta_minutes(
+    expected: str | None, recorded: str | None,
+    *, time_field: bool,
+) -> tuple[int | None, str | None]:
+    """Signed recorded - expected delta; never invent an overnight date.
+
+    The Schedule v0.1 input contract is an HH:MM wall clock. When a difference
+    straddles midnight, a dated source is required before assigning a delta.
+    """
+    if expected is None or recorded is None:
+        return None, None
+    if time_field:
+        eh, em = (int(part) for part in expected.split(":"))
+        rh, rm = (int(part) for part in recorded.split(":"))
+        delta = (rh * 60 + rm) - (eh * 60 + em)
+        if abs(delta) >= 720:
+            return None, "TIME_DELTA_DATE_AMBIGUOUS"
+        return delta, None
+    return int(recorded) - int(expected), None
+
+
+def _reason(row: Mapping[str, Any] | None, field: str
+            ) -> tuple[str | None, str | None]:
+    """Pass through only an explicitly supplied text reason; never infer one."""
+    if row is None:
+        return None, None
+    value = row.get(REASON_FIELDS[field])
+    if value is None or value == "":
+        return None, None
+    if not isinstance(value, str):
+        return None, "INVALID_" + REASON_FIELDS[field].upper()
+    return value.strip() or None, None
+
+
+def _comparisons(
+    planned: dict[str, Any] | None,
+    recorded: dict[str, Any] | None,
+    source_attendance: Mapping[str, Any] | None,
+) -> tuple[dict[str, dict[str, Any]], list[str]]:
+    result: dict[str, dict[str, Any]] = {}
+    issues: list[str] = []
+    for expected_field, recorded_field in (*TIME_FIELDS, ("break_min", "break_min")):
+        expected = planned.get(expected_field) if planned is not None else None
+        actual = recorded.get(recorded_field) if recorded is not None else None
+        delta, warning = _delta_minutes(
+            expected, actual, time_field=recorded_field != "break_min",
+        )
+        reason, reason_error = _reason(source_attendance, recorded_field)
+        if warning:
+            issues.append(warning)
+        if reason_error:
+            issues.append(reason_error)
+        result[recorded_field] = {
+            "expected": expected,
+            "recorded": actual,
+            "delta_minutes": delta,
+            "reason": reason,
+        }
+    return result, sorted(set(issues))
+
+
 def _provenance(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     return [
         {"source_ref": str(r.get("source_ref") or ""), "row_number": r.get("_row_number")}
@@ -145,6 +208,10 @@ def _compare(key: tuple[str, str], schedules: list[dict[str, Any]],
     if len(attendances) == 1:
         recorded, check = _normalized(attendances[0], "attendance")
         issues.extend(check)
+    comparisons, extra_issues = _comparisons(
+        planned, recorded, attendances[0] if len(attendances) == 1 else None,
+    )
+    issues.extend(extra_issues)
     issues = sorted(set(issues))
     differences: list[str] = []
     if issues:
@@ -166,7 +233,8 @@ def _compare(key: tuple[str, str], schedules: list[dict[str, Any]],
     return {
         "employee_id": key[0], "work_date": key[1], "status": state,
         "planned": planned, "recorded": recorded,
-        "different_fields": differences, "review_codes": issues,
+        "different_fields": differences, "comparisons": comparisons,
+        "review_codes": issues,
         "schedule_sources": _provenance(schedules),
         "attendance_sources": _provenance(attendances),
     }
@@ -181,8 +249,9 @@ def reconcile_schedule(
 ) -> dict[str, Any]:
     """Compare source facts per employee/day. Safe for independent execution.
 
-    Only equality is determined. No leave/absence, attendance approval, rest
-    compliance, lateness, overtime, holiday pay, or device-authentication claim.
+    Preserve signed time/record differences and externally supplied reasons.
+    No leave/absence, attendance approval, rest compliance, lateness,
+    overtime, holiday pay, or device-authentication claim.
     """
     start, end = _day(period_from), _day(period_to)
     if start is None or end is None or end < start:
