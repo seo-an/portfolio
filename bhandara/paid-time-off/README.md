@@ -84,3 +84,42 @@ python3 -m unittest discover -s bhandara/tests -p 'test_*.py'
 ```
 
 다른 Module의 정책 및 전체 Workflow는 계속 설계 중입니다. `ARCHITECTURE.md`에 이관 경계가 설명되어 있습니다.
+
+
+## 6. Deduction Quantity — 승인된 휴가 사용시간 계산 (2026-11-18, 시범 구현)
+
+> 이 항목은 위의 구형 차감량 설명보다 우선합니다. **독립 Excel 시범 실행**이며,
+> 발생분별 차감 배정·연차 잔여·만료·이월·월별 Closing은 구현하지 않습니다.
+
+- **입력 파일:** 명시된 경로 또는 `<input_root>/paid-time-off/approved-leave.xlsx`
+- **입력 시트:** `승인휴가`
+- **필수 헤더:** `request_id`, `employee_id`, `leave_date`, `leave_type`, `duration_hours`
+- **값:** 사용일 `YYYY-MM-DD`(또는 Excel 날짜), 휴가 유형 `연차`/ `대휴`, 시간은 hour 단위(예: `1.5` = 1시간 30분).
+- **승인·취소·반려 관리:** 외부 시스템에서 완료한 내역만 전달합니다. 여러 날짜에 걸친 하나의 신청은 같은 `request_id`를 서로 다른 `leave_date`에 반복 사용합니다. 같은 요청·같은 날짜는 외부에서 합쳐서 보내야 합니다.
+- **계산:** `duration_hours / standard_daily_hours`; 기본 1일 8시간, 직접 호출 시 변경 가능. 전일·반차·반반차/시간차의 고정 코드 분류는 입력에 필요 없습니다. 직원별 근무정책 파일은 지금 읽지 않습니다.
+- **정밀도:** 중간 반올림 없음. 유한소수는 정확한 표기, 무한소수는 표시할 때만 7자리 절사. 건별 절사값을 재합산하지 않습니다.
+- **예외:** 필수값 누락, 동일 `request_id + leave_date` 중복, 지원하지 않는 휴가 유형, 잘못된 시간·날짜 등은 **해당 행을 `계산 제외`**하고 사유를 남깁니다. 중복 행은 전부 제외합니다. 정상 행은 이어서 계산하고 요약 상태를 `일부 제외`로 표시합니다. 필수 헤더가 빠진 경우도 행별 제외합니다. 파일·시트 자체가 없거나 헤더 중복처럼 구조를 해석할 수 없으면 실행 오류입니다.
+- **독립 결과:** `<output_root>/<run_id>/deduction-quantity-result.xlsx`에 `차감요약`(직원별 계산된 차감일수·제외 건수), `차감상세`(요청 ID·사용일·휴가 유형·사용시간·차감일수·사유), 마지막 `정책정보` 시트를 작성합니다. 같은 `run_id` 덮어쓰기는 금지합니다.
+- **주의:** 이 결과는 사용량 **환산**일 뿐, 연차 발생·잔여 현황이 아닙니다. 발생분별 차감 근거와 직원별 발생/사용/잔여를 함께 보는 별도의 사용내역 결과는 추후 `expiry-carryover`와 조합할 때 설계합니다. `closing`의 월별·기간별 마감 양식과도 구분합니다.
+
+```python
+from importlib import import_module
+from pathlib import Path
+
+runner = import_module("bhandara.paid-time-off.runner")
+result = runner.run_deduction_quantity(
+    policy_id="회사휴가-2026",
+    run_id="example-deduction-2026",
+    input_root=Path("/secure/private/input"),
+    output_root=Path("/secure/private/output"),
+    standard_daily_hours=8,
+)
+print(result["path"])
+```
+
+위 `/secure/private` 경로는 예시입니다. 실제 사용 시 존재하는 비공개 경로를 지정하고 개인정보를 Git에 커밋하지 마세요. 기존 `calculate_deduction_quantity(unit=...)`는 과거 순수 API 호환을 위해 유지하되, 신규 시간 기반 API는 `deduction-quantity/calculation.py`의 `calculate_hours_deduction` 및 `calculate_approved_rows`입니다. 전체 Tool CLI·Gearbox·Slack과는 아직 연결하지 않았습니다.
+
+```bash
+python3 -m unittest bhandara.tests.test_paid_time_off_deduction_excel -v
+python3 -m unittest discover -s bhandara/tests -p 'test_*.py'
+```
