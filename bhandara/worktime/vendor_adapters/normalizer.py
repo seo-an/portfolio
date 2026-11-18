@@ -37,6 +37,7 @@ EXCLUDED_SECURITY_SET = frozenset({
     "세트", "세트(경비시작)", "경비시작", "경비설정", "경비세트", "경비시작(세트)",
 })
 OPTIONAL_MODE_COLUMNS = ("구분", "상태", "출입구분", "근태구분")
+OPTIONAL_RESULT_COLUMNS = ("인증결과", "인식결과", "처리결과", "결과")
 
 
 def _number(value: Any) -> str:
@@ -150,7 +151,8 @@ def _classification(value: Any, *, mode_column: bool) -> str:
 
 def _excluded(row: Mapping[str, Any], profile: VendorProfile) -> str:
     # Both mode/status and credential-type exports can contain exclusion codes.
-    for column in (profile.mode_column, profile.auth_method_column, *OPTIONAL_MODE_COLUMNS):
+    for column in (profile.mode_column, profile.auth_method_column,
+                   *OPTIONAL_MODE_COLUMNS, *OPTIONAL_RESULT_COLUMNS):
         if not column or row.get(column) in (None, ""):
             continue
         label = re.sub(r"\s+", "", str(row[column]))
