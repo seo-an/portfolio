@@ -1,78 +1,40 @@
-# Schedule — 근무 스케줄과 근태장부 대조 (초기 계약 0.1)
+# Schedule — 근무 예정일과 근태기록 존재 여부 대조 (v0.2)
 
-## 책임 경계
+## 역할
 
-`reconcile_schedule(schedule_rows, attendance_rows, *, period_from, period_to)`는 두 자료에 **어떤 차이가 있는지**만 판단하는 독립 순수 함수입니다. 분 단위 출퇴근 시각의 동등성, 휴게시간 기재의 동등성, 존재·누락·중복을 대조하며 **지각·결근·승인 연장근로·법 위반 판정은 하지 않습니다.** 실제 출입기 인증 검증도 수행하지 않습니다.
+`reconcile_schedule(schedule_rows, attendance_rows, *, period_from, period_to)`는 직원·날짜별 **근무 예정 여부와 근태장부 기록 존재 여부**만 비교합니다. 계획된 출근·퇴근 시각이 실제 시각과 일치하는지는 여기서 계산하지 않습니다. 시간 차이와 사유는 **Attendance Verification**, 확인된 휴게시간 차이는 **Worktime Compliance**가 담당합니다.
 
 ## 입력
 
-- 공통 대상: `employee_id`, `work_date` (정규 `YYYY-MM-DD`), 선택 `source_ref`, `_row_number` (증빙 위치).
-- Schedule: `day_type`(`WORK`, `OFF`, `HOLIDAY`), `scheduled_start`, `scheduled_end`(분 단위 `HH:MM`, 휴무라면 둘 다 공란 가능), `break_min`(0 이상 정수 분, 미확인이면 공란).
-- Attendance ledger: `clock_in`, `clock_out`(분 단위 `HH:MM`), `break_min`(0 이상 정수 분, 미확인이면 공란).
-- 기간: `period_from`, `period_to` (정규 `YYYY-MM-DD`, 시작일 ≤ 종료일).
-- 한 직원·날짜의 근무 구간이 복수인 경우 현재는 중복 검토 대상으로 남깁니다. 근무 구간(`shift_id`) 규약을 정하기 전 자동 병합하지 않습니다.
-- 원본 출입기·승인 자료는 여기서 대신 생성하지 않습니다. 승인된 외부 예외가 있더라도 무단으로 두 자료의 값이 같다고 바꾸지 않습니다.
+- `schedule_rows`: `employee_id`, `work_date`, `day_type`(`WORK/OFF/HOLIDAY`), 선택 `scheduled_start`, `scheduled_end`, `break_min`, `source_ref`, `_row_number`.
+- `attendance_rows`: `employee_id`, `work_date`, `clock_in`, `clock_out`, `break_min`, 선택 출처.
+- `period_from`, `period_to`: `YYYY-MM-DD`.
+- 동일 직원·날짜에 계획 또는 근태자료가 중복되면 자동으로 하나를 선택하지 않습니다.
+- 휴일이어도 **명시적으로 예정된 근무 시각이 있다면 근무 예정일**로 취급합니다.
+- 스케줄이 양쪽에 모두 없는 날짜까지 검사하려면 외부에서 대상 직원·날짜 목록이 제공되어야 합니다. 이 모듈은 누락된 전체 일정을 생성하지 않습니다.
 
-## 출력
-
-```json
-{
-  "schema_version": "0.1",
-  "module": "schedule",
-  "status": "REVIEW_REQUIRED",
-  "period_from": "2026-11-01",
-  "period_to": "2026-11-30",
-  "rows": [
-    {
-      "employee_id": "E001",
-      "work_date": "2026-11-16",
-      "status": "RECORD_DIFFERENT",
-      "planned": {"day_type": "WORK", "scheduled_start": "09:00", "scheduled_end": "18:00", "break_min": "60"},
-      "recorded": {"clock_in": "09:17", "clock_out": "18:00", "break_min": "60"},
-      "different_fields": ["clock_in"],
-      "review_codes": [],
-      "schedule_sources": [{"source_ref": "synthetic-schedule", "row_number": 2}],
-      "attendance_sources": [{"source_ref": "synthetic-ledger", "row_number": 2}]
-    }
-  ],
-  "source_issues": [],
-  "approved": false,
-  "notice": "대조 결과만 제공하며 지각·연장근무·휴무·휴가·근태 승인 여부를 확정하지 않습니다."
-}
-```
-
-### 직원·근무일별 상태
+## 직원·날짜별 상태
 
 | 상태 | 의미 |
 |---|---|
-| `WORK_MATCH` | 양측 시간·휴게 **기재값** 일치 (출입 인증이나 승인 확정은 아님) |
-| `RECORD_DIFFERENT` | 양측 값이 달라 차이 필드 표시 (지각 판정 아님) |
-| `MISSING` | 계획 근무에 대해 근태장부 기록이 없음 (결근 판정 아님) |
-| `UNSCHEDULED` | 계획 없이 근태장부 기록이 있음 (휴일근로 승인 아님) |
-| `NON_WORK_MATCH` | 예정 시간이 없는 OFF/HOLIDAY와 근태장부 기록 없음 (대조 대상으로만 정상) |
-| `REVIEW_REQUIRED` | 중복·불완전·유효하지 않은 행. 해당 직원/일의 자동 일치 판정 금지 |
+| `WORK_MATCH` | 해당 날짜는 근무 예정이며 근태장부 기록도 있음. **시각 일치·근로 수행이 확인됐다는 뜻이 아님** |
+| `NON_WORK_MATCH` | 휴무/휴일이며 별도 근무 예정이 없고 근태장부 기록도 없음 |
+| `MISSING` | 근무 예정일이지만 근태장부 기록이 없음. **결근 확정 아님** |
+| `UNSCHEDULED` | 근무 예정이 없거나 스케줄이 없는 날짜에 근태장부 기록이 존재 |
+| `REVIEW_REQUIRED` | 원본 중복·시간 형식 오류·불완전한 기록 등 |
 
-자료의 날짜/직원 키가 유효하지 않거나 기간 밖이면 `source_issues`에 기록하고 해당 행만 대조에서 제외합니다. 전체의 `status`는 `PASS` 또는 `REVIEW_REQUIRED`이며, 빈 입력은 검증 성공으로 취급하지 않습니다.
+전체 실행 상태는 모두 `WORK_MATCH/NON_WORK_MATCH`이고 원본 검토 이슈가 없을 때 `PASS`, 그 외 `REVIEW_REQUIRED`입니다. 이는 근태 승인이나 기간 전체의 완전성 확인이 아닙니다.
 
-### 전체 실행 상태와 휴가 구분
+기존 `planned`, `recorded`, `different_fields`, `review_codes`, 원본 출처는 호환을 위해 보존합니다. `different_fields`는 v0.2에서 빈 목록이며, 기존 `RECORD_DIFFERENT`는 **더 이상 반환하지 않습니다**. 모든 시각 차이와 사유는 Attendance Verification에서 계산합니다.
 
-- `PASS`: 전달된 대조 대상의 직원·날짜별 상태가 전부 `WORK_MATCH` 또는 `NON_WORK_MATCH`이고, 원본 검토 이슈가 없는 경우입니다. **기간 전체의 근태 완료·승인 또는 출입기 인증을 의미하지 않습니다.**
-- `REVIEW_REQUIRED`: 불일치·누락·미예정 기록·중복 또는 잘못된 입력 등 추가 확인이 필요한 경우입니다.
-- `NON_WORK_MATCH`는 예정된 `OFF`/`HOLIDAY`에서 근무 기록이 없다는 사실만 뜻합니다. **휴가 사용 여부는 확정하지 않습니다.**
-- `LEAVE_MATCH`는 향후 외부에서 확정된 휴가 근거와 연결하는 계약이 합의될 때 검토할 **예약 명칭**으로, 이번 버전에서는 반환하지 않습니다.
+## 예시
 
-## 계산하지 않는 것과 남은 계약
+09:00 출근 예정이고 08:40 출근했다고 신고했더라도 해당 날짜에 근태장부가 있으면 `WORK_MATCH`입니다. 이때 `-20분`은 Schedule이 아니라 Attendance Verification의 `time_deviations.clock_in`에 기록됩니다.
 
-- 현재 **보고된 근태장부**와 스케줄만 비교합니다. 근태장부가 실제 출입과 부합하는지는 Attendance Verification 책임입니다.
-- 야간·익일 종료 근무도 시각 텍스트의 동일성만 비교합니다. 익일 근로시간 계산이나 법적 근로시간 구분은 수행하지 않습니다.
-- 복수 교대/분할 근무, 계획 변경 이력 및 외부 확정 휴가·휴무 증빙의 연결 규약은 별도 계약으로 남깁니다.
-- 전체 기간의 스케줄 자체가 완전한지 검증하려면 **대상자·대상일 목록**이 별도로 필요합니다. 현재 구현은 *두 입력 중 하나에 존재하는 직원·날짜*만 대조합니다. 양쪽에 모두 누락된 날짜를 정상이라고 주장하지 않습니다.
-- 기존 Excel 읽기/쓰기, `worktime-calculator` 호환 실행, 다른 Tool 및 Slack 연결은 제공하지 않습니다.
-
-## 독립 검증
+휴무인데 출입기 기록만 있고 **근태장부가 없다면**, Schedule은 `NON_WORK_MATCH`를 유지합니다. 출입기만으로 근태장부를 자동 생성하거나 휴일근무로 판정하지 않습니다. 출입 증빙은 Attendance Verification이 별도로 검토합니다.
 
 ```bash
 python3 -m unittest bhandara.tests.test_worktime_schedule -v
 ```
 
-실제 직원 자료가 아닌 합성 입력을 사용합니다. 서버에서 기능 변경 적용 전에는 해당 브랜치 직접 테스트 및 Gearbox 기능·인프라 호환성 확인이 필요합니다.
+기존 Excel 입출력·공개 CLI·Gearbox 연동은 이 PR에서 바꾸지 않습니다.

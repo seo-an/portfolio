@@ -390,6 +390,7 @@ def verify_attendance_xlsx(
     period_from: str,
     period_to: str,
     accepted_auth_methods: Iterable[str] = ("FINGERPRINT",),
+    schedule_rows: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """One tool-internal handoff from *canonical* Excel to Attendance Verification.
 
@@ -404,6 +405,8 @@ def verify_attendance_xlsx(
         attendance_rows, normalized["events"],
         period_from=period_from, period_to=period_to,
         accepted_auth_methods=accepted_auth_methods,
+        schedule_rows=schedule_rows,
+        candidate_rows=normalized["attendance_candidates"],
     )
     actionable = [row for row in normalized["source_reviews"] if row["status"] != "EXCLUDED"]
     for row in actionable:

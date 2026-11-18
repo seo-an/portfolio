@@ -162,6 +162,41 @@ class AccessExcelContractTests(unittest.TestCase):
         self.assertEqual(report["status"], "PASS")
         self.assertEqual(report["normalized_source"]["source_vendor"], "SYN_CAPS")
 
+    def test_generic_vendor_access_signed_vs_expected_schedule(self):
+        path = self.write(name="expected-delta.xlsx", events=[
+            self.event(event_id="FIRST", mode="ACCESS",
+                       event_time="2026-11-16T08:40",
+                       event_timestamp="2026-11-16T08:40:15",
+                       source_row_number=2),
+            self.event(event_id="LAST", mode="ACCESS",
+                       event_time="2026-11-16T18:16",
+                       event_timestamp="2026-11-16T18:16:45",
+                       source_row_number=3),
+        ])
+        ledger = [{
+            "employee_id": "E001", "worker_id": "EP0001",
+            "work_date": "2026-11-16", "clock_in": "08:40",
+            "clock_out": "18:16", "clock_in_reason": "시차출퇴근",
+            "clock_out_reason": "업무 마무리",
+        }]
+        schedule = [{
+            "employee_id": "E001", "worker_id": "EP0001",
+            "work_date": "2026-11-16", "day_type": "WORK",
+            "scheduled_start": "09:00", "scheduled_end": "18:00",
+        }]
+        result = verify_attendance_xlsx(
+            ledger, path, period_from="2026-11-16",
+            period_to="2026-11-16", schedule_rows=schedule,
+        )
+        deviation = result["rows"][0]["time_deviations"]
+        self.assertEqual(deviation["clock_in"]["ledger_vs_expected"]["delta_minutes"], -20)
+        self.assertEqual(deviation["clock_out"]["ledger_vs_expected"]["delta_minutes"], 16)
+        self.assertEqual(deviation["clock_in"]["device_vs_expected"]["delta_seconds"], -1185)
+        self.assertEqual(deviation["clock_out"]["device_vs_expected"]["delta_seconds"], 1005)
+        self.assertEqual(deviation["clock_in"]["device_origin"], "UNCONFIRMED_ACCESS_CANDIDATE")
+        self.assertFalse(deviation["clock_in"]["device_confirmed_as_work"])
+        self.assertEqual(result["rows"][0]["status"], "ACCESS_ONLY")
+
     def test_writer_rejects_unsupported_raw_vendor_code(self):
         with self.assertRaises(AccessWorkbookError):
             self.write(events=[self.event(mode="LEGACY_CODE_123")])
