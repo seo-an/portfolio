@@ -26,7 +26,7 @@
     {
       "employee_id": "E001",
       "work_date": "2026-11-16",
-      "status": "DIFFERENT",
+      "status": "RECORD_DIFFERENT",
       "planned": {"day_type": "WORK", "scheduled_start": "09:00", "scheduled_end": "18:00", "break_min": "60"},
       "recorded": {"clock_in": "09:17", "clock_out": "18:00", "break_min": "60"},
       "different_fields": ["clock_in"],
@@ -45,14 +45,21 @@
 
 | 상태 | 의미 |
 |---|---|
-| `MATCH` | 양측 시간·휴게 **기재값** 일치 (출입 인증이나 승인 확정은 아님) |
-| `DIFFERENT` | 양측 값이 달라 차이 필드 표시 (지각 판정 아님) |
-| `MISSING_ATTENDANCE` | 계획 근무에 대해 근태장부 기록이 없음 (결근 판정 아님) |
-| `UNSCHEDULED_ATTENDANCE` | 계획 없이 근태장부 기록이 있음 (휴일근로 승인 아님) |
-| `NO_WORK_RECORDED` | 예정 시간이 없는 OFF/HOLIDAY와 근태장부 기록 없음 (대조 대상으로만 정상) |
+| `WORK_MATCH` | 양측 시간·휴게 **기재값** 일치 (출입 인증이나 승인 확정은 아님) |
+| `RECORD_DIFFERENT` | 양측 값이 달라 차이 필드 표시 (지각 판정 아님) |
+| `MISSING` | 계획 근무에 대해 근태장부 기록이 없음 (결근 판정 아님) |
+| `UNSCHEDULED` | 계획 없이 근태장부 기록이 있음 (휴일근로 승인 아님) |
+| `NON_WORK_MATCH` | 예정 시간이 없는 OFF/HOLIDAY와 근태장부 기록 없음 (대조 대상으로만 정상) |
 | `REVIEW_REQUIRED` | 중복·불완전·유효하지 않은 행. 해당 직원/일의 자동 일치 판정 금지 |
 
-자료의 날짜/직원 키가 유효하지 않거나 기간 밖이면 `source_issues`에 기록하고 해당 행만 대조에서 제외합니다. 전체의 `status`는 `MATCH` 또는 `REVIEW_REQUIRED`이며, 빈 입력은 검증 성공으로 취급하지 않습니다.
+자료의 날짜/직원 키가 유효하지 않거나 기간 밖이면 `source_issues`에 기록하고 해당 행만 대조에서 제외합니다. 전체의 `status`는 `PASS` 또는 `REVIEW_REQUIRED`이며, 빈 입력은 검증 성공으로 취급하지 않습니다.
+
+### 전체 실행 상태와 휴가 구분
+
+- `PASS`: 전달된 대조 대상의 직원·날짜별 상태가 전부 `WORK_MATCH` 또는 `NON_WORK_MATCH`이고, 원본 검토 이슈가 없는 경우입니다. **기간 전체의 근태 완료·승인 또는 출입기 인증을 의미하지 않습니다.**
+- `REVIEW_REQUIRED`: 불일치·누락·미예정 기록·중복 또는 잘못된 입력 등 추가 확인이 필요한 경우입니다.
+- `NON_WORK_MATCH`는 예정된 `OFF`/`HOLIDAY`에서 근무 기록이 없다는 사실만 뜻합니다. **휴가 사용 여부는 확정하지 않습니다.**
+- `LEAVE_MATCH`는 향후 외부에서 확정된 휴가 근거와 연결하는 계약이 합의될 때 검토할 **예약 명칭**으로, 이번 버전에서는 반환하지 않습니다.
 
 ## 계산하지 않는 것과 남은 계약
 
