@@ -1,4 +1,4 @@
-# Worktime Compliance — 근로·휴게시간 기준 검토 (0.1)
+# Worktime Compliance — 근로·휴게시간 기준 및 부호 있는 휴게 차이 검토 (0.2)
 
 > **독립 순수 계산**입니다. 이 Module은 근태 승인, 연장근무 확정, 휴게 증빙 생성, 임금 산정, 법 위반 최종 판단 및 Closing을 수행하지 않습니다.
 
@@ -64,6 +64,31 @@ report = module.review_worktime_compliance(
 ```
 
 위 숫자는 **표준 근로시간제에 대한 합성 테스트 정책 예시**입니다. 실제 운용 시 해당 사업장, 근로시간제, 정책 시행일을 검토한 후 `policy_ref`를 설정해야 합니다. 외부 정책을 자동 승인하거나 현재 유효 법률이라고 재해석하지 않습니다. 법정 휴게 최소치는 근로기준법 제54조를 참조하며, 2026-12-10의 정확히 4시간 근로 요청 예외는 별도 근거가 있을 때만 적용합니다.
+
+### 휴게시간의 부호 있는 차이
+
+Schedule에서 휴게시간을 비교하지 않습니다. **확인된 휴게시간**과 외부 정책으로 산출한 **필수 최소 휴게시간**의 차이는 이 Module이 반환합니다.
+
+`daily[].rest_deviation`:
+
+```json
+{
+  "required_min": 60,
+  "recorded_min": 45,
+  "delta_min": -15,
+  "direction": "NEGATIVE",
+  "coverage_complete": true,
+  "shortfall_confirmable": true,
+  "reason": "업무 중단 불가"
+}
+```
+
+- **방향:** `delta_min = recorded_min - required_min`. 실제 45분/필수 60분이면 `-15`분, 실제 90분/필수 60분이면 `+30`분입니다.
+- **사유:** `daily_rows[].rest_reason` 선택 문자열을 있는 그대로 보존합니다. 비어 있으면 `null`; 사유를 만들어내거나 근무 승인 여부로 취급하지 않습니다.
+- **증빙:** 실제 휴게를 검증하지 못한 경우 `delta_min=null`, `direction=UNKNOWN`으로 유지합니다. 필수 휴게시간이 적용될지 결정되지 않은 근로시간제도 `null`입니다.
+- **완전성:** 기록된 휴게가 필수보다 짧으면 `delta_min`은 음수로 보존하되, 휴게 기록 전체의 완전성이 확인되지 않았다면 `shortfall_confirmable=false`이며 `REST_SHORTFALL_UNDETERMINED`로 표시합니다. **기록이 적다는 사실과 휴게 부족이 확정됐다는 주장은 구분**합니다.
+- **양수 차이:** 필수 최소보다 더 많이 쉬었다는 뜻이지 법정 최대 휴게시간 위반이 아닙니다. 회사가 예정한 휴게시간보다 긴지 여부는 별도 `COMPANY_BREAK_OVERRUN_REVIEW` 규칙에서 처리합니다.
+- `approved=false`, `legal_conclusion=false`, `payroll_finalizable=false`는 유지됩니다.
 
 ### 결과
 
