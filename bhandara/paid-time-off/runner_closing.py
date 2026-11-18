@@ -157,8 +157,9 @@ def _write_sheet(book, title: str, columns: tuple[str, ...],
     sheet.append(columns)
     for item in rows:
         sheet.append([
-            (str(item.get(key)) if isinstance(item.get(key), Fraction) else
-             _display(item.get(key)) if not exact else item.get(key))
+            (str(item.get(key)) if exact and
+             isinstance(item.get(key), Fraction) else
+             item.get(key) if exact else _display(item.get(key)))
             for key in columns
         ])
     sheet.freeze_panes = "C2" if title == "마감보고" else "A2"
