@@ -24,6 +24,7 @@
 - [Worktime Compliance](worktime-compliance/README.md)
 - [업체 공통 출입기 Excel 계약](ACCESS-EXCEL-CONTRACT.md)
 - [CAPS·세콤·KT텔레캅 어댑터](vendor_adapters/README.md)
+- [현재 실행·검증 실행서](RUNBOOK.md)
 
 ## 입력 참조
 
