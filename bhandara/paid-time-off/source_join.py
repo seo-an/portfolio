@@ -158,7 +158,8 @@ def combine_grant_sources(
         if ref:
             if ref.get("employee_id") not in (None, "", employee):
                 raise ValueError(f"발생근거 직원 ID 불일치: {identifier}")
-            if ref.get("grant_date") not in (None, "", row.get("grant_date")):
+            if ref.get("grant_date") not in (None, "") and (
+                _iso_date(ref.get("grant_date"), "발생근거 grant_date") != grant_date):
                 raise ValueError(f"발생근거 발생일 불일치: {identifier}")
         else:
             issues.append({"source": "Entitlement", "row": index,
