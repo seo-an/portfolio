@@ -41,9 +41,12 @@ def _input_cell(cell: Any, field: str) -> Any:
     value = cell.value
     if isinstance(value, str):
         value = value.strip()
-        if value.startswith(("=", "+", "-", "@")):
-            # Numeric negatives are allowed as numbers, not untrusted strings.
-            # Negative deficit in a user-supplied string is not allowed here.
+        if value.startswith(("=", "+", "@")):
+            return None
+        if value.startswith("-") and not re.fullmatch(
+                r"-[0-9]+(?:\.[0-9]+)?(?:/[0-9]+)?", value):
+            # A negative numeric value or signed exact fraction is safe.
+            # Formula-looking content such as '-SUM(...)' is not.
             return None
     return value
 
