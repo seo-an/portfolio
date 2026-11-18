@@ -75,13 +75,17 @@ def combine_grant_sources(
     """
     references = _index(reference_rows, key="grant_id", label="발생근거")
     by_source = {}
+    duplicate_sources = set()
     for row in references.values():
         source = str(row.get("source_ref") or "").strip()
         if source:
             if source in by_source:
-                raise ValueError(f"발생근거: 중복 source_ref={source}")
-            by_source[source] = row
+                duplicate_sources.add(source)
+            else:
+                by_source[source] = row
     compensation = _index(compensation_rows, key="source_ref", label="대휴발생")
+    if duplicate_sources & set(compensation):
+        raise ValueError(f"대휴 발생근거 source_ref 중복: {sorted(duplicate_sources & set(compensation))}")
     carried = _index(carry_rows, key="grant_id", label="Closing 인계")
     results: dict[str, dict] = {}
     issues: list[dict] = []
