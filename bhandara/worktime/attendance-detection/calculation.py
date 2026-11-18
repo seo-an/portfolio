@@ -221,6 +221,8 @@ def _normalize_device(row: Mapping[str, Any], day: date
     status = row.get("candidate_status")
     if status not in CANDIDATE_STATUSES:
         errors.append("DEVICE_CANDIDATE_STATUS_INVALID")
+    elif status in {"MULTIPLE_EXPLICIT_REVIEW", "TIME_SEQUENCE_REVIEW"}:
+        errors.append("DEVICE_CANDIDATE_NEEDS_REVIEW")
     arrival, err_arrival, _ = _instant(row.get("arrival_time"), day,
                                        "device_arrival", allow_next_day=False)
     departure, err_depart, _ = _instant(row.get("departure_time"), day,
@@ -360,8 +362,10 @@ def _detect_one(
         if plan is None and attendance_span:
             signals.append(_signal("UNSCHEDULED_PRESENCE_CANDIDATE", "LEDGER_REPORTED",
                                    int((attendance_span[1]-attendance_span[0]).total_seconds())))
-        if candidate and candidate["arrival_time"] and reported is None:
-            signals.append(_signal("DEVICE_PRESENCE_UNCONFIRMED", "DEVICE_CANDIDATE", None))
+        if candidate and reported is None:
+            code = ("DEVICE_PRESENCE_UNCONFIRMED" if candidate["arrival_time"]
+                    else "DEVICE_EVENTS_WITHOUT_ATTENDANCE_CANDIDATE")
+            signals.append(_signal(code, "DEVICE_CANDIDATE", None))
         if attendance_span:
             if day_type == "OFF":
                 signals.append(_signal("REST_DAY_PRESENCE_CANDIDATE", "LEDGER_REPORTED",
