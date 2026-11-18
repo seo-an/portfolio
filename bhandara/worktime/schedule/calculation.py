@@ -1,4 +1,4 @@
-"""Pure Schedule reconciliation. Does not infer attendance, lateness, overtime or approval.
+"""Pure Schedule workday/attendance-record presence matching. No clock deltas or approval.
 
 This module compares an authoritative planned schedule with the *reported*
 attendance ledger. Device access events are exclusively owned by Attendance
@@ -10,7 +10,6 @@ from datetime import date, datetime, time
 from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable, Mapping
 
-TIME_FIELDS = (("scheduled_start", "clock_in"), ("scheduled_end", "clock_out"))
 NON_WORK_TYPES = frozenset({"OFF", "HOLIDAY"})
 
 
@@ -146,27 +145,24 @@ def _compare(key: tuple[str, str], schedules: list[dict[str, Any]],
         recorded, check = _normalized(attendances[0], "attendance")
         issues.extend(check)
     issues = sorted(set(issues))
-    differences: list[str] = []
+    # Schedule decides only whether an attendance record exists for an
+    # expected working/non-working day. Clock, break and reason differences
+    # belong to Attendance Verification and Worktime Compliance.
+    expected_to_work = bool(planned and (
+        planned["day_type"] == "WORK" or planned["scheduled_start"] is not None
+    ))
     if issues:
         state = "REVIEW_REQUIRED"
     elif planned is None:
         state = "UNSCHEDULED"
     elif recorded is None:
-        state = ("NON_WORK_MATCH" if planned["day_type"] in NON_WORK_TYPES
-                 and planned["scheduled_start"] is None else "MISSING")
-    elif planned["scheduled_start"] is None:
-        state = "UNSCHEDULED"
+        state = "MISSING" if expected_to_work else "NON_WORK_MATCH"
     else:
-        for planned_field, record_field in TIME_FIELDS:
-            if planned[planned_field] != recorded[record_field]:
-                differences.append(record_field)
-        if planned["break_min"] != recorded["break_min"]:
-            differences.append("break_min")
-        state = "WORK_MATCH" if not differences else "RECORD_DIFFERENT"
+        state = "WORK_MATCH" if expected_to_work else "UNSCHEDULED"
     return {
         "employee_id": key[0], "work_date": key[1], "status": state,
         "planned": planned, "recorded": recorded,
-        "different_fields": differences, "review_codes": issues,
+        "different_fields": [], "review_codes": issues,
         "schedule_sources": _provenance(schedules),
         "attendance_sources": _provenance(attendances),
     }
@@ -181,8 +177,9 @@ def reconcile_schedule(
 ) -> dict[str, Any]:
     """Compare source facts per employee/day. Safe for independent execution.
 
-    Only equality is determined. No leave/absence, attendance approval, rest
-    compliance, lateness, overtime, holiday pay, or device-authentication claim.
+    Only workday/attendance-record presence is determined. No time deltas,
+    leave/absence approval, rest compliance, lateness, overtime, holiday pay,
+    or device-authentication claims.
     """
     start, end = _day(period_from), _day(period_to)
     if start is None or end is None or end < start:
@@ -207,5 +204,5 @@ def reconcile_schedule(
         "schema_version": "0.1", "module": "schedule", "status": state,
         "period_from": start, "period_to": end, "rows": rows,
         "source_issues": source_issues, "approved": False,
-        "notice": "대조 결과만 제공하며 지각·연장근무·휴무·휴가·근태 승인 여부를 확정하지 않습니다.",
+        "notice": "근무 예정일과 근태장부 기록의 존재 여부만 대조합니다. 시각 차이·휴게·지각·연장근무·휴가 승인 여부는 계산하지 않습니다.",
     }
