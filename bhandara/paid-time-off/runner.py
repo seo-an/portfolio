@@ -271,3 +271,159 @@ def run_entitlement(
         stream.write(payload)
     return {"path": str(destination.resolve()), "summaries": summaries,
             "details": details, "policy": metadata}
+
+
+# Separate, standalone Excel boundary for the deduction-quantity Module.
+# The combined PTO usage ledger and closing reports are NOT created here.
+_deduction = importlib.import_module(
+    "bhandara.paid-time-off.deduction-quantity.calculation")
+APPROVED_LEAVE_RELATIVE = Path("paid-time-off") / "approved-leave.xlsx"
+APPROVED_LEAVE_COLUMNS = _deduction.INPUT_COLUMNS
+
+
+def _read_approved_leave(path: Path) -> tuple[list[dict[str, Any]], list[str]]:
+    """Read approved rows without aborting the workbook for row-level errors.
+
+    A missing column is propagated as blank values to each source row. Duplicate
+    *headers*, or an unreadable workbook, are structural errors and cannot be
+    interpreted unambiguously.
+    """
+    if not path.is_file() or path.suffix.lower() not in (".xlsx", ".xlsm"):
+        raise EntitlementInputError(f"승인휴가 Excel 파일이 없습니다: {path.name}")
+    try:
+        book = load_workbook(path, read_only=True, data_only=False)
+    except Exception as exc:
+        raise EntitlementInputError(f"승인휴가 Excel 열기 실패: {path.name}") from exc
+    try:
+        if "승인휴가" not in book.sheetnames:
+            raise EntitlementInputError("approved-leave.xlsx: '승인휴가' 시트가 없습니다")
+        iterator = book["승인휴가"].iter_rows()
+        first = next(iterator, None)
+        if first is None:
+            raise EntitlementInputError("승인휴가: 헤더 행이 없습니다")
+        headers = [
+            cell.value.strip() if isinstance(cell.value, str) else cell.value
+            for cell in first
+        ]
+        for name in APPROVED_LEAVE_COLUMNS:
+            if headers.count(name) > 1:
+                raise EntitlementInputError(f"승인휴가: {name} 헤더가 중복됐습니다")
+        positions = {
+            name: headers.index(name)
+            for name in APPROVED_LEAVE_COLUMNS if name in headers
+        }
+        missing = [name for name in APPROVED_LEAVE_COLUMNS if name not in headers]
+        data = []
+        for row_number, cells in enumerate(iterator, start=2):
+            if not any(c.value is not None and c.value != "" for c in cells):
+                continue
+            values = {
+                name: cells[index].value if index < len(cells) else None
+                for name, index in positions.items()
+            }
+            errors = [
+                f"{name}: Excel 수식 입력 불가"
+                for name, index in positions.items()
+                if index < len(cells) and cells[index].data_type == "f"
+            ]
+            values.update({
+                "_excel_row": row_number,
+                "_source_errors": errors,
+            })
+            data.append(values)
+        return data, missing
+    finally:
+        book.close()
+
+
+def make_deduction_workbook(
+    summaries: list[dict], details: list[dict], metadata: dict[str, Any],
+) -> bytes:
+    """Deduction-only workbook; no grant balance, allocation, or closing."""
+    book = Workbook()
+    try:
+        summary = book.active
+        summary.title = "차감요약"
+        _append_table(
+            summary,
+            ("employee_id", "차감일수", "계산 건수", "제외 건수", "상태"),
+            summaries,
+            ("employee_id", "deduction_days", "valid_rows", "excluded_rows",
+             "status"),
+        )
+        detail = book.create_sheet("차감상세")
+        _append_table(
+            detail,
+            ("원본행", "request_id", "employee_id", "leave_date",
+             "leave_type", "사용시간", "차감일수", "상태", "사유"),
+            details,
+            ("excel_row", "request_id", "employee_id", "leave_date",
+             "leave_type", "duration_hours", "deduction_days", "status",
+             "reason"),
+        )
+        policy = book.create_sheet("정책정보")
+        _append_table(
+            policy, ("항목", "값"),
+            [{"name": key, "value": value} for key, value in metadata.items()],
+            ("name", "value"),
+        )
+        stream = BytesIO()
+        book.save(stream)
+        return stream.getvalue()
+    finally:
+        book.close()
+
+
+def run_deduction_quantity(
+    *,
+    policy_id: str,
+    run_id: str,
+    input_root: Path = SHARED_INPUT_ROOT,
+    output_root: Path = DEFAULT_OUTPUT_ROOT,
+    approved_file: Path | None = None,
+    standard_daily_hours: Any = 8,
+) -> dict[str, Any]:
+    """Independent approved-leave quantity calculation; not ledger posting.
+
+    Every supplied row is externally approved (including future leave).
+    No implicit date filtering, leave-grant selection, or approval decisions.
+    """
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", run_id):
+        raise EntitlementInputError("run_id는 영문·숫자·하이픈·밑줄만 허용합니다")
+    if not isinstance(policy_id, str) or not policy_id.strip():
+        raise EntitlementInputError("policy_id가 필요합니다")
+    path = (Path(approved_file) if approved_file is not None
+            else Path(input_root) / APPROVED_LEAVE_RELATIVE)
+    rows, missing_headers = _read_approved_leave(path)
+    calculated = _deduction.calculate_approved_rows(
+        rows, standard_daily_hours=standard_daily_hours)
+    metadata = {
+        "정책 ID": policy_id,
+        "입력 파일": path.name,
+        "입력 SHA256": sha256_file(path),
+        "입력 시트": "승인휴가",
+        "1일 기준시간": calculated["standard_daily_hours"],
+        "기준시간 출처": ("기본값 8시간" if standard_daily_hours == 8
+                     else "호출 시 지정값"),
+        "대상": "외부 승인 완료 건 전체(미래 사용일 포함)",
+        "누락 헤더": ", ".join(missing_headers) if missing_headers else "없음",
+        "계산 건수": calculated["calculated_rows"],
+        "제외 건수": calculated["excluded_rows"],
+        "정밀도": "중간 반올림 없음; 무한소수만 표시 7자리 절사",
+        "발생·잔여·만료·이월·마감 포함": "아니요",
+        "승인·취소 판정": "외부 시스템",
+    }
+    payload = make_deduction_workbook(
+        calculated["summaries"], calculated["details"], metadata)
+    destination = Path(output_root) / run_id / "deduction-quantity-result.xlsx"
+    if destination.exists():
+        raise EntitlementInputError("동일 run_id 결과가 이미 있습니다. 덮어쓰지 않습니다")
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("xb") as stream:
+        stream.write(payload)
+    return {
+        "path": str(destination.resolve()),
+        "summaries": calculated["summaries"],
+        "details": calculated["details"],
+        "policy": metadata,
+    }
