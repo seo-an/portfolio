@@ -41,9 +41,12 @@ def _input_cell(cell: Any, field: str) -> Any:
     value = cell.value
     if isinstance(value, str):
         value = value.strip()
-        if value.startswith(("=", "+", "-", "@")):
-            # Numeric negatives are allowed as numbers, not untrusted strings.
-            # Negative deficit in a user-supplied string is not allowed here.
+        if value.startswith(("=", "+", "@")):
+            return None
+        if value.startswith("-") and not re.fullmatch(
+                r"-[0-9]+(?:\.[0-9]+)?(?:/[0-9]+)?", value):
+            # A negative numeric value or signed exact fraction is safe.
+            # Formula-looking content such as '-SUM(...)' is not.
             return None
     return value
 
@@ -370,6 +373,7 @@ def _employee_summary(
 def make_usage_workbook(
     summary: list[dict], details: list[dict], expiry_result: dict | None,
     issues: list[dict], metadata: dict[str, Any],
+    source_snapshot: list[dict] | None = None,
 ) -> bytes:
     book = Workbook()
     try:
@@ -391,6 +395,21 @@ def make_usage_workbook(
             _sheet(book, "검토사항",
                    ("source", "row", "employee_id", "leave_type",
                     "grant_id", "request_id", "status", "reason"), issues)
+        if source_snapshot is not None:
+            keys = ("grant_id", "employee_id", "leave_type", "grant_date",
+                    "valid_from", "expires_on", "source_ref", "source_type",
+                    "available_days", "remaining_days")
+            # Handoff facts are NOT a second business ledger. Exact rational
+            # values are stored as text "numerator/denominator" to avoid the
+            # 7-decimal visual truncation used in the human-facing workbook.
+            entries = []
+            for record in source_snapshot:
+                entries.append({
+                    key: str(record[key]) if isinstance(record.get(key), Fraction)
+                    else record.get(key) for key in keys
+                })
+            hidden = _sheet(book, "_발생자료", keys, entries)
+            hidden.sheet_state = "hidden"
         _sheet(book, "정책정보", ("항목", "값"),
                [{"항목": k, "값": v} for k, v in metadata.items()])
         stream = BytesIO()
@@ -456,6 +475,14 @@ def run_usage_ledger(
             calculated["balances"], closing_id=closing_id,
             balance_as_of=as_of)
         issues.extend(expiry_result["errors"])
+    source_types = {
+        row["grant_id"]: row.get("source_type")
+        for row in combined["grants"]
+    }
+    source_snapshot = [
+        {**row, "source_type": source_types.get(row["grant_id"])}
+        for row in calculated["balances"]
+    ]
     metadata = {
         "정책 ID": policy_id, "run_id": run_id,
         "실행 기준일": as_of.isoformat(), "참조 Closing/기초": carry_ref or "없음",
@@ -471,7 +498,7 @@ def run_usage_ledger(
         "과거 인계 전 승인 신청": "기초 잔여에 반영되어 재차감하지 않음",
     }
     payload = make_usage_workbook(summary, details, expiry_result,
-                                  issues, metadata)
+                                  issues, metadata, source_snapshot)
     destination = Path(output_root) / run_id / "usage-ledger-result.xlsx"
     if destination.exists():
         raise UsageInputError("동일 run_id의 결과가 이미 있습니다. 덮어쓰지 않습니다")
@@ -482,4 +509,5 @@ def run_usage_ledger(
         "path": str(destination.resolve()), "summaries": summary,
         "details": details, "expiry": expiry_result,
         "issues": issues, "policy": metadata,
+        "source_snapshot": source_snapshot,
     }
