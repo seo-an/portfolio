@@ -241,6 +241,20 @@ class VendorAdapterTests(unittest.TestCase):
         self.assertEqual(normalized["attendance_candidates"][0]["arrival_time"],
                          "2026-11-16T09:00:00")
 
+    def test_failed_auth_in_optional_result_column_is_excluded(self):
+        rows = [
+            self.secom(stamp="2026-11-16 07:00:00",
+                       row_number=2, 인증결과="인식실패"),
+            self.secom(stamp="2026-11-16 08:45:00",
+                       row_number=3, 인증결과="인증성공"),
+            self.secom(stamp="2026-11-16 18:30:00",
+                       row_number=4, 인증결과="인증성공"),
+        ]
+        events, reviews = self.normalize("SECOM", rows)
+        self.assertEqual(len(events), 2)
+        self.assertEqual(len(reviews), 1)
+        self.assertEqual(reviews[0]["status"], "EXCLUDED")
+
     def test_unknown_raw_mode_does_not_become_access(self):
         events, reviews = self.normalize("CAPS", [
             self.caps(mode="업체미정의코드", row_number=2),
