@@ -32,7 +32,7 @@ class ToolAllocationTests(unittest.TestCase):
         grants = [
             grant("G9", grant_date="2026-01-01", end="2026-12-31"),
             grant("G2", grant_date="2026-01-01", end="2026-10-31"),
-            grant("G3", grant_date="2026-02-01", end="2026-10-31"),
+            grant("G3", grant_date="2026-02-01", start="2026-02-01", end="2026-10-31"),
             grant("G1", grant_date="2026-01-01", end="2026-10-31"),
         ]
         result = self.run_allocation(grants, [request("R1", amount="3")])
