@@ -123,7 +123,7 @@ def calculate_approved_rows(
         leave_type = leave_type.strip() if isinstance(leave_type, str) else leave_type
         original_date = row.get("leave_date")
         duration = row.get("duration_hours")
-        reasons: list[str] = []
+        reasons: list[str] = list(row.get("_source_errors", ()))
         used_date: date | None = None
 
         if not request_id:
