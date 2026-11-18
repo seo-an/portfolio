@@ -181,8 +181,8 @@ class ExcelUsageTests(unittest.TestCase):
         self.assertEqual(lines[0]["grant_id"], self.grant_id)
         self.assertEqual(Fraction(lines[0]["반영발생일수"]), 15)
         lines = rows_by_header(self.deduct_file, "차감상세")
-        self.assertEqual(lines[0]["_exact_numerator"], 1)
-        self.assertEqual(lines[0]["_exact_denominator"], 1)
+        self.assertEqual(int(lines[0]["_exact_numerator"]), 1)
+        self.assertEqual(int(lines[0]["_exact_denominator"]), 1)
         book = load_workbook(self.deduct_file)
         try:
             self.assertTrue(book["차감상세"].column_dimensions["J"].hidden)
