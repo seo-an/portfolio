@@ -30,7 +30,9 @@
 | `entitlement` | PR #38 병합, `calculation.py` + `runner.run_entitlement()` | 발생량 시범 Excel: `발생요약/발생상세/정책정보` |
 | `deduction-quantity` | PR #39 병합, `calculation.py` + `runner.run_deduction_quantity()` | 승인된 사용시간 시범 Excel: `차감요약/차감상세/정책정보` |
 | `eligibility` | 구형 순수 API 초안 존재 | PTO 발생 계산 단계에서 실행하지 않음 |
-| `expiry-carryover` / `use-promotion` / `closing` | 설계 문서만 | 계산·장부·Excel 미구현 |
+| Tool 내부 allocation.py | 순수 Python API 초기 구현 | Excel/Tool 연결 미구현 |
+| expiry-carryover | 만료·이월 순수 Python API 초기 구현 | Excel/Tool 연결 미구현 |
+| use-promotion / closing | 설계 문서만 | 계산·장부·Excel 미구현 |
 | `paid-time-off/module.json`, `user_settings.py`, 최상위 CLI, Tool 조합 | 아직 미구현 | Gearbox/Slack 운영 호출 금지 |
 | 구형 `pto-calculator` | v0.2.1 유지 | Golden·버전 게이트 임의 변경 금지 |
 
@@ -40,7 +42,8 @@
 
 - **`entitlement`**: 입사일 기준·1년 미만 월별·회계연도 첫 비례/후속 정기 연차의 **기준일 연도 발생량만 계산**합니다. 근태관리 확정 플래그를 입력받아 사용·잔여·만료는 계산하지 않습니다.
 - **`deduction-quantity`**: 외부에서 승인돼 현재 유효한 요청의 사용시간을 일수로 환산합니다. 연차/대휴 모두 지원하지만 어느 발생분에서 차감할지는 계산하지 않습니다. 미래 승인된 사용일도 입력에서 제외하지 않습니다.
-- **`expiry-carryover` (미구현)**: 발생 건의 유효기간·이월·만료 및 요청별 차감 대상 발생 건 배정을 소유하는 방향을 합의했습니다. 수당 지급·법적 면책 판정은 별도 근거/검증이 필요합니다.
+- **Tool 내부 allocation.py**: 순수 계산으로 요청 ID와 발생 ID를 연결해 부족분·예약까지 배정합니다. 업무 Module이 아닙니다.
+- **expiry-carryover**: 만료/이월 판정만 하는 독립 순수 Module입니다. **차감 배정은 하지 않습니다.** 수당 지급·법적 면책 판정도 하지 않습니다.
 - **`use-promotion` (미구현)**: 사용촉진 대상·기한·통지/증빙 및 적용 법령·정책을 별도 협의합니다.
 - **`closing` (미구현)**: 월별·기간별 사용량, 총 사용량 등의 **마감 집계·보고 양식**을 담당합니다. 요청별 차감 근거를 보여 주는 사용내역 표와는 서로 다른 산출물입니다.
 - 신청·승인·반려·취소 이력, 출퇴근 원본 검토, 휴일/근무일 충돌 검증은 **외부 시스템**이 소유합니다. 계산 Module은 외부 확정 사실을 신뢰하고 해당 계약을 검증합니다.
@@ -134,3 +137,22 @@
 - 발생일이 과거여도 **해당 사용일에 권리가 유효해야** 배정할 수 있습니다. 발생일·만료일·우선순위 정책이 없다면 임의로 추정하지 않습니다.
 - 사용내역 요약 후보는 직원별 `employee_id`, 발생일수·사용일수·잔여일수. 상세 후보는 요청 ID/발생 ID/사용일/휴가유형/차감량 및 잔여 추적입니다. **이는 다음 Module 조합 이후의 결과 후보이고 현재 Deduction Excel의 확정 열이 아닙니다.**
 - `closing`은 이 결과와 별도로 월별·기간별·누적 사용량을 마감 집계합니다. PTO 전체 통합 결과표는 여전히 보류합니다.
+
+## 2026-11-18 최신 설계: Allocation과 Expiry/Carryover 분리
+
+**기존 문서에서 Expiry가 발생분 차감까지 소유한다고 한 부분은 폐기합니다.** 현재는 순수 Python API 초기 구현이며 최종 Excel·Tool 호출 경계는 아직 아닙니다.
+
+- paid-time-off/allocation.py: Tool 내부 계산 단계. 별도 Module도 아니고 물리 flow/ 폴더도 아닙니다. 입력된 발생 건과 승인된 사용 건을 ID로 연결합니다.
+- paid-time-off/expiry-carryover/calculation.py: 독립 Module. 외부에서 유효기간과 마감일 현재 잔여가 확정된 발생 건에 대해 만료 또는 이월을 판정합니다. 배정/잔여 재계산/수당 지급 승인은 하지 않습니다.
+- Closing-1.4-2025 ~ Closing-4.4-2025 ID에서 분기 종료일을 유도하므로 opening_date 추가 입력은 없습니다. API의 balance_as_of는 상위 결과의 기준일이 마감일과 같은지 검증하는 값이지 사용자에게 입력을 중복 요구하는 시트가 아닙니다.
+- Allocation의 발생 건 입력 필드: grant_id, employee_id, leave_type, grant_date, available_days, valid_from, expires_on, source_ref. available_days는 원천에서 확정된 반영발생일수 또는 기존 Closing의 발생분별 기초잔여를 정규화한 내부 이름입니다. 유효기간은 필수이며 누락 시 추정하지 않습니다.
+- Allocation의 차감 입력 필드: request_id, employee_id, leave_type, leave_date, deduction_days. Deduction Quantity에서 이미 일수 환산된 승인 내역만 인계합니다.
+- 배정 순서는 사용일 → 만료일 → 발생일 → grant_id. 취소된 요청을 제외한 현재 유효 승인 목록으로 전체 재실행합니다. 연차와 대휴를 교차 차감하지 않습니다.
+- 초과 사용은 신청별 발생분 미배정 행(grant_id 없음)과 직원·유형별 **음수 잔여**로 표시합니다. 발생 건 자체를 음수로 변경하지 않습니다. 새 발생분으로 **자동 상계하지 않습니다**. 상계는 외부 확정 지시가 있어야 하지만 그 지시의 실제 입력 계약은 추후 연결합니다.
+- 미래 예약은 실행 기준일의 사용량과 별도 표시합니다. 마감일 이전의 발생분별 확정 잔여만 만료/이월 계산에 사용하며 미래의 미확정 발생은 예측하지 않습니다.
+- 무한소수 7자리 절사 문자열로는 정확한 분수를 복구할 수 없습니다. 향후 Excel-to-Flow 연결 시 분수의 정확한 인계 규격을 추가해야 합니다.
+- Expiry의 만료된 연차는 미사용수당 **검토 대상**만 표시하며 현금청구권·면책·지급을 자동 승인하지 않습니다.
+- 오류가 특정 직원/휴가유형의 수량에 영향을 주면 그 그룹의 배정을 생략합니다. 정상적인 다른 그룹의 계산은 유지합니다.
+- 과거 Closing/외부 대휴/Entitlement 원본 Excel의 실제 결합, grant_id 생성, 내부 Flow의 선택적 호출, 최초 Closing 이전 기초자료 인계, 외부 상계 명령, 결과 Excel과 SHA 기록은 **아직 구현하지 않았습니다**.
+- 단독 unittest: python3 -m unittest bhandara.tests.test_paid_time_off_allocation_expiry -v
+
