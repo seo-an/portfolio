@@ -1,6 +1,6 @@
 # Attendance Verification — 출입 인증·근태장부와 스케줄 시각 차이 대조 (0.2)
 
-> **독립 순수 계산 구현.** 벤더 원본 연결·Excel 입출력·공개 CLI·Gearbox/Slack 배포는 아직 구현하지 않았습니다. 검토 결과는 근로시간·지각·휴게·급여·승인 여부를 자동 확정하지 않습니다.
+> **독립 계산 및 표준 Excel 인계 구현.** 업체별 원본 Excel 해석과 공통 Excel 변환은 `../vendor_adapters/`와 `../access_source.py`가 담당합니다. 이 Module에 직접 연결하는 Tool 공개 CLI·Gearbox/Slack 운영 배포는 아직 구현하지 않았습니다. 근로시간·지각·휴게·급여·승인을 자동 확정하지 않습니다.
 
 ## 역할과 경계
 
@@ -33,7 +33,7 @@ result = verification.verify_attendance(
 
 `employee_id`, `work_date`, `event_id`, `event_time`, `mode`, `direction`, `auth_status`, `auth_method`를 받습니다. `worker_id`, `device_id`, `source_ref`, `_row_number`는 신원 대조·출처 추적을 위해 사용합니다.
 
-서로 다른 CAPS·KT텔레캅 원본 컬럼/코드는 **업체별 어댑터에서 명시적으로 매핑한 후** 전달해야 합니다. 알 수 없는 원본 코드의 뜻이나 인증 방법을 자동 추측하지 않습니다. 이 모듈은 제조사 파일·API에 직접 접근하지 않습니다.
+서로 다른 CAPS·세콤·KT텔레캅 원본 컬럼/코드는 **업체별 어댑터에서 명시적으로 매핑한 후** 전달해야 합니다. 알 수 없는 원본 코드의 뜻이나 인증 방법을 자동 추측하지 않습니다. 이 모듈은 제조사 파일·API에 직접 접근하지 않습니다.
 
 시간은 로컬 기준 `HH:MM` 또는 `YYYY-MM-DDTHH:MM`을 허용하고, 초/시간대 정보가 섞인 값은 검토 대상으로 남깁니다. 익일 퇴근 시각은 **전체 날짜를 포함**해야 합니다. `work_date`는 출근 기준 근무일을 뜻하므로 익일 퇴근 인증도 해당 근무일에 연결하여 전달해야 합니다.
 
@@ -88,12 +88,14 @@ report = verification.verify_attendance(
 
 출력 `rows[]`는 `reported`, `device_punches`, `different_fields`, `first_access_candidate`, `review_codes`, `ledger_sources`, `access_evidence`를 포함합니다. `first_access_candidate.confirmed`는 항상 `false`입니다. 두 자료의 중복/불일치가 있어도 임의로 한 행을 선택해 승인하지 않습니다.
 
-## 이번 PR에서 하지 않는 일
+## 연동 상태와 보류 범위
 
-1. 원본 인증 파일의 수집·열 이름 추정·제조사별 원본 코드 매핑. 실제 제공된 CAPS/KT텔레캅 샘플의 열과 코드 의미를 확인한 뒤 **별도의 독립 어댑터**를 설계합니다.
-2. Schedule Module 또는 구형 `worktime-calculator`와 자동 연결하지 않습니다.
-3. 휴게·법정 근로시간 판정은 Worktime Compliance가 담당합니다. 지각·조퇴·연장·야간·휴일근무의 승인/급여 판단은 여기서도 수행하지 않습니다.
-4. Closing, Gearbox, Slack, Tool 공개 CLI 및 Payroll 연동은 보류합니다.
+1. **구현:** CAPS·세콤·KT텔레캅의 제공 예제에서 관찰된 헤더를 사용하는 독립 어댑터와 업체 공통 Excel v0.2 Writer/Reader가 있습니다. 새 제조사 버전·미정의 코드 해석은 별도 검증 대상입니다. 자동 열 이름 추정은 하지 않습니다.
+2. **구현:** `verify_attendance_xlsx()`를 통해 표준 Excel의 `Attendance Candidates`와 선택적 스케줄을 전달해 시각 차이를 계산할 수 있습니다. 이것은 공개 CLI나 Gearbox 자동 Workflow 연결을 의미하지 않습니다.
+3. **보류:** 휴게·법정 근로시간 판단은 Worktime Compliance에 맡깁니다. 지각·조퇴·연장·야간·휴일근무의 확정·승인·급여 산정은 하지 않습니다.
+4. **보류:** Worktime Closing, Gearbox, Slack, Tool 공개 CLI, Payroll 연동 및 구형 `worktime-calculator` 제거.
+
+정규화 원본에서 인증 방식이나 인증 성공 여부를 확정할 수 없으면 **실근무 또는 승인된 출퇴근으로 승격하지 않아야 합니다**.
 
 ## 독립 테스트
 
