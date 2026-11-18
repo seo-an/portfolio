@@ -11,7 +11,7 @@ from openpyxl import load_workbook
 from bhandara.worktime.access_source import (
     ACCESS_SHEET, EVENT_COLUMNS, META_SHEET, META_COLUMNS,
     REVIEW_COLUMNS, REVIEW_SHEET, AccessWorkbookError,
-    read_access_events_xlsx, write_access_events_xlsx,
+    read_access_events_xlsx, write_access_events_xlsx, verify_attendance_xlsx,
 )
 
 verification = import_module("bhandara.worktime.attendance-verification")
@@ -129,6 +129,35 @@ class AccessExcelContractTests(unittest.TestCase):
         self.assertEqual(checked["status"], "REVIEW_REQUIRED")
         self.assertIn("EVENT_AUTH_METHOD_UNKNOWN",
                       checked["rows"][0]["review_codes"])
+
+    def test_canonical_excel_tool_handoff_preserves_source_reviews(self):
+        path = self.write(reviews=[self.review()])
+        ledger = [{
+            "employee_id": "E001", "worker_id": "EP0001",
+            "work_date": "2026-11-16",
+            "clock_in": "09:00", "clock_out": "18:00",
+        }]
+        report = verify_attendance_xlsx(
+            ledger, path, period_from="2026-11-16",
+            period_to="2026-11-16",
+        )
+        self.assertEqual(report["rows"][0]["status"], "RECORD_MATCH")
+        self.assertEqual(report["status"], "REVIEW_REQUIRED")
+        self.assertEqual(report["normalized_source"]["normalized_review_count"], 1)
+        self.assertEqual(report["source_issues"][0]["code"], "NORMALIZATION_UNMAPPED")
+
+    def test_canonical_excel_tool_handoff_passes_without_reviews(self):
+        ledger = [{
+            "employee_id": "E001", "worker_id": "EP0001",
+            "work_date": "2026-11-16",
+            "clock_in": "09:00", "clock_out": "18:00",
+        }]
+        report = verify_attendance_xlsx(
+            ledger, self.write(), period_from="2026-11-16",
+            period_to="2026-11-16",
+        )
+        self.assertEqual(report["status"], "PASS")
+        self.assertEqual(report["normalized_source"]["source_vendor"], "SYN_CAPS")
 
     def test_writer_rejects_unsupported_raw_vendor_code(self):
         with self.assertRaises(AccessWorkbookError):
