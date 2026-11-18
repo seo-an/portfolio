@@ -1,6 +1,6 @@
 # Worktime — 신규 Tool 구조 (설계·독립 계산 단계)
 
-> 목표 Module 이름은 **Schedule / Attendance Verification / Worktime Compliance / Attendance Detection**으로 확정합니다. **Schedule**, **Attendance Verification**, **Worktime Compliance**의 독립 순수 계산 경로가 구현되어 있고, Attendance Detection은 설계 대상입니다. 현재의 `worktime-calculator` 및 Gearbox/Slack 연결은 변경하지 않습니다.
+> 목표 Module 이름은 **Schedule / Attendance Verification / Worktime Compliance / Attendance Detection**으로 확정합니다. **Schedule**, **Attendance Verification**, **Worktime Compliance**, **Attendance Detection** 네 Module의 독립 순수 계산 경로가 구현되어 있습니다. 현재의 `worktime-calculator` 및 Gearbox/Slack 연결은 변경하지 않습니다.
 
 ## 계층 및 책임
 
@@ -20,7 +20,7 @@
 
 현재 저장소의 `bhandara/common/io/input_layout.py`에는 `common/employee.xlsx`, `common/id-map.xlsx`만 `common` 입력 역할로 등록돼 있고 Worktime 스케줄은 `worktime/work-schedule.xlsx`에 있습니다. 향후 공통 근무 스케줄을 단일 정본으로 만들되, **PTO에서 쓰는 별도 근태판정·근무제 배정 자료를 무작정 덮어쓰지 않습니다.** 공통 스케줄이 근로제 적용·임시 변경·분할 근무를 어떻게 표현할지 확인한 뒤 전환합니다.
 
-현재 단계는 기존 파일 경로 전환 없이 `schedule/calculation.py`, `attendance-verification/calculation.py`, `worktime-compliance/calculation.py`의 독립 순수 계산 경로를 제공합니다. 업체별 변환 결과 Excel은 Tool 내부 `access_source.py`의 표준 규격으로 읽고 씁니다. 실제 Excel 입출력, 공개 Tool CLI, Gearbox/Slack 연결, 구형 코드 제거는 후속 단계입니다.
+현재 단계는 기존 파일 경로 전환 없이 `schedule/calculation.py`, `attendance-verification/calculation.py`, `worktime-compliance/calculation.py`, `attendance-detection/calculation.py`의 독립 순수 계산 경로를 제공합니다. 업체별 변환 결과 Excel은 Tool 내부 `access_source.py`의 표준 규격으로 읽고 씁니다. 실제 Excel 입출력, 공개 Tool CLI, Gearbox/Slack 연결, 구형 코드 제거는 후속 단계입니다.
 
 ## Attendance Verification v0.1
 
@@ -29,6 +29,12 @@
 ## Worktime Compliance v0.1
 
 휴게의 법정 최소 충족 여부, 회사 예정 휴게시간 초과, 일/주 기준 근로시간 초과 후보를 외부 검증된 분 단위 증빙으로 검토합니다. 실제 근무·휴게 근거가 없으면 법 위반으로 단정하지 않습니다. 비표준 근로시간제와 주간 범위 불완전 자료도 별도 검토 대상으로 남깁니다. [상세 계약](worktime-compliance/README.md).
+
+## Attendance Detection v0.1
+
+스케줄과 신고 근태장부로 지각·조퇴·근태누락·근무시간 외 **체류 후보**를 찾고, 외부에서 별도로 검증한 `verified_work_intervals`가 있을 때만 연장·야간·휴무·휴일 **실근로 후보**를 별도 산출합니다. 원본 출입기에서 추정된 첫·마지막 이벤트는 미확정 근거로만 보존하며 근로시간으로 자동 승격하지 않습니다. 업체 공통 Excel v0.2의 `Attendance Candidates`를 `detect_attendance_xlsx()`에서 받을 수 있습니다. 기본 규칙은 Tool의 `user_settings.py`에서 수정할 수 있습니다.
+
+[상세 계약](attendance-detection/README.md).
 
 ## 업체별 Excel 정규화 계약
 
