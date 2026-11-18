@@ -227,7 +227,7 @@ class ExcelUsageTests(unittest.TestCase):
     def test_negative_balance_is_numeric_and_no_auto_offset(self):
         self._write_refs(annual_start="2027-01-01",
                          annual_end="2027-12-31",
-                         comp_end="2027-12-31")
+                         comp_end="2026-10-31")
         self._write_approved([["NEG-R", "E001", "2026-11-10", "연차", 8]])
         result = self.run_usage(carry=False, closing=None, run_id="negative")
         summary = rows_by_header(Path(result["path"]), "사용요약")[0]
