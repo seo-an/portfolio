@@ -229,6 +229,8 @@ def _compare(key: tuple[str, str], ledger_rows: list[dict[str, Any]],
 
     if problems:
         state = "REVIEW_REQUIRED"
+    elif not ledger_rows and not event_rows:
+        state = "MISSING_EVIDENCE"
     elif not ledger_rows:
         state = "DEVICE_ONLY"
     elif not event_rows:
