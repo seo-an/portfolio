@@ -68,6 +68,21 @@ records = read_access_events_xlsx(output)
 
 `read_access_events_xlsx()`의 `status=PASS`는 **표준 Excel 구조 및 변환 결과 검토 이슈 부재**만 의미합니다. 지문 인증 성공, 근태 승인 또는 출퇴근 확정을 뜻하지 않습니다.
 
+### 정규화 실패까지 보존하는 즉시 검증 경로
+
+`verify_attendance_xlsx(attendance_rows, workbook_path, *, period_from, period_to)`는 표준 Excel을 열어서 바로 Attendance Verification으로 전달하는 Tool 내부 편의 함수입니다.
+
+```python
+from bhandara.worktime.access_source import verify_attendance_xlsx
+
+report = verify_attendance_xlsx(
+    attendance_rows, "/private/output/access-events.xlsx",
+    period_from="2026-11-16", period_to="2026-11-16",
+)
+```
+
+`Access Events`가 장부와 모두 일치하더라도 `Source Review`에 미매핑·오류 행이 있다면 결과 전체를 `REVIEW_REQUIRED`로 표시합니다. **좋은 행만 골라 계산해서 원본 문제가 사라진 것처럼 표현하지 않습니다.**
+
 ## Worktime Compliance와의 관계
 
 이 Excel은 근태·외출의 독립 증빙을 제공할 뿐입니다. **CAPS/KT의 OUT→IN이 자동으로 법정 휴게가 되는 것은 아닙니다.** 실제 휴게시간·근로시간 및 증빙 완전성은 외부 검토를 거쳐 Worktime Compliance의 `daily_rows`에 들어갑니다. 따라서 업체별 어댑터를 추가해도 Compliance의 법률 기준 계산을 다시 쓰지 않습니다.
