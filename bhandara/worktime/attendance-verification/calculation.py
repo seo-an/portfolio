@@ -121,7 +121,7 @@ def _ledger(row: Mapping[str, Any], day: str) -> tuple[dict[str, Any], list[str]
         problems.append("LEDGER_CLOCK_INCOMPLETE")
     elif exit_ <= entry:
         problems.append("OVERNIGHT_DATE_REQUIRED" if not explicit_out else "LEDGER_CLOCK_SEQUENCE_INVALID")
-    elif (datetime.fromisoformat(exit_) - datetime.fromisoformat(entry_)).total_seconds() > 86400:
+    elif (datetime.fromisoformat(exit_) - datetime.fromisoformat(entry)).total_seconds() > 86400:
         problems.append("LEDGER_SPAN_EXCEEDS_24H")
     return {"clock_in": entry, "clock_out": exit_,
             "worker_id": str(row.get("worker_id") or "")}, sorted(set(problems))
