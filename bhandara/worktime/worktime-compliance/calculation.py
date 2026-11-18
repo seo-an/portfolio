@@ -135,6 +135,29 @@ def _required_rest(worked: int, day: date, policy: Mapping[str, int],
     return required
 
 
+def _rest_deviation(
+    required: int | None,
+    actual: int | None,
+    *,
+    verified: bool,
+    coverage_complete: bool,
+    reason: str | None,
+) -> dict[str, Any]:
+    """Actual confirmed rest minus minimum required rest, never payroll time."""
+    diff = actual - required if verified and actual is not None and required is not None else None
+    return {
+        "required_min": required,
+        "recorded_min": actual,
+        "delta_min": diff,
+        "direction": ("UNKNOWN" if diff is None else
+                      "NEGATIVE" if diff < 0 else
+                      "POSITIVE" if diff > 0 else "ZERO"),
+        "coverage_complete": coverage_complete,
+        "shortfall_confirmable": bool(diff is not None and diff < 0 and coverage_complete),
+        "reason": reason,
+    }
+
+
 def _daily_one(employee: str, day: str, data: list[dict[str, Any]],
                policy: Mapping[str, Any]) -> dict[str, Any]:
     codes = []
@@ -145,7 +168,10 @@ def _daily_one(employee: str, day: str, data: list[dict[str, Any]],
             "employee_id": employee, "work_date": day,
             "status": "REVIEW_REQUIRED", "worked_min": None,
             "rest_min": None, "required_rest_min": None,
-            "planned_break_min": None, "review_codes": sorted(set(codes)),
+            "planned_break_min": None,
+            "rest_deviation": _rest_deviation(
+                None, None, verified=False, coverage_complete=False, reason=None
+            ), "review_codes": sorted(set(codes)),
             "source_ref": None,
         }
     row = data[0]
@@ -162,6 +188,14 @@ def _daily_one(employee: str, day: str, data: list[dict[str, Any]],
     worked = _minutes(row.get("worked_min"))
     rest = _minutes(row.get("rest_min"))
     planned = _minutes(row.get("planned_break_min"))
+    raw_reason = row.get("rest_reason")
+    if raw_reason is None or raw_reason == "":
+        reason = None
+    elif isinstance(raw_reason, str):
+        reason = raw_reason.strip() or None
+    else:
+        reason = None
+        codes.append("INVALID_REST_REASON")
     if worked is None:
         codes.append("WORK_MINUTES_INVALID")
     if rest is None:
@@ -216,6 +250,10 @@ def _daily_one(employee: str, day: str, data: list[dict[str, Any]],
         "worked_min": worked, "rest_min": rest,
         "required_rest_min": required,
         "planned_break_min": planned,
+        "rest_deviation": _rest_deviation(
+            required, rest, verified=rest_supported,
+            coverage_complete=coverage, reason=reason,
+        ),
         "review_codes": sorted(set(codes)),
         "source_ref": str(row.get("source_ref") or ""),
     }
