@@ -311,7 +311,7 @@ def verify_attendance(
             "source_ref": "", "row_number": None,
         })
     return {
-        "schema_version": "0.1", "module": "attendance-verification",
+        "schema_version": "0.2", "module": "attendance-verification",
         "status": ("PASS" if not source_issues and
                    all(row["status"] == "RECORD_MATCH" and
                        row["time_deviations"]["status"] != "DIFFERENT"
