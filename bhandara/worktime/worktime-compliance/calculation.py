@@ -345,7 +345,7 @@ def review_worktime_compliance(
                        "employee_id": "", "work_date": "", "source_ref": "",
                        "row_number": None})
     return {
-        "schema_version": "0.1",
+        "schema_version": "0.2",
         "module": "worktime-compliance",
         "status": ("PASS" if not issues and daily and weeks
                    and all(row["status"] == "PASS" for row in daily + weeks)
