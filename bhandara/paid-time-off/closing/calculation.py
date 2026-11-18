@@ -107,6 +107,7 @@ def calculate_closing(
     sources = defaultdict(lambda: {"연차": Fraction(), "이월": Fraction(),
                                   "대휴": Fraction()})
     outstanding = defaultdict(Fraction)
+    inherited_shortage = defaultdict(Fraction)
     carried = defaultdict(list)
     active_ids = set()
     for position, row in enumerate(source_grants, 1):
@@ -186,6 +187,7 @@ def calculate_closing(
             # This deficit is already carried into opening balance (Q1)
             # or previous Closing net balance (Q2+).
             outstanding[eid] += amount
+            inherited_shortage[eid] += amount
             current_shortages.append({
                 "request_id": row.get("request_id"),
                 "employee_id": eid, "leave_type": row.get("leave_type"),
@@ -281,7 +283,7 @@ def calculate_closing(
         prev = prev_parsed.get(eid)
         c = (prev["발생연차일수"] if prev else Fraction()) + sources[eid]["연차"]
         d = (prev["기초이월잔여일수"] if prev else
-             sources[eid]["이월"] - outstanding[eid] if prev_end is None else
+             sources[eid]["이월"] - inherited_shortage[eid] if prev_end is None else
              Fraction())
         e = (prev["대휴발생일수"] if prev else Fraction()) + sources[eid]["대휴"]
         g = (prev["미사용만료일수"] if prev else Fraction()) + expired[eid]
