@@ -150,19 +150,19 @@ def _compare(key: tuple[str, str], schedules: list[dict[str, Any]],
     if issues:
         state = "REVIEW_REQUIRED"
     elif planned is None:
-        state = "UNSCHEDULED_ATTENDANCE"
+        state = "UNSCHEDULED"
     elif recorded is None:
-        state = ("NO_WORK_RECORDED" if planned["day_type"] in NON_WORK_TYPES
-                 and planned["scheduled_start"] is None else "MISSING_ATTENDANCE")
+        state = ("NON_WORK_MATCH" if planned["day_type"] in NON_WORK_TYPES
+                 and planned["scheduled_start"] is None else "MISSING")
     elif planned["scheduled_start"] is None:
-        state = "UNSCHEDULED_ATTENDANCE"
+        state = "UNSCHEDULED"
     else:
         for planned_field, record_field in TIME_FIELDS:
             if planned[planned_field] != recorded[record_field]:
                 differences.append(record_field)
         if planned["break_min"] != recorded["break_min"]:
             differences.append("break_min")
-        state = "MATCH" if not differences else "DIFFERENT"
+        state = "WORK_MATCH" if not differences else "RECORD_DIFFERENT"
     return {
         "employee_id": key[0], "work_date": key[1], "status": state,
         "planned": planned, "recorded": recorded,
@@ -201,7 +201,7 @@ def reconcile_schedule(
         source_issues.append({"code": "NO_COMPARABLE_ROWS", "source": "schedule",
                               "employee_id": "", "work_date": "",
                               "source_ref": "", "row_number": None})
-    state = ("MATCH" if not source_issues and all(row["status"] in {"MATCH", "NO_WORK_RECORDED"} for row in rows)
+    state = ("PASS" if not source_issues and all(row["status"] in {"WORK_MATCH", "NON_WORK_MATCH"} for row in rows)
              else "REVIEW_REQUIRED")
     return {
         "schema_version": "0.1", "module": "schedule", "status": state,
