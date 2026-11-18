@@ -2,17 +2,17 @@
 
 ## 원칙
 
-**CAPS, KT텔레캅 및 향후 다른 보안업체의 원본 열 순서·파일명·코드가 달라도, 어댑터의 최종 출력 Excel 구조는 반드시 같습니다.**
+**CAPS·세콤·KT텔레캅 및 향후 다른 보안업체의 원본 열 순서·파일명·코드가 달라도, 어댑터의 최종 출력 Excel 구조는 반드시 같습니다.**
 
 ```text
 원본 CAPS.xlsx ──> CAPS Adapter  ──┐
 원본 세콤.xlsx ──> SECOM Adapter ──┼──> access-events.xlsx ──> Attendance Verification
-원본 KT.xlsx   ──> KT Adapter    ──┘         └────────────> Attendance Detection 후보 근거
+원본 KT.xlsx   ──> KT Adapter    ──┘                          └─> 표준 Attendance Candidates
 ```
 
 업체별 파서는 원본 해석·식별자 연결·업체 코드 매핑만 담당합니다. 결과 파일의 시트, 헤더, enum, 시간 표현은 **Tool 공통 `access_source.py`**가 통제합니다. 업체별 코드에서 지원되지 않는 값은 임의 추정하지 않고 검토 대상으로 보관합니다.
 
-실제 CAPS/KT 내보내기 Excel은 현재 저장소에 없어 **업체별 실제 파서는 미구현**입니다. 테스트에 사용하는 가상 업체 행은 실 제조사 코드표가 아닙니다. 원본을 받은 뒤 업체별 Mapping Table을 따로 추가하되 위 표준 출력 형식은 변경하지 않습니다.
+**제공된 CAPS·세콤·KT텔레캅 샘플에서 관찰된 헤더의 해석기는 이미 `vendor_adapters/`에 구현되어 있습니다.** 다만 실제 회사의 원본 파일을 Git에 보관하지 않으며, 제조사의 모든 버전·장치별 코드표까지 검증한 것은 아닙니다. 새로운 헤더와 미정의 코드는 업체별 프로필·매핑 테스트를 추가해야 하고, 위 표준 출력 형식은 변경하지 않습니다.
 
 ## 파일명 및 시트 고정
 
@@ -94,7 +94,7 @@ records = read_access_events_xlsx(output)
 
 ### 정규화 실패까지 보존하는 즉시 검증 경로
 
-`verify_attendance_xlsx(attendance_rows, workbook_path, *, period_from, period_to)`는 표준 Excel을 열어서 바로 Attendance Verification으로 전달하는 Tool 내부 편의 함수입니다.
+`verify_attendance_xlsx(attendance_rows, workbook_path, *, period_from, period_to, schedule_rows=())`는 표준 Excel을 열어서 바로 Attendance Verification으로 전달하는 Tool 내부 편의 함수입니다. `schedule_rows`는 선택적이며, 제공하면 스케줄 대비 부호 있는 시각 차이를 추가 계산합니다.
 
 ```python
 from bhandara.worktime.access_source import verify_attendance_xlsx
