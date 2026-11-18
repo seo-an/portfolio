@@ -1,6 +1,6 @@
 # Worktime — 신규 Tool 구조 (설계·독립 계산 단계)
 
-> 목표 Module 이름은 **Schedule / Attendance Verification / Worktime Compliance / Attendance Detection**으로 확정합니다. 아직 **Schedule**의 순수 계산 경로만 구현되었고 나머지는 설계 대상입니다. 현재의 `worktime-calculator` 및 Gearbox/Slack 연결은 변경하지 않습니다.
+> 목표 Module 이름은 **Schedule / Attendance Verification / Worktime Compliance / Attendance Detection**으로 확정합니다. **Schedule**과 **Attendance Verification**의 독립 순수 계산 경로가 구현되어 있고, Worktime Compliance와 Attendance Detection은 설계 대상입니다. 현재의 `worktime-calculator` 및 Gearbox/Slack 연결은 변경하지 않습니다.
 
 ## 계층 및 책임
 
@@ -20,4 +20,8 @@
 
 현재 저장소의 `bhandara/common/io/input_layout.py`에는 `common/employee.xlsx`, `common/id-map.xlsx`만 `common` 입력 역할로 등록돼 있고 Worktime 스케줄은 `worktime/work-schedule.xlsx`에 있습니다. 향후 공통 근무 스케줄을 단일 정본으로 만들되, **PTO에서 쓰는 별도 근태판정·근무제 배정 자료를 무작정 덮어쓰지 않습니다.** 공통 스케줄이 근로제 적용·임시 변경·분할 근무를 어떻게 표현할지 확인한 뒤 전환합니다.
 
-현재 단계는 파일 경로 전환 없이 `schedule/calculation.py`의 순수 계산 인터페이스만 제공하는 단계입니다. 실제 Excel 입출력, 공개 Tool CLI, Gearbox/Slack 연결, 구형 코드 제거는 후속 단계입니다.
+현재 단계는 파일 경로 전환 없이 `schedule/calculation.py` 및 `attendance-verification/calculation.py`의 독립 순수 계산 인터페이스만 제공하는 단계입니다. 실제 Excel 입출력, 공개 Tool CLI, Gearbox/Slack 연결, 구형 코드 제거는 후속 단계입니다.
+
+## Attendance Verification v0.1
+
+장부의 출퇴근 시각과 정규화된 출입 인증 이벤트를 대조합니다. 출입기 업체의 원본 코드·인증 방법을 추측하지 않고 `auth_status=SUCCESS` 및 명시적으로 허용된 `auth_method`만 출퇴근 인증 근거로 사용합니다. 일반 출입은 미확정 후보로만 보존합니다. [상세 계약](attendance-verification/README.md)을 참고하세요.
