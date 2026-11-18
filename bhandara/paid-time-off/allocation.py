@@ -21,7 +21,7 @@ def _id(value: Any, field: str) -> str:
 
 def _date(value: Any, field: str) -> date:
     if isinstance(value, datetime):
-        raise ValueError(f"{field}: 날짜만 입력해야 합니다")
+        return value.date()
     if isinstance(value, date):
         return value
     if not isinstance(value, str) or len(value.strip()) != 10:
