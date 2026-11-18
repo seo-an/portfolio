@@ -1,5 +1,17 @@
 # Portfolio · Bhandara(반다라)
 
+## Worktime 재설계 현황 (2026-11-18)
+
+기존 `bhandara/worktime-calculator/`는 **현재 실행 가능한 독립 근무시간 계산기**로 그대로 유지합니다. 새로 재설계 중인 `bhandara/worktime/`은 세 개의 독립 계산 Module을 구현했으며 아직 공개 통합 CLI·Gearbox 운영 Workflow로 연결하지 않았습니다.
+
+- **Schedule:** 근무 예정일/휴무일과 근태장부 **기록 존재 여부**
+- **Attendance Verification:** 예정 출퇴근 시각과 장부·출입기 시각의 **부호 있는 차이** 및 외부 사유
+- **Worktime Compliance:** 검증된 근로·휴게시간의 기준 검토와 **확인 휴게−필수 휴게 차이**
+- **업체별 Excel 해석기:** CAPS·세콤·KT텔레캅 원본 → 업체 공통 `access-events.xlsx` v0.2
+
+**별도 Attendance Detection Module은 폐기했습니다.** [신규 Worktime 전체 구조](bhandara/worktime/README.md) 및 [현재 실행·검증 가이드](bhandara/worktime/RUNBOOK.md)를 참고하세요. 아래에 소개된 `run.py bhandara worktime-calculator` 명령은 **구형 계산기 실행 경로**입니다.
+
+
 ## 2단계: Common 라이브러리 / Normalizer 독립 모듈 분리
 
 Common의 `io/`·`validation/`·`runtime/` 등은 계산기 내부에서 재사용하는 **라이브러리**입니다.

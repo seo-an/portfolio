@@ -6,7 +6,7 @@
 
 1. **휴게시간 준수:** 실제 근로시간에 대한 법정 최소 휴게시간 후보를 비교합니다. 실제 휴게시간과 자유 사용·근무 도중 배치 근거가 있어야 합니다. 휴게가 부족해 보여도 전체 휴게 기록의 완전성이 확인되지 않으면 **부족 확정 금지**.
 2. **회사 기준 휴게 초과:** 외부 근무표의 `planned_break_min`과 검증된 `rest_min`을 비교합니다. 허용 오차는 `break_overrun_tolerance_min`. **법정 최대 휴게시간이 있다는 의미가 아닙니다.**
-3. **일별 근로시간:** 회사에서 확정한 근로시간제/적용 규칙에 따라 일별 8시간 등 표준 기준 초과 후보를 표시합니다. 지각·조퇴·연장근로 승인/시간 산정은 Attendance Detection 담당입니다.
+3. **일별 근로시간:** 회사에서 확정한 근로시간제/적용 규칙에 따라 일별 8시간 등 표준 기준 초과 후보를 표시합니다. 지각·조퇴·연장근로의 승인 및 수당 산정은 이 Module의 범위 밖입니다. 출퇴근 기록과 예정 시각의 차이는 Attendance Verification에서 보존합니다.
 4. **주간 근로시간:** 월요일~일요일 단위의 완결된 근태 자료를 외부에서 `weekly_coverage`로 확인해 준 경우에만 주간 합계를 기준에 대조합니다. 월초·월말에 걸친 불완전 주를 정상으로 판정하지 않습니다.
 
 `worktime_system=standard`와 `actor_type=EMPLOYEE`, 정책 참조가 일치할 때만 표준 적용 규칙으로 검토합니다. 탄력·선택근로제·외부 용역 인력 등은 임의로 표준 법령 적용 대상으로 만들지 않고 `REVIEW_REQUIRED`로 남깁니다.
@@ -35,6 +35,7 @@ report = module.review_worktime_compliance(
 | `rest_within_workday_verified` | 휴게가 근로시간 도중에 주어진 사실 검증 |
 | `rest_coverage_complete, rest_coverage_ref` | 실내 휴게 등 전체 기록의 완전성 확인과 증빙. 부족 판정 시 필수 |
 | `planned_break_min` | 예정 휴게시간(분). 없는 경우 회사 기준 초과 검토 생략 |
+| `rest_reason` | 선택적 외부 사유 문자열. 원인·승인 여부를 코드가 추정하지 않음 |
 | `four_hour_waiver_ref` | 2026-12-10 이후 **정확히 4시간 근로자의 명시적 미사용 요청** 근거(해당 시만) |
 | `source_ref, _row_number` | 출처 파일·행 번호 |
 
@@ -92,7 +93,7 @@ Schedule에서 휴게시간을 비교하지 않습니다. **확인된 휴게시�
 
 ### 결과
 
-`daily[]`는 `worked_min, rest_min, required_rest_min, planned_break_min, review_codes, status`를 기록합니다. `weekly[]`는 `total_worked_min, week_start, week_end, coverage_ref, review_codes, status`를 기록합니다.
+`daily[]`는 `worked_min, rest_min, required_rest_min, planned_break_min, rest_deviation, review_codes, status`를 기록합니다. `weekly[]`는 `total_worked_min, week_start, week_end, coverage_ref, review_codes, status`를 기록합니다.
 
 대표 코드:
 - `REST_SHORTFALL_REVIEW`: 확인된 휴게 부족 후보(완전성 근거 필요)
@@ -109,5 +110,7 @@ Schedule에서 휴게시간을 비교하지 않습니다. **확인된 휴게시�
 ```bash
 python3 -m unittest bhandara.tests.test_worktime_compliance -v
 ```
+
+추가 테스트: `python3 -m unittest bhandara.tests.test_worktime_rest_deviations -v`.
 
 외부 인증 기록을 읽어 실제 휴게로 자동 확정하지 않으며, 이 Module은 독립 실행 가능합니다.

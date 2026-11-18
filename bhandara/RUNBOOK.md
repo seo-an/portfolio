@@ -1,5 +1,8 @@
 # 반다라 사용 안내서 — 처음 사용하는 사람을 위한 설명
 
+> **현재 Worktime 안내:** 아래 `run.py bhandara worktime-calculator` 명령은 현재 실행 가능한 **기존 근무시간 계산기**용입니다. 새 `bhandara/worktime/` 세 Module(Schedule / Attendance Verification / Worktime Compliance)은 현재 독립 함수·업체별 표준 Excel 변환 경로까지 구현돼 있으나 **공개 통합 CLI는 아직 없습니다.** [신규 Worktime 실행·검증서](worktime/RUNBOOK.md)를 참고하세요. 별도 Attendance Detection Module은 사용하지 않습니다.
+
+
 Normalizer는 계산 전에 반드시 실행해야 하는 단계가 아닙니다.
 해당 계산기가 이미 읽을 수 있는 파일이라면 바로 PTO·Worktime·Payroll을 실행하세요.
 Normalizer를 따로 실행할 경우 결과를 `common/module/normalizer/output/<run-id>/`에 기록하고,
