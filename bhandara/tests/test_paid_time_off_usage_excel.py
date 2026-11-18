@@ -295,6 +295,40 @@ class ExcelUsageTests(unittest.TestCase):
         with self.assertRaisesRegex(usage.UsageInputError, "필수 열 누락"):
             self.run_usage(carry=False, closing=None, run_id="old-deduction")
 
+    def test_native_excel_dates_in_reference_are_consistent_with_grant_id(self):
+        book = load_workbook(self.refs)
+        try:
+            row = book["발생근거"][2]
+            row[2].value = date(2026, 1, 1)  # grant_date as actual Excel date
+            row[3].value = date(2026, 1, 1)
+            row[4].value = date(2027, 6, 30)
+            book.save(self.refs)
+        finally:
+            book.close()
+        result = self.run_usage(carry=False, closing=None, run_id="native-date")
+        self.assertFalse(result["issues"], result["issues"])
+
+    def test_duplicate_inherited_shortage_rejected(self):
+        book = load_workbook(self.carry)
+        try:
+            sheet = book["미상계부족"]
+            sheet.append(["OLD-R", "E001", "연차", "2025-11-15", 3])
+            book.save(self.carry)
+        finally:
+            book.close()
+        with self.assertRaisesRegex(usage.UsageInputError, "중복"):
+            self.run_usage(run_id="dup-shortage")
+
+    def test_annual_reference_start_before_grant_date_blocks_annual_only(self):
+        self._write_refs(annual_start="2025-12-31",
+                         annual_end="2027-06-30")
+        result = self.run_usage(carry=False, closing=None, run_id="invalid-start")
+        self.assertTrue(result["issues"])
+        self.assertTrue(any("발생일" in item["reason"]
+                            for item in result["issues"]))
+        self.assertEqual(rows_by_header(Path(result["path"]), "사용요약")[0]
+                         ["잔여일수"], None)
+
     def test_closing_snapshot_zero_id_cannot_be_resurrected(self):
         old = {
             "grant_id": self.grant_id, "employee_id": "E001",
