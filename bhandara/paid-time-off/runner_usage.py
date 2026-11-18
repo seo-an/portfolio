@@ -242,6 +242,7 @@ def _read_carry(path: Path) -> tuple[list[dict], list[dict], str, date]:
 
 def _positive_shortages(rows: Iterable[Mapping[str, Any]]) -> list[dict]:
     valid = []
+    seen: set[tuple[str, date]] = set()
     for row in rows:
         try:
             amount = _sources._quantity(row.get("shortage_days"), "shortage_days")
@@ -253,6 +254,10 @@ def _positive_shortages(rows: Iterable[Mapping[str, Any]]) -> list[dict]:
                 raise ValueError("leave_type 오류")
             request = _sources._identifier(row.get("request_id"), "request_id")
             leave_date = _sources._iso_date(row.get("leave_date"), "leave_date")
+            key = (request, leave_date)
+            if key in seen:
+                raise ValueError("인계 미상계부족 request_id·leave_date 중복")
+            seen.add(key)
             valid.append({"request_id": request, "employee_id": employee,
                           "leave_type": leave_type, "leave_date": leave_date,
                           "shortage_days": amount})
