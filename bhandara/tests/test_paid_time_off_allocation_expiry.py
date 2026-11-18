@@ -58,6 +58,9 @@ class ToolAllocationTests(unittest.TestCase):
                           for r in result["allocations"]],
                          [("A1", Fraction(2)), (None, Fraction(3))])
         self.assertEqual(result["shortages"][("E001", "연차")], Fraction(3))
+        annual = next(r for r in result["summary"] if r["leave_type"] == "연차")
+        self.assertEqual(annual["shortage_balance"], -3)
+        self.assertEqual(annual["net_remaining_days"], -3)
         self.assertFalse(result["future_shortages"])
         self.assertEqual(next(r for r in result["balances"]
                               if r["grant_id"] == "C1")["remaining_days"], 10)
