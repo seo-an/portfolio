@@ -108,7 +108,7 @@ class ExcelUsageTests(unittest.TestCase):
         )
         self.ent_file = Path(self.ent_result["path"])
         self.grant_id = self.ent_result["details"][0]["grant_id"]
-        self.assertEqual(self.ent_result["details"][0]["reflected_days"], "15.0")
+        self.assertEqual(Fraction(self.ent_result["details"][0]["reflected_days"]), 15)
         self.assertEqual(self.ent_result["summaries"][0]["granted_days"], "15.0")
         self.refs = self.inputs / "paid-time-off" / "grant-references.xlsx"
         self.carry = self.inputs / "paid-time-off" / "carry-in.xlsx"
@@ -179,7 +179,7 @@ class ExcelUsageTests(unittest.TestCase):
     def test_entitlement_grant_columns_and_hidden_deduction_precision(self):
         lines = rows_by_header(self.ent_file, "발생상세")
         self.assertEqual(lines[0]["grant_id"], self.grant_id)
-        self.assertEqual(lines[0]["반영발생일수"], "15.0")
+        self.assertEqual(Fraction(lines[0]["반영발생일수"]), 15)
         lines = rows_by_header(self.deduct_file, "차감상세")
         self.assertEqual(lines[0]["_exact_numerator"], 1)
         self.assertEqual(lines[0]["_exact_denominator"], 1)
