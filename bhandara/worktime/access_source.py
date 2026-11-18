@@ -213,6 +213,10 @@ def _normalized_candidate(row: Mapping[str, Any], vendor: str) -> dict[str, Any]
     if not isinstance(row, Mapping):
         raise AccessWorkbookError("candidate must be mapping")
     output = {key: row.get(key) for key in CANDIDATE_COLUMNS}
+    # Excel stores a blank string cell as None. Canonical absence is always "".
+    for field in ("arrival_time", "departure_time", "evidence_event_ids"):
+        if output[field] is None:
+            output[field] = ""
     if type(output["confirmed"]) is not bool or output["confirmed"]:
         raise AccessWorkbookError("candidate must be unconfirmed")
     if output["source_vendor"] != vendor or not output["employee_id"] or not output["worker_id"]:
