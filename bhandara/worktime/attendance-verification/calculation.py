@@ -10,6 +10,8 @@ from collections import Counter
 from datetime import date, datetime, time, timedelta
 from typing import Any, Iterable, Mapping
 
+from .deviations import compare_time_deviations
+
 MODES = frozenset({"CLOCK_IN", "CLOCK_OUT", "ACCESS", "OUTING", "RETURN", "DISARM", "UNKNOWN"})
 DIRECTIONS = frozenset({"IN", "OUT", "UNKNOWN"})
 AUTH_STATUSES = frozenset({"SUCCESS", "FAILED", "UNKNOWN"})
@@ -171,11 +173,17 @@ def _event(row: Mapping[str, Any], day: str, accepted: frozenset[str],
 
 def _compare(key: tuple[str, str], ledger_rows: list[dict[str, Any]],
              event_rows: list[dict[str, Any]], accepted: frozenset[str],
-             duplicated_ids: set[str]) -> dict[str, Any]:
+             duplicated_ids: set[str],
+             schedule_rows: list[dict[str, Any]],
+             candidate_rows: list[dict[str, Any]]) -> dict[str, Any]:
     problems: list[str] = []
     recorded = None
     if len(ledger_rows) > 1:
         problems.append("DUPLICATE_LEDGER")
+    if len(schedule_rows) > 1:
+        problems.append("DUPLICATE_SCHEDULE")
+    if len(candidate_rows) > 1:
+        problems.append("DUPLICATE_DEVICE_CANDIDATE")
     if len(ledger_rows) == 1:
         recorded, errors = _ledger(ledger_rows[0], key[1])
         problems.extend(errors)
@@ -205,6 +213,14 @@ def _compare(key: tuple[str, str], ledger_rows: list[dict[str, Any]],
     out_punch = punches["CLOCK_OUT"][0] if len(punches["CLOCK_OUT"]) == 1 else None
     if in_punch and out_punch and out_punch <= in_punch:
         problems.append("DEVICE_CLOCK_SEQUENCE_INVALID")
+    time_deviations, deviation_issues = compare_time_deviations(
+        work_date=key[1],
+        schedule=schedule_rows[0] if len(schedule_rows) == 1 else None,
+        attendance=ledger_rows[0] if len(ledger_rows) == 1 else None,
+        device_punches={"clock_in": in_punch, "clock_out": out_punch},
+        device_candidate=candidate_rows[0] if len(candidate_rows) == 1 else None,
+    )
+    problems.extend(deviation_issues)
     different: list[str] = []
     if recorded and in_punch and recorded["clock_in"] != in_punch:
         different.append("clock_in")
@@ -231,12 +247,15 @@ def _compare(key: tuple[str, str], ledger_rows: list[dict[str, Any]],
         "reported": recorded,
         "device_punches": {"clock_in": in_punch, "clock_out": out_punch},
         "different_fields": different,
+        "time_deviations": time_deviations,
         "review_codes": sorted(set(problems)),
         "first_access_candidate": (
             {"event_time": min(access_candidates),
              "basis": "FIRST_GENERIC_ACCESS", "confirmed": False}
             if access_candidates else None),
         "ledger_sources": [_reference(row) for row in ledger_rows],
+        "schedule_sources": [_reference(row) for row in schedule_rows],
+        "candidate_sources": [_reference(row) for row in candidate_rows],
         "access_evidence": events,
     }
 
@@ -248,12 +267,14 @@ def verify_attendance(
     period_from: str,
     period_to: str,
     accepted_auth_methods: Iterable[str] = DEFAULT_ACCEPTED_METHODS,
+    schedule_rows: Iterable[Mapping[str, Any]] = (),
+    candidate_rows: Iterable[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     """Reconcile trustworthy *punch evidence* with reported ledger data.
 
-    Authenticated device punches are not employer approval, worked hours,
-    payroll inputs, or proof of actual rest. A non-accepted credential cannot
-    silently be substituted for fingerprint authentication.
+    Authenticated device punches are not employer approval or worked hours.
+    Optional schedule and *unconfirmed* vendor candidate rows supply signed
+    time deviations without changing the accepted authentication policy.
     """
     begin, end = _day(period_from), _day(period_to)
     if begin is None or end is None or end < begin:
@@ -269,14 +290,18 @@ def verify_attendance(
     accepted = frozenset(values)
     ledger, ledger_issues = _index(attendance_rows, "attendance", begin, end)
     access, access_issues = _index(access_events, "access_events", begin, end)
+    schedule, schedule_issues = _index(schedule_rows, "schedule", begin, end)
+    candidates, candidate_issues = _index(candidate_rows, "device_candidates", begin, end)
     ids = Counter(str(row.get("event_id") or "").strip()
                   for items in access.values() for row in items
                   if str(row.get("event_id") or "").strip())
     duplicated_ids = {identifier for identifier, count in ids.items() if count > 1}
+    keys = sorted(set(ledger) | set(access) | set(schedule) | set(candidates))
     rows = [_compare(key, ledger.get(key, []), access.get(key, []),
-                     accepted, duplicated_ids)
-            for key in sorted(set(ledger) | set(access))]
-    source_issues = ledger_issues + access_issues
+                     accepted, duplicated_ids,
+                     schedule.get(key, []), candidates.get(key, []))
+            for key in keys]
+    source_issues = ledger_issues + access_issues + schedule_issues + candidate_issues
     if not rows:
         source_issues.append({
             "source": "attendance", "code": "NO_COMPARABLE_ROWS",
@@ -286,7 +311,9 @@ def verify_attendance(
     return {
         "schema_version": "0.1", "module": "attendance-verification",
         "status": ("PASS" if not source_issues and
-                   all(row["status"] == "RECORD_MATCH" for row in rows)
+                   all(row["status"] == "RECORD_MATCH" and
+                       row["time_deviations"]["status"] != "DIFFERENT"
+                       for row in rows)
                    else "REVIEW_REQUIRED"),
         "period_from": begin, "period_to": end,
         "accepted_auth_methods": sorted(accepted),
