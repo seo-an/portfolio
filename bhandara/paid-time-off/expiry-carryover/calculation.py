@@ -84,6 +84,11 @@ def evaluate_expiry_carryover(
     errors: list[dict[str, Any]] = []
     seen: set[str] = set()
     source = list(balances)
+    counts = {}
+    for row in source:
+        identifier = str(row.get("grant_id") or "").strip()
+        if identifier:
+            counts[identifier] = counts.get(identifier, 0) + 1
     for row_number, row in enumerate(source, 1):
         try:
             grant_id = str(row.get("grant_id") or "").strip()
@@ -91,6 +96,8 @@ def evaluate_expiry_carryover(
             leave_type = str(row.get("leave_type") or "").strip()
             if not grant_id or not employee or leave_type not in ("연차", "대휴"):
                 raise ValueError("grant_id/employee_id/leave_type 누락·오류")
+            if counts.get(grant_id, 0) > 1:
+                raise ValueError("중복 grant_id")
             if grant_id in seen:
                 raise ValueError("중복 grant_id")
             seen.add(grant_id)
