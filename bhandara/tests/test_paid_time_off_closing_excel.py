@@ -176,6 +176,36 @@ class ClosingArithmeticTests(unittest.TestCase):
         self.assertEqual(row["마감상태"], "초과사용")
         self.assertEqual(result["shortage_rows"][0]["shortage_days"], 3)
 
+    def test_negative_opening_is_real_excel_number_and_exact_machine_text(self):
+        result = calc.calculate_closing(
+            closing_id="Closing-1.4-2026", source_grants=[],
+            usage_details=[used("R0", "2025-11-15", "3", status="인계부족")],
+            expiry_rows=[],
+            usage_summaries=[{"employee_id": "E001", "잔여일수": "-3"}],
+            name_map={"E001": "홍길동"},
+        )
+        self.assertEqual(result["report"][0]["기초이월잔여일수"], -3)
+        self.assertEqual(result["report"][0]["마감잔여일수"], -3)
+        self.assertEqual(result["report"][0]["마감상태"], "초과사용")
+        with tempfile.TemporaryDirectory() as temp:
+            file = Path(temp) / "closing.xlsx"
+            file.write_bytes(runner.make_closing_workbook(
+                result, {"참조 ID": "Closing-1.4-2026",
+                         "확정여부": "미확정"}))
+            book = load_workbook(file)
+            try:
+                self.assertEqual(book["마감보고"]["D2"].value, -3)
+                self.assertEqual(book["마감보고"]["U2"].value, -3)
+                self.assertEqual(book["마감보고"]["U2"].data_type, "n")
+                self.assertIn("(", book["마감보고"]["U2"].number_format)
+            finally:
+                book.close()
+            exact = usage.read_rows(
+                file, "_수량정본",
+                ("employee_id", "기초이월잔여일수", "마감잔여일수"))
+            self.assertEqual(exact[0]["기초이월잔여일수"], "-3")
+            self.assertEqual(exact[0]["마감잔여일수"], "-3")
+
     def test_period_errors_and_partial_summaries_do_not_silently_finalize(self):
         data = calc.calculate_closing(
             closing_id="Closing-4.4-2026",
