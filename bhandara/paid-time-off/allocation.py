@@ -236,13 +236,13 @@ def allocate_usage(
             if (item["employee_id"], item["leave_type"]) == key
             and item["valid_from"] <= cutoff <= item["expires_on"]
         ), Fraction())
-        negative = -shortages[key]
+        negative = -shortages.get(key, Fraction())
         summary.append({
             "employee_id": employee, "leave_type": leave_type,
             "current_valid_grant_balance": usable,
             "shortage_balance": negative,
             "net_remaining_days": usable + negative,
-            "future_shortage_balance": -future_shortages[key],
+            "future_shortage_balance": -future_shortages.get(key, Fraction()),
         })
     for employee, leave_type in sorted(blocked):
         issues.append({
