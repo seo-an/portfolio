@@ -1,10 +1,10 @@
-# Attendance Verification — 출입 인증 근거와 근태장부 대조 (0.1)
+# Attendance Verification — 출입 인증·근태장부와 스케줄 시각 차이 대조 (0.2)
 
 > **독립 순수 계산 구현.** 벤더 원본 연결·Excel 입출력·공개 CLI·Gearbox/Slack 배포는 아직 구현하지 않았습니다. 검토 결과는 근로시간·지각·휴게·급여·승인 여부를 자동 확정하지 않습니다.
 
 ## 역할과 경계
 
-근태장부에 기록된 **출근·퇴근 시각**을 출입기에서 **명시적으로 성공 인증된 출근·퇴근 이벤트**와 비교합니다.
+근태장부에 기록된 **출근·퇴근 시각**을 출입기에서 **명시적으로 성공 인증된 출근·퇴근 이벤트**와 비교합니다. 선택적으로 스케줄과 업체 공통 출입 후보를 함께 받으면 **기록된 시각−예정 시각**의 부호 있는 차이를 계산합니다. 근무 유형·승인 여부를 자동 분류하지는 않습니다.
 
 - `mode=CLOCK_IN/CLOCK_OUT`: 출근·퇴근 인증 버튼의 의미를 가진 기록만 직접 대조합니다. 물리적 출입 방향(`direction=IN/OUT/UNKNOWN`)을 출근/퇴근으로 변환하지 않습니다.
 - `mode=ACCESS`: 일반 출입 인증입니다. 명시적 출근 인증을 대신하지 않습니다. 첫 인증 시각은 `confirmed=false` 후보로만 보존합니다.
@@ -37,6 +37,42 @@ result = verification.verify_attendance(
 
 시간은 로컬 기준 `HH:MM` 또는 `YYYY-MM-DDTHH:MM`을 허용하고, 초/시간대 정보가 섞인 값은 검토 대상으로 남깁니다. 익일 퇴근 시각은 **전체 날짜를 포함**해야 합니다. `work_date`는 출근 기준 근무일을 뜻하므로 익일 퇴근 인증도 해당 근무일에 연결하여 전달해야 합니다.
 
+## 부호 있는 시각 차이 (선택 입력)
+
+Schedule Module은 **근무 예정일과 장부 기록의 존재 여부**만 판단합니다. 출근·퇴근 시간의 차이는 이 Module의 `time_deviations`가 담당합니다.
+
+```python
+from importlib import import_module
+
+verification = import_module("bhandara.worktime.attendance-verification")
+report = verification.verify_attendance(
+    attendance_rows, access_events,
+    period_from="2026-11-16", period_to="2026-11-16",
+    schedule_rows=schedule_rows,            # 선택: 기대 출퇴근 시각
+    candidate_rows=attendance_candidates,   # 선택: 출입기 미확정 후보
+)
+```
+
+`schedule_rows`는 `employee_id`, `work_date`, `scheduled_start`, `scheduled_end`, 선택 `worker_id`를 받습니다. `candidate_rows`는 업체 공통 `access-events.xlsx` v0.2의 `Attendance Candidates`와 같은 규격이며 `confirmed=false`를 반드시 유지합니다.
+
+근태장부의 선택 사유 필드는 `clock_in_reason`과 `clock_out_reason`입니다. 값이 없으면 `null`이고, 외부에서 제공된 설명만 보존합니다. 시차출퇴근·조기출근·야근·승인된 연장근무는 **차이의 부호만으로 판정하지 않습니다**.
+
+### 시각별 세 개의 독립 비교
+
+| 필드 | 기준 | 의미 |
+|---|---|---|
+| `ledger_vs_expected` | 장부 시각 − 스케줄 시각 | 사용자가 신고한 출퇴근 시각이 예정과 얼마나 다른지 |
+| `device_vs_expected` | 출입기 시각 − 스케줄 시각 | 출입기 인증/미확정 후보가 예정과 얼마나 다른지 |
+| `device_vs_ledger` | 출입기 시각 − 장부 시각 | 서로 다른 두 기록이 얼마나 다른지 |
+
+각 항목은 `delta_minutes`(부호 포함)와 `delta_seconds`(원본 초 단위 정확성 유지)를 제공합니다. 예를 들어 **09:00 대비 08:40은 `-20`**, **18:00 대비 18:16은 `+16`**입니다. 두 시각 차이를 더해 실근로시간으로 간주하지 않습니다.
+
+- `device_origin=AUTHENTICATED_PUNCH`는 설정된 인증방법에 부합하는 명시적 출퇴근 인증입니다. `device_origin=UNCONFIRMED_ACCESS_CANDIDATE`는 보안업체 첫/마지막 출입 후보이며 **근로 시작/종료 확정값이 아닙니다.**
+- `device_confirmed_as_work=false`는 항상 유지합니다. 두 기록이 일치해도 실근로·임금·근태 승인으로 승격되지 않습니다.
+- 기준 시각이 없거나 출처에서 확인되지 않으면 해당 차이는 `null`입니다. 자정 경계에서 날짜를 알 수 없는 12시간 이상 차이는 부호를 추정하지 않고 `CLOCK_DATE_AMBIGUOUS`로 검토합니다.
+- `time_deviations.status`는 `MATCH / DIFFERENT / NOT_COMPARABLE`이며 **스케줄 대비 시각 비교**의 요약입니다. 기존 행 `status=RECORD_MATCH/RECORD_DIFFERENT`는 **장부↔명시적 인증 대조**를 뜻하므로 별개입니다. 스케줄 대비 차이가 하나라도 있으면 전체 실행 상태는 `REVIEW_REQUIRED`로 표시하되 그 사유가 법 위반이라는 뜻은 아닙니다.
+- 업체 공통 `verify_attendance_xlsx(..., schedule_rows=schedule_rows)`는 `Attendance Candidates`를 자동으로 전달합니다. `Source Review`의 미매핑·원본 오류는 기존처럼 결과 전체를 검토로 남깁니다.
+
 ## 상태 계약
 
 | 직원·근무일별 상태 | 의미 |
@@ -56,7 +92,7 @@ result = verification.verify_attendance(
 
 1. 원본 인증 파일의 수집·열 이름 추정·제조사별 원본 코드 매핑. 실제 제공된 CAPS/KT텔레캅 샘플의 열과 코드 의미를 확인한 뒤 **별도의 독립 어댑터**를 설계합니다.
 2. Schedule Module 또는 구형 `worktime-calculator`와 자동 연결하지 않습니다.
-3. 휴게·법정 근로시간·지각·조퇴·연장·야간·휴일근무 판정은 다른 Module에서 처리합니다.
+3. 휴게·법정 근로시간 판정은 Worktime Compliance가 담당합니다. 지각·조퇴·연장·야간·휴일근무의 승인/급여 판단은 여기서도 수행하지 않습니다.
 4. Closing, Gearbox, Slack, Tool 공개 CLI 및 Payroll 연동은 보류합니다.
 
 ## 독립 테스트
@@ -65,4 +101,4 @@ result = verification.verify_attendance(
 python3 -m unittest bhandara.tests.test_worktime_attendance_verification -v
 ```
 
-실제 직원 자료가 아닌 합성자료로 검증합니다. 서버 적용은 PR 브랜치 직접 확인 및 기존 Worktime·Gearbox 회귀 검증 후 수행합니다.
+추가 회귀 테스트: `python3 -m unittest bhandara.tests.test_worktime_attendance_deviations -v`. 실제 직원 자료가 아닌 합성자료로 검증합니다. 서버 적용은 PR 브랜치 직접 확인 및 기존 Worktime·Gearbox 회귀 검증 후 수행합니다.
