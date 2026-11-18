@@ -15,6 +15,11 @@ from typing import Any, Mapping
 
 FIELDS = (("clock_in", "scheduled_start", "arrival_time", "clock_in_reason"),
           ("clock_out", "scheduled_end", "departure_time", "clock_out_reason"))
+CANDIDATE_STATUSES = frozenset({
+    "EXPLICIT_PAIR", "INFERRED_PAIR", "PARTIAL_EXPLICIT",
+    "MULTIPLE_EXPLICIT_REVIEW", "SINGLE_ACCESS",
+    "NO_ATTENDANCE_CANDIDATE", "TIME_SEQUENCE_REVIEW",
+})
 BAD_CANDIDATE_STATUSES = frozenset({
     "MULTIPLE_EXPLICIT_REVIEW", "TIME_SEQUENCE_REVIEW",
 })
@@ -89,6 +94,9 @@ def compare_time_deviations(
     if device_candidate:
         if device_candidate.get("confirmed") is not False:
             issues.append("DEVICE_CANDIDATE_MUST_BE_UNCONFIRMED")
+            device_candidate = None
+        elif device_candidate.get("candidate_status") not in CANDIDATE_STATUSES:
+            issues.append("DEVICE_CANDIDATE_STATUS_INVALID")
             device_candidate = None
         elif device_candidate.get("candidate_status") in BAD_CANDIDATE_STATUSES:
             issues.append("DEVICE_CANDIDATE_NEEDS_REVIEW")
