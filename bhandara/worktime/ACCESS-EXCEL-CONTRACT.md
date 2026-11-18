@@ -1,0 +1,90 @@
+# 업체별 원본 정규화 → 표준 Access Events Excel 계약 0.1
+
+## 원칙
+
+**CAPS, KT텔레캅 및 향후 다른 보안업체의 원본 열 순서·파일명·코드가 달라도, 어댑터의 최종 출력 Excel 구조는 반드시 같습니다.**
+
+```text
+원본 CAPS.xlsx ──> CAPS Adapter ──┐
+                                 ├──> access-events.xlsx ──> Attendance Verification
+원본 KT.xlsx   ──> KT Adapter   ──┘                          └─> 근태·휴게 검토용 증빙
+```
+
+업체별 파서는 원본 해석·식별자 연결·업체 코드 매핑만 담당합니다. 결과 파일의 시트, 헤더, enum, 시간 표현은 **Tool 공통 `access_source.py`**가 통제합니다. 업체별 코드에서 지원되지 않는 값은 임의 추정하지 않고 검토 대상으로 보관합니다.
+
+실제 CAPS/KT 내보내기 Excel은 현재 저장소에 없어 **업체별 실제 파서는 미구현**입니다. 테스트에 사용하는 가상 업체 행은 실 제조사 코드표가 아닙니다. 원본을 받은 뒤 업체별 Mapping Table을 따로 추가하되 위 표준 출력 형식은 변경하지 않습니다.
+
+## 파일명 및 시트 고정
+
+파일: `access-events.xlsx` (기본 권장명, 파일 경로는 호출자가 명시)
+
+| 시트 | 목적 |
+|---|---|
+| **Access Events** | 근태 검증 Module에 전달할 정규화된 이벤트 1행=1이벤트 |
+| **Source Review** | 원본에서 변환 거부·미매핑된 행의 출처 및 문제 코드 |
+| **Metadata** | 스키마 버전·업체명·원본 SHA-256·타임존·건수 |
+
+### Access Events (열 순서 고정)
+
+`event_id, employee_id, worker_id, work_date, event_time, mode, direction, auth_status, auth_method, device_id, source_vendor, source_ref, source_row_number`
+
+- `work_date`: 출근 기준 근무일(`YYYY-MM-DD`), `event_time`: 실제 로컬 시각(`YYYY-MM-DDTHH:MM`). 익일 퇴근 인증은 날짜를 명시하고 같은 `work_date`로 연결. 어느 근무일인지 확인할 수 없으면 임의 연결하지 않고 Source Review로 남깁니다.
+- `mode`: `CLOCK_IN, CLOCK_OUT, ACCESS, OUTING, RETURN, DISARM, UNKNOWN`.
+- `direction`: `IN, OUT, UNKNOWN`; 출근·퇴근 모드와 **물리 방향은 별개**입니다.
+- `auth_status`: `SUCCESS, FAILED, UNKNOWN` / `auth_method`: `FINGERPRINT, FACE, CARD, PIN, UNKNOWN`. 원본에 인증방법이 없다면 `UNKNOWN`, 지문 성공으로 추정 불가.
+- `employee_id, worker_id`: Common ID 연결을 외부에서 **검증 완료한 후** 적습니다. 미등록/중복/충돌을 임의로 다른 직원에게 연결하지 않습니다.
+- `source_ref`: 정규화 과정에서 유지하는 원본 증빙 참조. `source_row_number`: 원본 Excel의 실제 행 번호.
+- 이 시트는 출입 인증 사실을 담는 것이지, **법정 휴게·실근로·지각·연장근로 확정** 자료가 아닙니다.
+
+### Source Review (열 순서 고정)
+
+`source_vendor, source_row_number, status, issue_codes, source_ref, detail`
+
+변환할 수 없는 행이나 승인되지 않은 코드 해석이 있으면 이 시트에 기록합니다. `status`는 `REJECTED, REVIEW_REQUIRED, UNMAPPED` 중 하나. 누락된 원본 행을 조용히 버리면 안 됩니다.
+
+### Metadata
+
+`key, value` 형식으로 `schema_version(0.1), source_vendor, source_sha256, source_file, timezone(Asia/Seoul), event_count, review_count`을 기록합니다.
+
+## 표준 Excel 쓰기/읽기 API
+
+```python
+from bhandara.worktime.access_source import (
+    write_access_events_xlsx, read_access_events_xlsx,
+)
+output = write_access_events_xlsx(
+    "/private/output/access-events.xlsx",
+    normalized_events, rejected_or_review_rows,
+    source_vendor="CAPS",
+    source_sha256="...",  # 원본 파일의 실제 64자리 SHA-256
+    source_file="caps-export.xlsx",
+)
+records = read_access_events_xlsx(output)
+# records["events"]는 Attendance Verification의 access_events 입력 형태
+# records["source_reviews"]에 정규화 중 발생한 누락/불명확 원본 보존
+```
+
+도구 내부 모든 업체 어댑터는 **같은 Writer만 호출**해야 합니다. Worktime Calculation Module은 업체별 원본을 직접 열거나 필드 위치를 추측하지 않습니다.
+
+`read_access_events_xlsx()`의 `status=PASS`는 **표준 Excel 구조 및 변환 결과 검토 이슈 부재**만 의미합니다. 지문 인증 성공, 근태 승인 또는 출퇴근 확정을 뜻하지 않습니다.
+
+### 정규화 실패까지 보존하는 즉시 검증 경로
+
+`verify_attendance_xlsx(attendance_rows, workbook_path, *, period_from, period_to)`는 표준 Excel을 열어서 바로 Attendance Verification으로 전달하는 Tool 내부 편의 함수입니다.
+
+```python
+from bhandara.worktime.access_source import verify_attendance_xlsx
+
+report = verify_attendance_xlsx(
+    attendance_rows, "/private/output/access-events.xlsx",
+    period_from="2026-11-16", period_to="2026-11-16",
+)
+```
+
+`Access Events`가 장부와 모두 일치하더라도 `Source Review`에 미매핑·오류 행이 있다면 결과 전체를 `REVIEW_REQUIRED`로 표시합니다. **좋은 행만 골라 계산해서 원본 문제가 사라진 것처럼 표현하지 않습니다.**
+
+## Worktime Compliance와의 관계
+
+이 Excel은 근태·외출의 독립 증빙을 제공할 뿐입니다. **CAPS/KT의 OUT→IN이 자동으로 법정 휴게가 되는 것은 아닙니다.** 실제 휴게시간·근로시간 및 증빙 완전성은 외부 검토를 거쳐 Worktime Compliance의 `daily_rows`에 들어갑니다. 따라서 업체별 어댑터를 추가해도 Compliance의 법률 기준 계산을 다시 쓰지 않습니다.
+
+현재 단계에서는 업체별 Parser → 표준 Excel Writer의 완성된 엔드투엔드 연결은 미구현이며, 다음 PR에서 실제 제조사 내보내기 양식을 확인한 후 추가합니다.

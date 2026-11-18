@@ -1,6 +1,6 @@
 # Worktime — 신규 Tool 구조 (설계·독립 계산 단계)
 
-> 목표 Module 이름은 **Schedule / Attendance Verification / Worktime Compliance / Attendance Detection**으로 확정합니다. **Schedule**과 **Attendance Verification**의 독립 순수 계산 경로가 구현되어 있고, Worktime Compliance와 Attendance Detection은 설계 대상입니다. 현재의 `worktime-calculator` 및 Gearbox/Slack 연결은 변경하지 않습니다.
+> 목표 Module 이름은 **Schedule / Attendance Verification / Worktime Compliance / Attendance Detection**으로 확정합니다. **Schedule**, **Attendance Verification**, **Worktime Compliance**의 독립 순수 계산 경로가 구현되어 있고, Attendance Detection은 설계 대상입니다. 현재의 `worktime-calculator` 및 Gearbox/Slack 연결은 변경하지 않습니다.
 
 ## 계층 및 책임
 
@@ -20,8 +20,16 @@
 
 현재 저장소의 `bhandara/common/io/input_layout.py`에는 `common/employee.xlsx`, `common/id-map.xlsx`만 `common` 입력 역할로 등록돼 있고 Worktime 스케줄은 `worktime/work-schedule.xlsx`에 있습니다. 향후 공통 근무 스케줄을 단일 정본으로 만들되, **PTO에서 쓰는 별도 근태판정·근무제 배정 자료를 무작정 덮어쓰지 않습니다.** 공통 스케줄이 근로제 적용·임시 변경·분할 근무를 어떻게 표현할지 확인한 뒤 전환합니다.
 
-현재 단계는 파일 경로 전환 없이 `schedule/calculation.py` 및 `attendance-verification/calculation.py`의 독립 순수 계산 인터페이스만 제공하는 단계입니다. 실제 Excel 입출력, 공개 Tool CLI, Gearbox/Slack 연결, 구형 코드 제거는 후속 단계입니다.
+현재 단계는 기존 파일 경로 전환 없이 `schedule/calculation.py`, `attendance-verification/calculation.py`, `worktime-compliance/calculation.py`의 독립 순수 계산 경로를 제공합니다. 업체별 변환 결과 Excel은 Tool 내부 `access_source.py`의 표준 규격으로 읽고 씁니다. 실제 Excel 입출력, 공개 Tool CLI, Gearbox/Slack 연결, 구형 코드 제거는 후속 단계입니다.
 
 ## Attendance Verification v0.1
 
 장부의 출퇴근 시각과 정규화된 출입 인증 이벤트를 대조합니다. 출입기 업체의 원본 코드·인증 방법을 추측하지 않고 `auth_status=SUCCESS` 및 명시적으로 허용된 `auth_method`만 출퇴근 인증 근거로 사용합니다. 일반 출입은 미확정 후보로만 보존합니다. [상세 계약](attendance-verification/README.md)을 참고하세요.
+
+## Worktime Compliance v0.1
+
+휴게의 법정 최소 충족 여부, 회사 예정 휴게시간 초과, 일/주 기준 근로시간 초과 후보를 외부 검증된 분 단위 증빙으로 검토합니다. 실제 근무·휴게 근거가 없으면 법 위반으로 단정하지 않습니다. 비표준 근로시간제와 주간 범위 불완전 자료도 별도 검토 대상으로 남깁니다. [상세 계약](worktime-compliance/README.md).
+
+## 업체별 Excel 정규화 계약
+
+CAPS/KT텔레캅 등 어떤 업체에서 추출해도 **Access Events / Source Review / Metadata** 시트와 열·enum이 동일한 `access-events.xlsx`를 최종 결과로 사용합니다. 표준 Writer/Reader는 [access_source.py](access_source.py)에 있고 [계약 문서](ACCESS-EXCEL-CONTRACT.md)를 따릅니다. 이 Excel은 Attendance Verification의 이벤트 입력으로 그대로 읽을 수 있습니다. **업체 원본 열/코드 파서는 실제 샘플 확인 전까지 구현하지 않습니다.**
