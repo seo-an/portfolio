@@ -117,6 +117,10 @@ def _verified_entitlement(path: Path, as_of: date) -> list[dict]:
     summaries = read_rows(path, "발생요약", (
         "employee_id", "발생연차", "상태",
     ))
+    undetermined = {
+        str(row["employee_id"]) for row in summaries
+        if row["상태"] != "계산 완료"
+    }
     totals = defaultdict(Fraction)
     valid = set()
     for item in details:
@@ -136,6 +140,11 @@ def _verified_entitlement(path: Path, as_of: date) -> list[dict]:
         item["calculation_result"] = item.pop("계산결과")
         item["grant_type"] = item.pop("발생구분")
         if item["status"] == "계산 완료":
+            if item["reflected_days"] is None and str(item["employee_id"]) in undetermined:
+                # This employee has an unresolved grant; Entitlement correctly
+                # withheld all reflected amounts to avoid a false partial right.
+                item["status"] = "판정 안됨"
+                continue
             if item["reflected_days"] is None:
                 raise UsageInputError("완료된 Entitlement 발생 건의 반영발생일수 누락")
             try:
@@ -174,8 +183,12 @@ def _verified_deduction(path: Path) -> tuple[list[dict], list[dict]]:
                             "employee_id": row["employee_id"]})
             continue
         num, den = row["_exact_numerator"], row["_exact_denominator"]
-        if type(num) is not int or type(den) is not int or num <= 0 or den <= 0:
+        if (not re.fullmatch(r"[0-9]+", str(num or "")) or
+                not re.fullmatch(r"[0-9]+", str(den or ""))):
             raise UsageInputError("Deduction 정확한 분수 열 누락·오류: 새 버전으로 재산출하세요")
+        num, den = int(num), int(den)
+        if num <= 0 or den <= 0:
+            raise UsageInputError("Deduction 정확한 분수의 분자/분모는 양수여야 합니다")
         number = Fraction(num, den)
         if _allocation.quantity_text(number) != str(row["차감일수"]):
             raise UsageInputError("Deduction 표기 수량과 정확한 분수가 다릅니다")
