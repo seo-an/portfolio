@@ -1,7 +1,7 @@
 # Paid Time Off — 한국 연차유급휴가 도구 (재설계 중)
 
 > **현재 상태 (2026-11-18): Entitlement와 Deduction Quantity의 독립 Python/Excel 시범 API 구현·병합(PR #38, #39).**
-> 전체 Tool CLI·manifest·Gearbox/Slack 연동, 발생분별 차감·이월·만료·Closing은 **아직 구현하지 않았습니다**.
+> 전체 Tool CLI·manifest·Gearbox/Slack 연동, 차감 배정·만료·이월의 **순수 Python API는 초기 구현**, Excel/Tool 연결·Closing은 미구현입니다.
 > 기존 `pto-calculator` v0.2.1과 Gearbox 버전 게이트는 변경하지 않았습니다.
 
 ## 1. Entitlement(연차 발생)에서 하는 일
@@ -143,3 +143,22 @@ python3 -m unittest discover -s bhandara/tests -p 'test_*.py'
 4. **출력·예외:** 요청-발생 연결 이력과 발생분별 잔여를 정의한 뒤 Excel 양식을 결정합니다. 추정이나 임의 승인 없이 최소 예외부터 구현합니다.
 
 기존의 `eligibility`는 PTO에서 재실행하지 않습니다. 모든 Module은 독립적이며 Tool 간 호출은 Gearbox Workflow 책임입니다.
+
+## 2026-11-18 최신 설계: Allocation과 Expiry/Carryover 분리
+
+**기존 문서에서 Expiry가 발생분 차감까지 소유한다고 한 부분은 폐기합니다.** 현재는 순수 Python API 초기 구현이며 최종 Excel·Tool 호출 경계는 아직 아닙니다.
+
+- paid-time-off/allocation.py: Tool 내부 계산 단계. 별도 Module도 아니고 물리 flow/ 폴더도 아닙니다. 입력된 발생 건과 승인된 사용 건을 ID로 연결합니다.
+- paid-time-off/expiry-carryover/calculation.py: 독립 Module. 외부에서 유효기간과 마감일 현재 잔여가 확정된 발생 건에 대해 만료 또는 이월을 판정합니다. 배정/잔여 재계산/수당 지급 승인은 하지 않습니다.
+- Closing-1.4-2025 ~ Closing-4.4-2025 ID에서 분기 종료일을 유도하므로 opening_date 추가 입력은 없습니다. API의 balance_as_of는 상위 결과의 기준일이 마감일과 같은지 검증하는 값이지 사용자에게 입력을 중복 요구하는 시트가 아닙니다.
+- Allocation의 발생 건 입력 필드: grant_id, employee_id, leave_type, grant_date, available_days, valid_from, expires_on, source_ref. available_days는 원천에서 확정된 반영발생일수 또는 기존 Closing의 발생분별 기초잔여를 정규화한 내부 이름입니다. 유효기간은 필수이며 누락 시 추정하지 않습니다.
+- Allocation의 차감 입력 필드: request_id, employee_id, leave_type, leave_date, deduction_days. Deduction Quantity에서 이미 일수 환산된 승인 내역만 인계합니다.
+- 배정 순서는 사용일 → 만료일 → 발생일 → grant_id. 취소된 요청을 제외한 현재 유효 승인 목록으로 전체 재실행합니다. 연차와 대휴를 교차 차감하지 않습니다.
+- 초과 사용은 신청별 발생분 미배정 행(grant_id 없음)과 직원·유형별 **음수 잔여**로 표시합니다. 발생 건 자체를 음수로 변경하지 않습니다. 새 발생분으로 **자동 상계하지 않습니다**. 상계는 외부 확정 지시가 있어야 하지만 그 지시의 실제 입력 계약은 추후 연결합니다.
+- 미래 예약은 실행 기준일의 사용량과 별도 표시합니다. 마감일 이전의 발생분별 확정 잔여만 만료/이월 계산에 사용하며 미래의 미확정 발생은 예측하지 않습니다.
+- 무한소수 7자리 절사 문자열로는 정확한 분수를 복구할 수 없습니다. 향후 Excel-to-Flow 연결 시 분수의 정확한 인계 규격을 추가해야 합니다.
+- Expiry의 만료된 연차는 미사용수당 **검토 대상**만 표시하며 현금청구권·면책·지급을 자동 승인하지 않습니다.
+- 오류가 특정 직원/휴가유형의 수량에 영향을 주면 그 그룹의 배정을 생략합니다. 정상적인 다른 그룹의 계산은 유지합니다.
+- 과거 Closing/외부 대휴/Entitlement 원본 Excel의 실제 결합, grant_id 생성, 내부 Flow의 선택적 호출, 최초 Closing 이전 기초자료 인계, 외부 상계 명령, 결과 Excel과 SHA 기록은 **아직 구현하지 않았습니다**.
+- 단독 unittest: python3 -m unittest bhandara.tests.test_paid_time_off_allocation_expiry -v
+
