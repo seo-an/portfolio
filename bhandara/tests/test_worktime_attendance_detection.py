@@ -152,7 +152,7 @@ class AttendanceDetectionTests(unittest.TestCase):
 
     def test_night_work_overlap_counts_actual_seconds(self):
         report = self.run_one(
-            ledgers=[self.ledger(clock_out="23:10:30")],
+            ledgers=[self.ledger(clock_out="23:20:30")],
             work=[self.work("21:30", "23:10:30")],
         )
         self.assertEqual(self.signal(report, "NIGHT_WORK_CANDIDATE")["duration_seconds"], 4230)
