@@ -164,6 +164,9 @@ def calculate_approved_rows(
             "leave_type": leave_type,
             "duration_hours": duration,
             "deduction_days": quantity_text(quantity) if quantity is not None else None,
+            # Exact transport columns for downstream allocation: not 7-digit display.
+            "exact_numerator": quantity.numerator if quantity is not None else None,
+            "exact_denominator": quantity.denominator if quantity is not None else None,
             "status": "계산 제외" if reasons else "계산 완료",
             "reason": "; ".join(reasons),
         })
