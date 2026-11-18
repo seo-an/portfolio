@@ -220,7 +220,7 @@ class ExcelUsageTests(unittest.TestCase):
         book = load_workbook(result["path"])
         try:
             self.assertEqual(book.sheetnames,
-                             ["사용요약", "사용상세", "만료이월", "정책정보"])
+                             ["사용요약", "사용상세", "만료이월", "_발생자료", "정책정보"])
         finally:
             book.close()
 
