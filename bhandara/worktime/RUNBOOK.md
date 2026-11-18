@@ -1,0 +1,119 @@
+# Worktime 사용·검증 실행서 (신규 세 Module, 2026-11-18)
+
+> **개발·검증용 실행서**입니다. 신규 `bhandara/worktime/`은 독립 계산·입력 정규화 경로를 구현한 단계로, 공개 통합 CLI 및 Gearbox/Slack 운영 연동은 아직 하지 않았습니다. 기존 `bhandara/worktime-calculator/`는 별도 실행 가능한 구형 계산기이며 **현재도 유지**합니다.
+
+## 1. 어떤 기능이 어디에 있나요?
+
+| 기능 | 경로 | 현재 역할 |
+|---|---|---|
+| Schedule | `worktime/schedule/` | 근무 예정일/휴무일과 근태장부 **기록 존재 여부** 대조 |
+| Attendance Verification | `worktime/attendance-verification/` | 장부↔출입기 증빙, 스케줄 대비 출근·퇴근 **부호 있는 시각 차이** 보존 |
+| Worktime Compliance | `worktime/worktime-compliance/` | 확인된 근로·휴게 사실의 기준 적합성, **확인 휴게−필수 휴게** 차이 보존 |
+| 보안업체 원본 해석 | `worktime/vendor_adapters/` | CAPS·세콤·KT텔레캅 제공 예제에 맞춘 원본 열/시각/식별자 변환 |
+| 표준 Excel | `worktime/access_source.py` | 모든 업체에 동일한 `access-events.xlsx` v0.2 작성·읽기·검증 인계 |
+
+**Attendance Detection은 삭제한 기획**이며 별도 Module이 없습니다. 근무 종류나 지각·조퇴·야근을 시각 차이만으로 확정하지 않습니다.
+
+## 2. 자료별 의미
+
+- **근무 스케줄:** 해당 날짜에 근무가 예정되어 있었는지, 기준 출퇴근 시각이 무엇이었는지. 근무제도·휴일·승인된 변경사항은 별도 정본이 필요합니다.
+- **근태장부:** 기록된 출퇴근 시각과 외부 입력 사유(`clock_in_reason`, `clock_out_reason`). 근로 수행·휴게 보장의 최종 증빙으로 간주하지 않습니다.
+- **출입기 원본:** 업체가 기록한 출입/인증 사실. `세트(경비시작)`와 실패 기록은 제외 이력에 남기고 후보에서 제외합니다. 같은 사람·같은 날 일반 출입만 있으면 첫/마지막 유효 기록을 **미확정** 출퇴근 후보로 잡습니다.
+- **실제 근로·휴게 자료:** 별도로 검증한 `worked_min`, `rest_min`, 증빙과 범위. 임의의 출입기 IN/OUT을 실제 근로 또는 자유 휴게로 단정하지 않습니다.
+
+## 3. 주요 출력과 차이 계산
+
+| Module | 비교 | 계산 예 |
+|---|---|---|
+| Schedule | 근무 예정일과 장부 유무 | 근무 예정+장부 있음 `WORK_MATCH`; 휴무+장부 있음 `UNSCHEDULED` |
+| Attendance Verification | 장부 시각 − 예정 시각 | 09:00 예정·08:40 장부 출근: **-20분** |
+| Attendance Verification | 출입기 시각 − 예정 시각 | 18:00 예정·18:16 출입 후보: **+16분** (미확정 출입 후보) |
+| Attendance Verification | 출입기 시각 − 장부 시각 | 출처 간 차이(초 단위 정확성도 보존) |
+| Worktime Compliance | 확인된 휴게 − 필수 휴게 | 필수 60분·확인 45분: **-15분**; 확인 90분: **+30분** |
+
+`time_deviations.clock_in/clock_out`과 `daily[].rest_deviation`은 **차이의 방향과 크기**를 보존하는 것이지, 승인된 연장근무시간·수당·법적 위반 최종 판정이 아닙니다. 근태장부에 이유가 없다면 사유는 `null`입니다.
+
+## 4. 업체 Excel 정규화
+
+업체별 원본 형식이 달라도 출력은 모두 **같은 Excel**입니다.
+
+```text
+CAPS / SECOM / KT_TELECOP 원본
+  → 업체별 헤더·코드 해석
+  → 부서+사번(사원번호) 기반 Common 직원 식별자 연결
+  → 경비 세트·인식 실패 제외, 미매핑/오류 분리
+  → access-events.xlsx
+       Access Events
+       Attendance Candidates
+       Source Review
+       Metadata
+  → Attendance Verification (필요하면 스케줄도 함께 전달)
+```
+
+- **원본 인사 식별:** 이름만으로 동명이인을 결합하지 않습니다. 사번과 부서의 조합을 확인한 다음 검증된 `employee_id`/`worker_id`에 연결합니다.
+- **정상 제외와 오류:** `Source Review.status=EXCLUDED`는 정상 필터링 이력이고, `UNMAPPED/REVIEW_REQUIRED/REJECTED`는 검토가 필요한 이력입니다.
+- **유효 출근·퇴근 명시 기록**이 있으면 이를 우선합니다. 일반 출입만 있으면 첫·마지막 유효 출입을 후보로 만들되 `confirmed=false`를 유지합니다.
+- **원본 초 단위 시각**은 `event_timestamp` 및 후보 시각에 남깁니다.
+- **추가 업체·다른 헤더 버전**은 새 프로필·합성 테스트를 구현해야 합니다. 새 원본을 자동으로 추측해 매핑하지 않습니다.
+- **자동 연결 미완료:** 호출 측이 검증한 직원 ID 매핑을 `identities`로 전달해야 하며 Common Excel에서 자동으로 연결하는 전체 입력 Flow는 아직 구현하지 않았습니다.
+
+세부 스키마: [ACCESS-EXCEL-CONTRACT.md](ACCESS-EXCEL-CONTRACT.md), [업체별 어댑터](vendor_adapters/README.md).
+
+## 5. 격리 Python에서 테스트
+
+서버 호스트의 Git 체크아웃 위치는 **반드시 전체 경로**를 사용합니다.
+
+```bash
+cd /opt/agents/config/agent-config/.external/portfolio
+git status --short
+git log -1 --oneline
+```
+
+Hermes 컨테이너의 마운트 경로와 Python은 호스트와 다릅니다.
+
+```bash
+sudo docker exec -w /opt/agent-config/.external/portfolio \
+  hermes /opt/hermes/.venv/bin/python -B -m unittest \
+  bhandara.tests.test_worktime_schedule \
+  bhandara.tests.test_worktime_attendance_verification \
+  bhandara.tests.test_worktime_attendance_deviations \
+  bhandara.tests.test_worktime_compliance \
+  bhandara.tests.test_worktime_rest_deviations \
+  bhandara.tests.test_worktime_vendor_adapters \
+  bhandara.tests.test_worktime_access_xlsx_contract -v
+```
+
+```bash
+sudo docker exec -w /opt/agent-config/.external/portfolio \
+  hermes /opt/hermes/.venv/bin/python -B -m unittest \
+  discover -s bhandara/tests -p 'test_*.py'
+
+sudo docker exec -w /opt/agent-config \
+  hermes /opt/hermes/.venv/bin/python -B gearbox/_tests/run.py
+
+sudo docker exec -w /opt/agent-config \
+  hermes /opt/hermes/.venv/bin/python -B gearbox/_tests/core_run.py
+```
+
+서버 기본 `python3` 환경은 `python_calamine` 등 패키지가 없을 수 있습니다. **호스트 Python에 임의로 pip 설치하지 말고**, 위 Hermes 격리 Python을 사용합니다. 향후 새 의존성이 필요한 경우에도 `uv`로 통제합니다.
+
+## 6. 다음 개발 단계 (미완료)
+
+1. **공통 입력 정본 계약:** Schedule·근태장부·휴게 증빙·외부 사유/승인 자료의 Excel 컬럼, 직원 ID 매핑, 근무일/익일 종료 규칙을 정합니다. 기존 PTO 입력을 무조건 덮어쓰지 않습니다.
+2. **실제 업무용 Excel 입출력:** 업체별 표준 `access-events.xlsx` 외에 신규 Worktime의 스케줄·검증·Compliance 결과 Excel 표준 서식을 정의하고 Writer/Reader를 연결합니다.
+3. **모듈 조합 Flow와 공개 Tool CLI:** 소스 파일을 불러와 독립 Module을 순서대로 호출하고 결과·검토 파일을 생성합니다. 불필요한 API/DB는 도입하지 않습니다.
+4. **현실 데이터 예외 검증:** 분할근무·자정/익일 퇴근·시차출퇴근·휴일 예정 근무·복수 출입/미인증 등 **합성자료 기반** 회귀를 확장합니다.
+5. **Gearbox 연결:** Bhandara 변경마다 `gearbox/_tests/run.py`와 `core_run.py` 등 기존 호환성을 검증합니다. 운영 파일 수집·보관 정책(임시 캐시 3시간, 원본 장기보관 금지)은 별도 연결 시 준수합니다.
+6. **구형 계산기 전환 및 정리:** 새 계산 결과의 계약·샘플·Gearbox 사용 경로가 검증되기 전에는 `worktime-calculator/`를 제거하거나 기존 Payroll 인계 경로를 바꾸지 않습니다.
+
+**아직 확정하지 않은 것:** 지각/조퇴·연장·야간근무의 승인 판단, 임금 계산, 근로시간제별 예외 정책, 실제 휴게 증빙의 입수 방식, Closing 및 외부 시스템 자동 연결.
+
+## 7. 관련 문서
+
+- [전체 구조](README.md)
+- [Schedule](schedule/README.md)
+- [Attendance Verification](attendance-verification/README.md)
+- [Worktime Compliance](worktime-compliance/README.md)
+- [출입 Excel 출력 규격](ACCESS-EXCEL-CONTRACT.md)
+- [업체별 원본 해석기](vendor_adapters/README.md)
+- [구형 Worktime 계산기 실행서](../worktime-calculator/RUNBOOK.md)
