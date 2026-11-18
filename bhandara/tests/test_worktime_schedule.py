@@ -44,6 +44,104 @@ class ScheduleTests(unittest.TestCase):
         self.assertNotIn("late_minutes", result["rows"][0])
         self.assertNotIn("overtime_hours", result["rows"][0])
 
+    def test_signed_clock_differences_with_independent_reasons(self):
+        actual = self.ledger(
+            clock_in="08:40", clock_out="18:16",
+            clock_in_reason="시차출퇴근",
+            clock_out_reason="업무 마무리",
+        )
+        result = self.run_one([self.plan()], [actual])
+        row = result["rows"][0]
+        self.assertEqual(row["status"], "RECORD_DIFFERENT")
+        self.assertEqual(row["different_fields"], ["clock_in", "clock_out"])
+        self.assertEqual(row["comparisons"]["clock_in"], {
+            "expected": "09:00", "recorded": "08:40",
+            "delta_minutes": -20, "reason": "시차출퇴근",
+        })
+        self.assertEqual(row["comparisons"]["clock_out"], {
+            "expected": "18:00", "recorded": "18:16",
+            "delta_minutes": 16, "reason": "업무 마무리",
+        })
+        self.assertNotIn("overtime_minutes", row)
+        self.assertFalse(result["approved"])
+
+    def test_missing_reason_is_null_not_guessed_lateness(self):
+        row = self.run_one(
+            [self.plan()], [self.ledger(clock_in="09:13")]
+        )["rows"][0]
+        self.assertEqual(row["comparisons"]["clock_in"]["delta_minutes"], 13)
+        self.assertIsNone(row["comparisons"]["clock_in"]["reason"])
+        self.assertNotIn("late_minutes", row)
+
+    def test_matching_values_have_zero_delta(self):
+        row = self.run_one([self.plan()], [self.ledger()])["rows"][0]
+        self.assertEqual(row["status"], "WORK_MATCH")
+        self.assertEqual(
+            [row["comparisons"][key]["delta_minutes"]
+             for key in ("clock_in", "clock_out", "break_min")],
+            [0, 0, 0],
+        )
+
+    def test_break_difference_is_signed_and_has_own_reason(self):
+        row = self.run_one([self.plan()], [self.ledger(
+            break_min=75, break_reason="기록 조정 필요"
+        )])["rows"][0]
+        self.assertEqual(row["status"], "RECORD_DIFFERENT")
+        self.assertEqual(row["different_fields"], ["break_min"])
+        self.assertEqual(row["comparisons"]["break_min"], {
+            "expected": "60", "recorded": "75",
+            "delta_minutes": 15, "reason": "기록 조정 필요",
+        })
+
+    def test_negative_break_difference_is_not_statutory_noncompliance(self):
+        row = self.run_one(
+            [self.plan()], [self.ledger(break_min=45)]
+        )["rows"][0]
+        self.assertEqual(row["comparisons"]["break_min"]["delta_minutes"], -15)
+        self.assertNotIn("legal_violation", row)
+        self.assertEqual(row["status"], "RECORD_DIFFERENT")
+
+    def test_unknown_break_remains_null_delta(self):
+        row = self.run_one(
+            [self.plan(break_min=None)], [self.ledger(break_min=0)]
+        )["rows"][0]
+        self.assertEqual(row["status"], "RECORD_DIFFERENT")
+        self.assertIsNone(row["comparisons"]["break_min"]["delta_minutes"])
+        self.assertIsNone(row["comparisons"]["break_min"]["expected"])
+
+    def test_missing_attendance_does_not_invent_delta_or_reason(self):
+        row = self.run_one([self.plan()], [])["rows"][0]
+        self.assertEqual(row["status"], "MISSING")
+        self.assertIsNone(row["comparisons"]["clock_in"]["recorded"])
+        self.assertIsNone(row["comparisons"]["clock_in"]["delta_minutes"])
+        self.assertIsNone(row["comparisons"]["clock_in"]["reason"])
+
+    def test_unscheduled_record_keeps_reason_but_no_expected_time(self):
+        row = self.run_one([], [self.ledger(
+            clock_out_reason="별도 확인 예정",
+        )])["rows"][0]
+        self.assertEqual(row["status"], "UNSCHEDULED")
+        self.assertEqual(row["comparisons"]["clock_out"]["reason"], "별도 확인 예정")
+        self.assertIsNone(row["comparisons"]["clock_out"]["delta_minutes"])
+
+    def test_invalid_reason_value_is_review_not_silently_stringified(self):
+        row = self.run_one(
+            [self.plan()], [self.ledger(clock_in_reason={"wrong": "type"})]
+        )["rows"][0]
+        self.assertEqual(row["status"], "REVIEW_REQUIRED")
+        self.assertIn("INVALID_CLOCK_IN_REASON", row["review_codes"])
+        self.assertIsNone(row["comparisons"]["clock_in"]["reason"])
+
+    def test_midnight_delta_ambiguous_without_dates_review_only(self):
+        row = self.run_one(
+            [self.plan(scheduled_start="23:55", scheduled_end="23:59")],
+            [self.ledger(clock_in="00:02", clock_out="23:59")],
+        )["rows"][0]
+        self.assertEqual(row["status"], "REVIEW_REQUIRED")
+        self.assertIn("TIME_DELTA_DATE_AMBIGUOUS", row["review_codes"])
+        self.assertIsNone(row["comparisons"]["clock_in"]["delta_minutes"])
+        self.assertEqual(row["comparisons"]["clock_in"]["recorded"], "00:02")
+
     def test_missing_attendance_not_absence(self):
         result = self.run_one([self.plan()], [])
         self.assertEqual(result["rows"][0]["status"], "MISSING")
