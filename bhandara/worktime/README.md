@@ -32,4 +32,4 @@
 
 ## 업체별 Excel 정규화 계약
 
-CAPS/KT텔레캅 등 어떤 업체에서 추출해도 **Access Events / Source Review / Metadata** 시트와 열·enum이 동일한 `access-events.xlsx`를 최종 결과로 사용합니다. 표준 Writer/Reader는 [access_source.py](access_source.py)에 있고 [계약 문서](ACCESS-EXCEL-CONTRACT.md)를 따릅니다. 이 Excel은 Attendance Verification의 이벤트 입력으로 그대로 읽을 수 있습니다. **업체 원본 열/코드 파서는 실제 샘플 확인 전까지 구현하지 않습니다.**
+CAPS·세콤·KT텔레캅 등 어떤 업체에서 추출해도 **Access Events / Attendance Candidates / Source Review / Metadata** 4개 시트와 열·enum이 동일한 표준 v0.2 `access-events.xlsx`를 사용합니다. 원본 초 단위 시각은 `event_timestamp`에 보존하고, 첫/마지막 유효 일반 출입은 `Attendance Candidates`에서 미확정 후보로 제공합니다. 표준 Writer/Reader는 [access_source.py](access_source.py)에 있고 [계약 문서](ACCESS-EXCEL-CONTRACT.md)를 따릅니다. 실제 업로드한 세 업체의 관찰된 헤더를 대상으로 한 어댑터는 [vendor_adapters](vendor_adapters/)에 있으며, 다른 원본 버전·코드표는 별도 검증이 필요합니다.
