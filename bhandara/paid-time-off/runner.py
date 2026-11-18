@@ -185,10 +185,11 @@ def make_entitlement_workbook(
         _append_table(
             detail,
             ("employee_id", "basis", "발생구분", "period_start", "period_end",
-             "grant_date", "계산결과", "상태", "사유"),
+             "grant_date", "계산결과", "상태", "사유", "grant_id", "반영발생일수"),
             details,
             ("employee_id", "basis", "grant_type", "period_start", "period_end",
-             "grant_date", "calculation_result", "status", "reason"),
+             "grant_date", "calculation_result", "status", "reason",
+             "grant_id", "reflected_days"),
         )
         policy = book.create_sheet("정책정보")
         _append_table(
