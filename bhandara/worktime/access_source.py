@@ -15,14 +15,20 @@ from openpyxl import Workbook, load_workbook
 
 from bhandara.common.io.input_layout import InputLayoutError, read_sheet
 
-SCHEMA_VERSION = "0.1"
+SCHEMA_VERSION = "0.2"
 ACCESS_SHEET = "Access Events"
+CANDIDATE_SHEET = "Attendance Candidates"
 REVIEW_SHEET = "Source Review"
 META_SHEET = "Metadata"
 EVENT_COLUMNS = (
     "event_id", "employee_id", "worker_id", "work_date", "event_time",
     "mode", "direction", "auth_status", "auth_method", "device_id",
-    "source_vendor", "source_ref", "source_row_number",
+    "source_vendor", "source_ref", "source_row_number", "event_timestamp",
+)
+CANDIDATE_COLUMNS = (
+    "employee_id", "worker_id", "work_date", "arrival_time", "departure_time",
+    "arrival_basis", "departure_basis", "candidate_status", "confirmed",
+    "evidence_event_ids", "source_vendor",
 )
 REVIEW_COLUMNS = (
     "source_vendor", "source_row_number", "status", "issue_codes",
@@ -31,13 +37,13 @@ REVIEW_COLUMNS = (
 META_COLUMNS = ("key", "value")
 META_KEYS = (
     "schema_version", "source_vendor", "source_sha256", "source_file",
-    "timezone", "event_count", "review_count",
+    "timezone", "event_count", "candidate_count", "review_count",
 )
 MODES = {"CLOCK_IN", "CLOCK_OUT", "ACCESS", "OUTING", "RETURN", "DISARM", "UNKNOWN"}
 DIRECTIONS = {"IN", "OUT", "UNKNOWN"}
 AUTH_STATUSES = {"SUCCESS", "FAILED", "UNKNOWN"}
 AUTH_METHODS = {"FINGERPRINT", "FACE", "CARD", "PIN", "UNKNOWN"}
-REVIEW_STATUSES = {"REJECTED", "REVIEW_REQUIRED", "UNMAPPED"}
+REVIEW_STATUSES = {"REJECTED", "REVIEW_REQUIRED", "UNMAPPED", "EXCLUDED"}
 
 
 class AccessWorkbookError(ValueError):
@@ -75,6 +81,21 @@ def _event_time(value: Any, work_date: str) -> str:
     return parsed.isoformat(timespec="minutes")
 
 
+def _full_timestamp(value: Any, work_date: str) -> str:
+    if not isinstance(value, str) or len(value) != 19 or value[10] != "T":
+        raise AccessWorkbookError("event_timestamp requires YYYY-MM-DDTHH:MM:SS")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as exc:
+        raise AccessWorkbookError("invalid event_timestamp") from exc
+    if parsed.tzinfo is not None or parsed.microsecond:
+        raise AccessWorkbookError("event_timestamp must be local second precision")
+    workday = date.fromisoformat(work_date)
+    if not workday <= parsed.date() <= workday + timedelta(days=1):
+        raise AccessWorkbookError("event_timestamp outside workday/next day")
+    return parsed.isoformat(timespec="seconds")
+
+
 def _str(row: Mapping[str, Any], key: str) -> str:
     value = row.get(key)
     if value is None:
@@ -99,6 +120,12 @@ def _normalized_event(value: Mapping[str, Any], vendor: str) -> dict[str, Any]:
     row["work_date"] = _iso_day(value.get("work_date"))
     row["event_time"] = _event_time(value.get("event_time"), row["work_date"])
     row["source_row_number"] = _positive(value, "source_row_number")
+    full = value.get("event_timestamp")
+    if full in (None, ""):
+        full = row["event_time"] + ":00"
+    row["event_timestamp"] = _full_timestamp(full, row["work_date"])
+    if row["event_timestamp"][:16] != row["event_time"]:
+        raise AccessWorkbookError("event_timestamp and event_time minute differ")
     for field in ("event_id", "employee_id", "worker_id", "source_ref"):
         if not row[field]:
             raise AccessWorkbookError(f"{field} is required")
@@ -124,6 +151,81 @@ def _normalized_review(value: Mapping[str, Any], vendor: str) -> dict[str, Any]:
     if row["status"] not in REVIEW_STATUSES or not row["issue_codes"] or not row["source_ref"]:
         raise AccessWorkbookError("review status, issue_codes and source_ref required")
     return row
+
+
+
+def _candidates(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Resolve explicit attendance modes; use first/last generic ACCESS only otherwise.
+
+    Excluded security-setting/failed-auth raw records must never reach this
+    stage. A candidate is never an approved attendance punch.
+    """
+    from collections import defaultdict
+
+    groups: dict[tuple[str, str, str], list[dict[str, Any]]] = defaultdict(list)
+    for event in events:
+        groups[(event["employee_id"], event["worker_id"], event["work_date"])].append(event)
+    output = []
+    for key, rows in sorted(groups.items()):
+        sorted_rows = sorted(rows, key=lambda row: (row["event_timestamp"], row["event_id"]))
+        ins = [r for r in sorted_rows if r["mode"] == "CLOCK_IN"
+               and r["auth_status"] != "FAILED"]
+        outs = [r for r in sorted_rows if r["mode"] == "CLOCK_OUT"
+                and r["auth_status"] != "FAILED"]
+        generic = [r for r in sorted_rows if r["mode"] == "ACCESS"
+                   and r["auth_status"] != "FAILED"]
+        selected: list[dict[str, Any]] = []
+        if ins or outs:
+            arrival, departure = (ins[0] if len(ins) == 1 else None,
+                                  outs[0] if len(outs) == 1 else None)
+            arrival_basis = "EXPLICIT_CLOCK_IN" if arrival else "MISSING"
+            departure_basis = "EXPLICIT_CLOCK_OUT" if departure else "MISSING"
+            status = ("EXPLICIT_PAIR" if arrival and departure
+                      else "MULTIPLE_EXPLICIT_REVIEW" if len(ins) > 1 or len(outs) > 1
+                      else "PARTIAL_EXPLICIT")
+            selected = ins + outs
+        elif generic:
+            arrival = generic[0]
+            departure = generic[-1] if len(generic) > 1 else None
+            arrival_basis = "INFERRED_FIRST_ACCESS"
+            departure_basis = "INFERRED_LAST_ACCESS" if departure else "MISSING"
+            status = "INFERRED_PAIR" if departure else "SINGLE_ACCESS"
+            selected = generic if len(generic) <= 2 else [generic[0], generic[-1]]
+        else:
+            arrival = departure = None
+            arrival_basis = departure_basis = "MISSING"
+            status = "NO_ATTENDANCE_CANDIDATE"
+        if arrival and departure and departure["event_timestamp"] <= arrival["event_timestamp"]:
+            status = "TIME_SEQUENCE_REVIEW"
+        output.append({
+            "employee_id": key[0], "worker_id": key[1], "work_date": key[2],
+            "arrival_time": arrival["event_timestamp"] if arrival else "",
+            "departure_time": departure["event_timestamp"] if departure else "",
+            "arrival_basis": arrival_basis, "departure_basis": departure_basis,
+            "candidate_status": status, "confirmed": False,
+            "evidence_event_ids": ",".join(r["event_id"] for r in selected),
+            "source_vendor": rows[0]["source_vendor"],
+        })
+    return output
+
+
+def _normalized_candidate(row: Mapping[str, Any], vendor: str) -> dict[str, Any]:
+    if not isinstance(row, Mapping):
+        raise AccessWorkbookError("candidate must be mapping")
+    output = {key: row.get(key) for key in CANDIDATE_COLUMNS}
+    # Excel stores a blank string cell as None. Canonical absence is always "".
+    for field in ("arrival_time", "departure_time", "evidence_event_ids"):
+        if output[field] is None:
+            output[field] = ""
+    if type(output["confirmed"]) is not bool or output["confirmed"]:
+        raise AccessWorkbookError("candidate must be unconfirmed")
+    if output["source_vendor"] != vendor or not output["employee_id"] or not output["worker_id"]:
+        raise AccessWorkbookError("candidate identity/vendor invalid")
+    workday = _iso_day(output["work_date"])
+    for key in ("arrival_time", "departure_time"):
+        if output[key]:
+            output[key] = _full_timestamp(output[key], workday)
+    return output
 
 
 def _safe(value: Any) -> Any:
@@ -175,6 +277,7 @@ def write_access_events_xlsx(
         raise AccessWorkbookError("duplicate event_id; put unresolved input in Source Review")
     if not accepted and not reviews:
         raise AccessWorkbookError("empty source requires explicit review finding")
+    candidates = [_normalized_candidate(row, vendor) for row in _candidates(accepted)]
     meta = [
         {"key": key, "value": str(value)}
         for key, value in {
@@ -184,6 +287,7 @@ def write_access_events_xlsx(
             "source_file": source_file,
             "timezone": "Asia/Seoul",
             "event_count": len(accepted),
+            "candidate_count": len(candidates),
             "review_count": len(reviews),
         }.items()
     ]
@@ -196,9 +300,11 @@ def write_access_events_xlsx(
     try:
         primary = book.active
         primary.title = ACCESS_SHEET
+        candidate_sheet = book.create_sheet(CANDIDATE_SHEET)
         review_sheet = book.create_sheet(REVIEW_SHEET)
         meta_sheet = book.create_sheet(META_SHEET)
         _append(primary, EVENT_COLUMNS, accepted)
+        _append(candidate_sheet, CANDIDATE_COLUMNS, candidates)
         _append(review_sheet, REVIEW_COLUMNS, reviews)
         _append(meta_sheet, META_COLUMNS, meta)
         book.save(path)
@@ -227,15 +333,17 @@ def read_access_events_xlsx(source: str | Path) -> dict[str, Any]:
     try:
         book = load_workbook(path, read_only=True, data_only=False)
         try:
-            if book.sheetnames != [ACCESS_SHEET, REVIEW_SHEET, META_SHEET]:
+            if book.sheetnames != [ACCESS_SHEET, CANDIDATE_SHEET, REVIEW_SHEET, META_SHEET]:
                 raise AccessWorkbookError("canonical sheet names/order mismatch")
             _exact_header(book, ACCESS_SHEET, EVENT_COLUMNS)
+            _exact_header(book, CANDIDATE_SHEET, CANDIDATE_COLUMNS)
             _exact_header(book, REVIEW_SHEET, REVIEW_COLUMNS)
             _exact_header(book, META_SHEET, META_COLUMNS)
         finally:
             book.close()
         # Shared strict reader rejects formulas; no cached formula results are trusted.
         events = read_sheet(path, EVENT_COLUMNS, sheet_name=ACCESS_SHEET)
+        candidate_rows = read_sheet(path, CANDIDATE_COLUMNS, sheet_name=CANDIDATE_SHEET)
         reviews = read_sheet(path, REVIEW_COLUMNS, sheet_name=REVIEW_SHEET)
         meta_rows = read_sheet(path, META_COLUMNS, sheet_name=META_SHEET)
     except (InputLayoutError, OSError, ValueError) as exc:
@@ -245,12 +353,17 @@ def read_access_events_xlsx(source: str | Path) -> dict[str, Any]:
         raise AccessWorkbookError("canonical metadata keys or version invalid")
     if metadata["timezone"] != "Asia/Seoul":
         raise AccessWorkbookError("canonical timezone mismatch")
-    if metadata["event_count"] != str(len(events)) or metadata["review_count"] != str(len(reviews)):
+    if (metadata["event_count"] != str(len(events)) or
+            metadata["candidate_count"] != str(len(candidate_rows)) or
+            metadata["review_count"] != str(len(reviews))):
         raise AccessWorkbookError("canonical source counts mismatch")
     canonical_events = [_normalized_event(row, metadata["source_vendor"]) for row in (
         {**x, "source_row_number": x["source_row_number"]} for x in events
     )]
     canonical_reviews = [_normalized_review(row, metadata["source_vendor"]) for row in reviews]
+    candidates = [_normalized_candidate(row, metadata["source_vendor"]) for row in candidate_rows]
+    if candidates != _candidates(canonical_events):
+        raise AccessWorkbookError("attendance candidates do not match normalized events")
     ids = [event["event_id"] for event in canonical_events]
     if len(set(ids)) != len(ids):
         raise AccessWorkbookError("canonical duplicate event_id")
@@ -259,12 +372,14 @@ def read_access_events_xlsx(source: str | Path) -> dict[str, Any]:
     for physical, event in zip(events, canonical_events):
         event["_row_number"] = event["source_row_number"]
         event["normalized_row_number"] = physical["_row_number"]
+    actionable = [row for row in canonical_reviews if row["status"] != "EXCLUDED"]
     return {
         "schema_version": SCHEMA_VERSION,
         "events": canonical_events,
+        "attendance_candidates": candidates,
         "source_reviews": canonical_reviews,
         "metadata": metadata,
-        "status": "PASS" if canonical_events and not canonical_reviews else "REVIEW_REQUIRED",
+        "status": "PASS" if canonical_events and not actionable else "REVIEW_REQUIRED",
     }
 
 
@@ -290,7 +405,8 @@ def verify_attendance_xlsx(
         period_from=period_from, period_to=period_to,
         accepted_auth_methods=accepted_auth_methods,
     )
-    for row in normalized["source_reviews"]:
+    actionable = [row for row in normalized["source_reviews"] if row["status"] != "EXCLUDED"]
+    for row in actionable:
         result["source_issues"].append({
             "source": "access_normalization",
             "code": "NORMALIZATION_" + row["status"],
@@ -299,12 +415,14 @@ def verify_attendance_xlsx(
             "row_number": row["source_row_number"],
             "detail": row["issue_codes"],
         })
-    if normalized["source_reviews"]:
+    if actionable:
         result["status"] = "REVIEW_REQUIRED"
     result["normalized_source"] = {
         "schema_version": normalized["schema_version"],
         "source_vendor": normalized["metadata"]["source_vendor"],
         "source_sha256": normalized["metadata"]["source_sha256"],
-        "normalized_review_count": len(normalized["source_reviews"]),
+        "normalized_review_count": len(actionable),
+        "excluded_count": len(normalized["source_reviews"]) - len(actionable),
     }
+    result["attendance_candidates"] = normalized["attendance_candidates"]
     return result
