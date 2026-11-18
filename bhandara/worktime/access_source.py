@@ -266,3 +266,45 @@ def read_access_events_xlsx(source: str | Path) -> dict[str, Any]:
         "metadata": metadata,
         "status": "PASS" if canonical_events and not canonical_reviews else "REVIEW_REQUIRED",
     }
+
+
+def verify_attendance_xlsx(
+    attendance_rows: Iterable[Mapping[str, Any]],
+    workbook_path: str | Path,
+    *,
+    period_from: str,
+    period_to: str,
+    accepted_auth_methods: Iterable[str] = ("FINGERPRINT",),
+) -> dict[str, Any]:
+    """One tool-internal handoff from *canonical* Excel to Attendance Verification.
+
+    Do not discard vendor normalization findings even when accepted events
+    alone happen to match the reported attendance ledger.
+    """
+    from importlib import import_module
+
+    normalized = read_access_events_xlsx(workbook_path)
+    module = import_module("bhandara.worktime.attendance-verification")
+    result = module.verify_attendance(
+        attendance_rows, normalized["events"],
+        period_from=period_from, period_to=period_to,
+        accepted_auth_methods=accepted_auth_methods,
+    )
+    for row in normalized["source_reviews"]:
+        result["source_issues"].append({
+            "source": "access_normalization",
+            "code": "NORMALIZATION_" + row["status"],
+            "employee_id": "", "work_date": "",
+            "source_ref": row["source_ref"],
+            "row_number": row["source_row_number"],
+            "detail": row["issue_codes"],
+        })
+    if normalized["source_reviews"]:
+        result["status"] = "REVIEW_REQUIRED"
+    result["normalized_source"] = {
+        "schema_version": normalized["schema_version"],
+        "source_vendor": normalized["metadata"]["source_vendor"],
+        "source_sha256": normalized["metadata"]["source_sha256"],
+        "normalized_review_count": len(normalized["source_reviews"]),
+    }
+    return result
