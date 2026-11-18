@@ -21,7 +21,7 @@ def _id(value: Any, field: str) -> str:
 
 def _date(value: Any, field: str) -> date:
     if isinstance(value, datetime):
-        raise ValueError(f"{field}: 날짜만 입력해야 합니다")
+        return value.date()
     if isinstance(value, date):
         return value
     if not isinstance(value, str) or len(value.strip()) != 10:
@@ -121,6 +121,8 @@ def allocate_usage(
             end = _date(row.get("expires_on"), "expires_on")
             if start > end:
                 raise ValueError("유효기간 시작일이 종료일 이후입니다")
+            if start < granted:
+                raise ValueError("사용 가능 시작일이 최초 발생일보다 빠릅니다")
             source = _id(row.get("source_ref"), "source_ref")
             days = _days(row.get("available_days"), "available_days")
             parsed_grants.append({
