@@ -225,6 +225,25 @@ def allocate_usage(
             "remaining_after_reservations": (
                 grant["available_days"] - completed[identifier] - reserved[identifier]),
         })
+    # Shortage is a signed employee/type balance, not a negative grant.
+    # Future confirmed grants do not increase today's spendable amount.
+    summary_keys = (set(by_group) | set(shortages) | set(future_shortages)) - blocked
+    summary = []
+    for key in sorted(summary_keys):
+        employee, leave_type = key
+        usable = sum((
+            item["remaining_days"] for item in balances
+            if (item["employee_id"], item["leave_type"]) == key
+            and item["valid_from"] <= cutoff <= item["expires_on"]
+        ), Fraction())
+        negative = -shortages[key]
+        summary.append({
+            "employee_id": employee, "leave_type": leave_type,
+            "current_valid_grant_balance": usable,
+            "shortage_balance": negative,
+            "net_remaining_days": usable + negative,
+            "future_shortage_balance": -future_shortages[key],
+        })
     for employee, leave_type in sorted(blocked):
         issues.append({
             "source": "allocation", "employee_id": employee,
@@ -233,6 +252,7 @@ def allocate_usage(
         })
     return {
         "allocations": allocations, "balances": balances,
+        "summary": summary,
         "shortages": dict(shortages),
         "future_shortages": dict(future_shortages),
         "issues": issues, "blocked_groups": sorted(blocked),
