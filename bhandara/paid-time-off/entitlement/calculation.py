@@ -6,6 +6,8 @@ truncated to seven places only when serialized, never for later arithmetic.
 """
 from __future__ import annotations
 
+import hashlib
+import json
 from datetime import date, timedelta
 from fractions import Fraction
 from decimal import Decimal
@@ -138,6 +140,50 @@ def prorated_quantity(
     if base <= 0:
         raise ValueError("기준 발생일수는 양수여야 합니다")
     return base * Fraction(numerator, denominator)
+
+
+
+def grant_identity(row: Mapping[str, Any]) -> str:
+    """Stable event identity independent of row order, quantity and run_id."""
+    identity = [row[key] for key in (
+        "employee_id", "basis", "grant_type", "period_start",
+        "period_end", "grant_date")]
+    encoded = json.dumps(identity, ensure_ascii=False, separators=(",", ":"))
+    return "ENT-" + hashlib.sha256(encoded.encode("utf-8")).hexdigest()[:32]
+
+
+def _apply_reflected_days(
+    events: list[tuple[dict[str, Any], Fraction | None]],
+    *,
+    rounding_digits: int,
+    unresolved: bool,
+) -> list[dict[str, Any]]:
+    """Allocate ONE final rounded employee total to grant rows.
+
+    Apportion units by fractional remainders; this does not round each event
+    independently. Source raw calculation_result remains unchanged.
+    """
+    details = [dict(row, grant_id=grant_identity(row), reflected_days=None)
+               for row, _ in events]
+    if len({row["grant_id"] for row in details}) != len(details):
+        raise ValueError("중복 발생 건 식별자: Entitlement 입력을 검토하세요")
+    if unresolved:
+        return details
+    scale = 10 ** rounding_digits
+    raw = [value for _, value in events]
+    assert all(isinstance(value, Fraction) for value in raw)
+    floors = [int(value * scale) for value in raw]
+    target_units = int(Fraction(round_final(sum(raw, Fraction()), rounding_digits)) * scale)
+    additions = target_units - sum(floors)
+    if not 0 <= additions <= len(raw):
+        raise ValueError("발생 상세 반영 수량 배분 오류")
+    ordering = sorted(range(len(raw)), key=lambda i: (
+        -(raw[i] * scale - floors[i]), details[i]["grant_id"]))
+    for index in ordering[:additions]:
+        floors[index] += 1
+    for i, row in enumerate(details):
+        row["reflected_days"] = quantity_text(Fraction(floors[i], scale))
+    return details
 
 
 def _make_event(
@@ -366,4 +412,5 @@ def calculate_employee(
         "granted_days": None if unresolved else round_final(total, rounding_digits),
         "status": "판정 안됨" if unresolved else "계산 완료",
     }
-    return summary, [row for row, _raw in results]
+    return summary, _apply_reflected_days(
+        results, rounding_digits=rounding_digits, unresolved=unresolved)
