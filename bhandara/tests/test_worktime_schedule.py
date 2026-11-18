@@ -29,8 +29,8 @@ class ScheduleTests(unittest.TestCase):
 
     def test_exact_match_with_source_lineage(self):
         result = self.run_one([self.plan()], [self.ledger()])
-        self.assertEqual(result["status"], "MATCH")
-        self.assertEqual(result["rows"][0]["status"], "MATCH")
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual(result["rows"][0]["status"], "WORK_MATCH")
         self.assertEqual(result["rows"][0]["schedule_sources"],
                          [{"source_ref": "schedule-fixture", "row_number": 2}])
         self.assertFalse(result["approved"])
@@ -39,33 +39,33 @@ class ScheduleTests(unittest.TestCase):
         actual = self.ledger()
         actual["clock_in"] = "09:17"
         result = self.run_one([self.plan()], [actual])
-        self.assertEqual(result["rows"][0]["status"], "DIFFERENT")
+        self.assertEqual(result["rows"][0]["status"], "RECORD_DIFFERENT")
         self.assertEqual(result["rows"][0]["different_fields"], ["clock_in"])
         self.assertNotIn("late_minutes", result["rows"][0])
         self.assertNotIn("overtime_hours", result["rows"][0])
 
     def test_missing_attendance_not_absence(self):
         result = self.run_one([self.plan()], [])
-        self.assertEqual(result["rows"][0]["status"], "MISSING_ATTENDANCE")
+        self.assertEqual(result["rows"][0]["status"], "MISSING")
         self.assertEqual(result["status"], "REVIEW_REQUIRED")
 
     def test_unscheduled_attendance_not_approved_holiday(self):
         result = self.run_one([], [self.ledger()])
-        self.assertEqual(result["rows"][0]["status"], "UNSCHEDULED_ATTENDANCE")
+        self.assertEqual(result["rows"][0]["status"], "UNSCHEDULED")
         self.assertFalse(result["approved"])
 
     def test_off_without_times_has_no_expected_attendance(self):
         plan = self.plan()
         plan.update(day_type="OFF", scheduled_start=None, scheduled_end=None, break_min=None)
         result = self.run_one([plan], [])
-        self.assertEqual(result["rows"][0]["status"], "NO_WORK_RECORDED")
-        self.assertEqual(result["status"], "MATCH")
+        self.assertEqual(result["rows"][0]["status"], "NON_WORK_MATCH")
+        self.assertEqual(result["status"], "PASS")
 
     def test_holiday_with_scheduled_hours_expects_record(self):
         plan = self.plan()
         plan["day_type"] = "HOLIDAY"
         result = self.run_one([plan], [])
-        self.assertEqual(result["rows"][0]["status"], "MISSING_ATTENDANCE")
+        self.assertEqual(result["rows"][0]["status"], "MISSING")
 
     def test_duplicate_schedule_is_reviewed_without_guessing(self):
         plan2 = self.plan()
@@ -109,7 +109,7 @@ class ScheduleTests(unittest.TestCase):
         wrong = self.plan(employee="E002")
         wrong["work_date"] = "bad-date"
         result = self.run_one([self.plan(), wrong], [self.ledger()])
-        self.assertEqual(result["rows"][0]["status"], "MATCH")
+        self.assertEqual(result["rows"][0]["status"], "WORK_MATCH")
         self.assertEqual(result["source_issues"][0]["code"], "ROW_KEY_INVALID")
         self.assertEqual(result["status"], "REVIEW_REQUIRED")
 
@@ -123,6 +123,23 @@ class ScheduleTests(unittest.TestCase):
         result = self.run_one([], [])
         self.assertEqual(result["status"], "REVIEW_REQUIRED")
         self.assertEqual(result["source_issues"][0]["code"], "NO_COMPARABLE_ROWS")
+
+    def test_aggregate_pass_with_mixed_work_and_non_work(self):
+        off = self.plan(employee="E002", day="2026-11-17")
+        off.update(day_type="OFF", scheduled_start=None,
+                   scheduled_end=None, break_min=None)
+        result = self.run_one([self.plan(), off], [self.ledger()])
+        self.assertEqual(result["status"], "PASS")
+        self.assertEqual([row["status"] for row in result["rows"]],
+                         ["WORK_MATCH", "NON_WORK_MATCH"])
+        self.assertTrue(all(row["status"] != "LEAVE_MATCH" for row in result["rows"]))
+
+    def test_discrepancy_sets_aggregate_review(self):
+        actual = self.ledger()
+        actual["clock_out"] = "18:20"
+        result = self.run_one([self.plan()], [actual])
+        self.assertEqual(result["status"], "REVIEW_REQUIRED")
+        self.assertEqual(result["rows"][0]["status"], "RECORD_DIFFERENT")
 
     def test_bad_period_and_mapping_rejected(self):
         with self.assertRaises(ScheduleInputError):
