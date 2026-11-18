@@ -201,7 +201,7 @@ def reconcile_schedule(
     state = ("PASS" if not source_issues and all(row["status"] in {"WORK_MATCH", "NON_WORK_MATCH"} for row in rows)
              else "REVIEW_REQUIRED")
     return {
-        "schema_version": "0.1", "module": "schedule", "status": state,
+        "schema_version": "0.2", "module": "schedule", "status": state,
         "period_from": start, "period_to": end, "rows": rows,
         "source_issues": source_issues, "approved": False,
         "notice": "근무 예정일과 근태장부 기록의 존재 여부만 대조합니다. 시각 차이·휴게·지각·연장근무·휴가 승인 여부는 계산하지 않습니다.",
