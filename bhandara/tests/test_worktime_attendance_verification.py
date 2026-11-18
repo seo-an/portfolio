@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 import unittest
+from importlib import import_module
 
-from bhandara.worktime.attendance_verification import verify_attendance
-from bhandara.worktime.attendance_verification.calculation import (
-    AttendanceVerificationInputError,
-)
+verification = import_module("bhandara.worktime.attendance-verification")
+verify_attendance = verification.verify_attendance
+AttendanceVerificationInputError = verification.AttendanceVerificationInputError
 
 
 class AttendanceVerificationTests(unittest.TestCase):
