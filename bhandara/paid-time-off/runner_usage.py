@@ -68,7 +68,8 @@ def read_rows(
         headers = [x.value.strip() if isinstance(x.value, str)
                    else x.value for x in head]
         fields = tuple(fields)
-        if len(headers) != len(set(headers)):
+        present = [item for item in headers if item not in (None, "")]
+        if len(present) != len(set(present)):
             raise UsageInputError(f"{path.name}/{sheet}: 중복 헤더")
         missing = [field for field in fields if field not in headers]
         if missing:
@@ -303,7 +304,7 @@ def _record_details(allocation: Mapping[str, Any],
 
 def _employee_summary(
     allocation: Mapping[str, Any], opening_shortages: list[dict],
-    *, as_of: date
+    *, as_of: date, close_of_period: bool = False
 ) -> list[dict]:
     carry = defaultdict(Fraction)
     for row in opening_shortages:
@@ -330,8 +331,10 @@ def _employee_summary(
         ), Fraction())
         available = sum((
             g["remaining_days"] for g in sources
-            if (_sources._iso_date(g["valid_from"], "valid_from") <= as_of <=
-                _sources._iso_date(g["expires_on"], "expires_on"))
+            if (_sources._iso_date(g["valid_from"], "valid_from") <= as_of and
+                (_sources._iso_date(g["expires_on"], "expires_on") > as_of if
+                 close_of_period else
+                 _sources._iso_date(g["expires_on"], "expires_on") >= as_of))
         ), Fraction())
         shortage = sum((
             v for (eid, kind), v in allocation["shortages"].items()
@@ -425,7 +428,9 @@ def run_usage_ledger(
     calculated = _allocation.allocate_usage(
         combined["grants"], deduction, as_of_date=as_of)
     issues = combined["issues"] + deduction_issues + calculated["issues"]
-    summary = _employee_summary(calculated, opening_shortage, as_of=as_of)
+    summary = _employee_summary(
+        calculated, opening_shortage, as_of=as_of,
+        close_of_period=bool(closing_id))
     details = _record_details(calculated, opening_shortage)
     expiry_result = None
     if closing_id:
