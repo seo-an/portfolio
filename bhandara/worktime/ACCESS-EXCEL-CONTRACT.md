@@ -82,6 +82,16 @@ records = read_access_events_xlsx(output)
 
 `read_access_events_xlsx()`의 `status=PASS`는 **표준 Excel 구조 및 변환 결과 검토 이슈 부재**만 의미합니다. `EXCLUDED`는 별도 집계되며 미매핑 오류와 혼동하지 않습니다. 지문 인증 성공, 근태 승인 또는 출퇴근 확정을 뜻하지 않습니다.
 
+### 근무 예정 시각과 출입 후보의 부호 있는 차이
+
+`verify_attendance_xlsx(..., schedule_rows=schedule_rows)`에 **선택적으로 스케줄을 전달**하면 `Attendance Candidates`의 첫·마지막 일반 출입 후보를 포함해, 예정 시각 대비 장부 및 출입기 시각의 **부호 있는 차이**를 `time_deviations`에 제공합니다. 정규화된 Excel의 시트·컬럼은 변경하지 않습니다.
+
+- `ledger_vs_expected`: 장부−예정
+- `device_vs_expected`: 출입기−예정 (일반 출입은 미확정)
+- `device_vs_ledger`: 출입기−장부
+
+`reason`은 근태장부의 `clock_in_reason`과 `clock_out_reason`에서만 전달받으며 임의로 조기출근·시차출퇴근·야근을 판정하지 않습니다. 출입기 인식 시각이나 시각 차이는 **승인된 근로시간이 아닙니다**.
+
 ### 정규화 실패까지 보존하는 즉시 검증 경로
 
 `verify_attendance_xlsx(attendance_rows, workbook_path, *, period_from, period_to)`는 표준 Excel을 열어서 바로 Attendance Verification으로 전달하는 Tool 내부 편의 함수입니다.
