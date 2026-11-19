@@ -69,11 +69,11 @@ Writer는 파일 덮어쓰기를 거절하며 `PAYROLL` 시트만 생성한다. 
 
 ## 다음 구현 우선순위
 
-출력기 자체의 설계·테스트·병합은 끝났다(PR #60). **다음 구현은 출력 열을 다시 설계하는 것이 아니라** [남은 Payroll 통합 과제](NEXT-STEPS.md)의 Excel Reader 및 코어→Output `item_id/label/amount` Adapter를 만드는 것이다. 초과근무수당·공제액 산정 및 정산 기간 구분이 완료될 때만 `earnings_complete`/`deductions_complete`를 확정한다.
+출력기 설계·병합은 완료됐다(PR #60). P0-1 Excel Reader와 P0-2/3 [정확 산정기간·Core→Output 검토용 Adapter](PERIOD-PREVIEW.md)를 통해 지급항목 ID·이름·금액을 전달할 수 있다. 단, **P0 Adapter는 완료 플래그 둘 다 False로 고정**한다. 초과근무·입퇴사/휴가 정산 및 실제 공제액을 검증하기 전에는 실지급액이 생기지 않는다.
 
 ## 후속 입력 연결 시 반드시 필요한 정보
 
-현재 `bhandara/payroll/core.py`의 기본급·고정수당·성과급 계산 결과에는 **출력용 항목 표시명(label)을 일관되게 제공하는 계약이 없다**. 따라서 이번 PR은 외부에서 정규화한 `item_id`, `label`, `amount`를 입력받는 독립 출력기까지만 구현한다. 고정수당 ID→표시명, 성과급 ID→표시명, 초과근무 카테고리→표시명, 공제 항목별 확정 금액을 어떤 데이터에서 연결할지는 다음 입력/산정 연결 작업에서 정한다. 이 정보가 없이 이름을 임의 추측하지 않는다.
+기존 독립 Output은 `item_id`, `label`, `amount`를 엄격히 요구한다. P0 Adapter는 신규 입력 스키마 v1.1의 `FIXED ALLOWANCE MAP.allowance_name`과 `BONUS BUDGET.bonus_name`을 이름 정본으로 사용해 **계약·고정수당·성과급 후보**를 결합한다. 초과근무 지급항목 명칭과 공제 항목의 실제 계산 금액은 아직 미확정이며 임의로 생성하지 않는다.
 
 또한 `payroll` 독립 Tool CLI, Worktime 초과근무 정책 적용, 실제 4대보험 공제 산출, 연차·입퇴사 일할 산정, 법적 비과세 검증, 사용자 승인, Gearbox 운영연결은 **아직 미구현**이다. `agent-config` 수정은 PAUSE 중이다.
 
