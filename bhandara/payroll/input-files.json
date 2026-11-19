@@ -1,5 +1,5 @@
 {
-  "schema_version": "1.0",
+  "schema_version": "1.1",
   "tool": "payroll",
   "status": "READER_AND_REVIEW_ADAPTER_NOT_YET_CONNECTED_TO_CLI",
   "input_directory": "payroll",
