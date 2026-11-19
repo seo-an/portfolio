@@ -118,6 +118,10 @@
 
 [산정기간·스키마 v1.1·Core→Output 연결 및 실행 예시](PERIOD-PREVIEW.md). 요청 구간과 산정기간이 정확히 일치하는 계약만 선택하고, 수당/성과급 이름을 기존 Excel 두 곳에서 읽는다. 인사·노무 관련 실제 계약 효력, 기간 분할과 임금 완결성은 자동 확정하지 않는다.
 
+## P1-1: Worktime 근무 사실의 Payroll 검토 인계
+
+[Worktime Bridge 계약](WORKTIME-BRIDGE.md) · `worktime_bridge.py`의 `build_payroll_worktime_review()`는 독립 Worktime의 단일 10열 Excel을 대상으로 월/주급 산정기간·직원 ID를 검증하고, 조기출근·지연퇴근·휴무일 출근 등 **검토 필요 사실**만 분류한다. 실제 승인 근로시간·야간/휴일 가산·임금액은 산정하지 않으며, 검토용 Payroll Output도 항상 `PARTIAL_REVIEW_ONLY`다. Worktime 자료는 Payroll 기존 7개 입력 시트에 추가하지 않는다.
+
 ## 실행 / 테스트
 
 ```bash
