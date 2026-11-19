@@ -1,6 +1,6 @@
 # 반다라 사용 안내서 — 처음 사용하는 사람을 위한 설명
 
-> **현재 기준:** 신규 Payroll의 7개 분리 Excel Reader와 Core→Output Adapter, Worktime 검토 및 초과근무 수당 **후보 금액** 연결까지 구현됐습니다. 아직 신규 Payroll의 JSON Tool CLI나 실제 공제액·최종 급여 산정은 제공하지 않습니다. 아래에 남아 있는 구형 `*-calculator` 예제는 **레거시 사용법**입니다. [신규 Payroll 상태](payroll/NEXT-STEPS.md) · [레거시 철수 기준](LEGACY-RETIREMENT.md).
+> **현재 기준:** 신규 Payroll의 7개 분리 Excel Reader와 Core→Output Adapter, Worktime 검토·초과근무 수당 **후보 금액**·명시적 중복가산(P1-4)까지 구현됐습니다. 입퇴사·재계약 달력일수 정산(P1-5a)은 별도 검토용 함수로 구현 중입니다. 아직 신규 Payroll의 JSON Tool CLI나 실제 공제액·최종 급여 산정은 제공하지 않습니다. 아래에 남아 있는 구형 `*-calculator` 예제는 **레거시 사용법**입니다. [신규 Payroll 상태](payroll/NEXT-STEPS.md) · [레거시 철수 기준](LEGACY-RETIREMENT.md).
 
 
 > **과거 안내(PR #60 병합 당시):** 신규 `paid-time-off`와 `worktime` Tool은 JSON 설정 기반 CLI를 사용할 수 있습니다. 신규 `payroll`은 **계약·수당·성과급 코어와 동적 Excel Output만 구현**했으며, 별도 Excel Reader/JSON Tool CLI/실제 공제·초과근무 산정 및 둘 사이 연결은 아직 없습니다. 아래 `*-calculator` 예시는 **구형** 계산기용이며 여전히 지원합니다. 신규 Tool은 Gearbox/Slack 운영과 연결되지 않았고 `agent-config` 작업은 PAUSE입니다. [개발 현황](DEVELOPMENT-STATUS-2026-11-19.md) · [Payroll 남은 작업](payroll/NEXT-STEPS.md).
@@ -21,9 +21,9 @@ python3 run.py bhandara worktime
 
 ### 신규 Payroll은 아직 직접 실행하는 CLI가 아닙니다
 
-현재 새 `bhandara/payroll/`의 계약·수당·성과급 함수는 **검토용 부분 계산 코어**이고, `payroll-result.xlsx` Writer는 이미 계산된 금액 항목을 받아서 **표시만** 합니다. 둘을 자동 연결하는 코드가 없으며, 새 `python3 run.py bhandara payroll` 명령은 아직 지원한다고 안내하면 안 됩니다.
+새 `bhandara/payroll/`에는 계약·수당·성과급 코어, **7개 XLSX Reader, 계산기간 선택·검토용 Adapter, 초과근무/중복가산 검토 후보**가 있습니다. 다만 **정식 JSON Tool CLI와 최종 급여 계산은 구현되지 않았으므로** 새 `python3 run.py bhandara payroll` 명령은 아직 지원되지 않습니다. 계약·기간 분할 일할도 출처가 확인된 별도 입력을 함수에 전달해야 하며, Excel만 올렸다고 자동 실행되지 않습니다.
 
-- 입력 계약: [분리형 Excel 7개](payroll/input-files.json). `input_root/payroll/`의 각각 한 시트 Excel로 읽는 Reader는 아직 구현하지 않았습니다.
+- 입력 계약: [분리형 Excel 7개](payroll/input-files.json). `input_root/payroll/`의 각 파일 한 시트를 읽는 엄격한 Reader는 구현됐으나, 정식 독립 JSON Tool CLI는 미구현입니다.
 - 출력 계약: [`payroll-result.xlsx`/`PAYROLL`](payroll/OUTPUT-CONTRACT.md). 50명 중 1명만 특정 수당을 받더라도 그 수당 열이 생성되고, 미해당 직원 셀은 공란입니다.
 - 기존 `payroll-calculator`의 아래 명령은 구형 계산기 호출이며, **새 Payroll Tool의 지급액이 계산된다는 뜻이 아닙니다**.
 - 설치된 공개 샘플 폴더의 `pay-contract.xlsx`를 새 `CONTRACTS` 단일 시트 계약으로 간주하지 마세요. 신규 나머지 6개 파일의 실제 Git 반영 및 시트/헤더 검증도 아직 확인해야 합니다.
