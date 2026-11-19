@@ -59,11 +59,15 @@ def resolve_contract_pay(contracts: Iterable[Mapping[str, Any]]) -> dict[str, di
     TOTAL requires an independently declared base to avoid reverse inference.
     """
     resolved: dict[str, dict[str, Any]] = {}
+    selected_contract_ids: set[str] = set()
     for row in contracts:
         worker = _value(row, "employee_id")
         contract_id = _value(row, "contract_id")
         if worker in resolved:
             raise PayrollCoreError(f"{worker}: multiple selected contracts")
+        if contract_id in selected_contract_ids:
+            raise PayrollCoreError(f"{contract_id}: duplicate contract_id")
+        selected_contract_ids.add(contract_id)
         cycle = _cycle_amount(row)
         kind = _value(row, "amount_type")
         if kind not in {"BASE", "TOTAL"}:
@@ -76,14 +80,13 @@ def resolve_contract_pay(contracts: Iterable[Mapping[str, Any]]) -> dict[str, di
         if kind == "BASE" and base != cycle:
             raise PayrollCoreError(f"{worker}: BASE declared base conflicts with contract")
         daily = _number(row.get("daily_base_rate"), "daily_base_rate", whole_won=True)
-        minutes = _number(row.get("standard_day_minutes"), "standard_day_minutes", whole_won=True)
-        if daily <= 0 or minutes <= 0:
-            raise PayrollCoreError(f"{worker}: daily base and standard day minutes must be positive")
+        if daily <= 0:
+            raise PayrollCoreError(f"{worker}: daily base must be positive")
         resolved[worker] = {
             "employee_id": worker, "contract_id": contract_id,
             "pay_basis": _value(row, "pay_basis"), "amount_type": kind,
             "contract_cycle_amount": cycle, "base_pay": base,
-            "daily_base_rate": daily, "standard_day_minutes": int(minutes),
+            "daily_base_rate": daily,
             "payment_date": _value(row, "payment_date"),
             "calculation_period_from": _value(row, "calculation_period_from"),
             "calculation_period_to": _value(row, "calculation_period_to"),
@@ -98,7 +101,11 @@ def resolve_fixed_allowances(
     mapping: Iterable[Mapping[str, Any]],
     assignments: Iterable[Mapping[str, Any]],
 ) -> dict[str, list[dict[str, Any]]]:
-    """Join employee assignments to allowance ID + level without CSV parsing."""
+    """Resolve contract_id to employee once, then join allowance ID + level.
+
+    A negotiated contract gets a *new* contract_id and its own allowance
+    assignments. Never silently inherit old-contract rows.
+    """
     rate_map: dict[tuple[str, str], dict[str, Any]] = {}
     for row in mapping:
         key = (_value(row, "allowance_id"), _value(row, "level"))
@@ -111,18 +118,24 @@ def resolve_fixed_allowances(
                          "payroll_taxability": tax,
                          "taxability_policy_ref": str(row.get("taxability_policy_ref") or "").strip()}
     out: dict[str, list[dict[str, Any]]] = {worker: [] for worker in contracts}
+    contract_to_worker: dict[str, str] = {}
+    for worker, contract in contracts.items():
+        contract_id = _value(contract, "contract_id")
+        if contract_id in contract_to_worker:
+            raise PayrollCoreError(f"{contract_id}: duplicate selected contract_id")
+        contract_to_worker[contract_id] = worker
     seen: set[tuple[str, str]] = set()
     for row in assignments:
-        worker = _value(row, "employee_id")
         contract_id = _value(row, "contract_id")
+        worker = contract_to_worker.get(contract_id)
+        if worker is None:
+            raise PayrollCoreError(f"{contract_id}: allowance refers to unknown or expired contract")
         key = (_value(row, "allowance_id"), _value(row, "level"))
-        if worker not in contracts or contracts[worker]["contract_id"] != contract_id:
-            raise PayrollCoreError(f"{worker}: allowance assigned to missing/mismatched contract")
         if key not in rate_map:
-            raise PayrollCoreError(f"{worker}: allowance map missing {key}")
-        assignment_key = (worker, key[0])
+            raise PayrollCoreError(f"{contract_id}: allowance map missing {key}")
+        assignment_key = (contract_id, key[0])
         if assignment_key in seen:
-            raise PayrollCoreError(f"{worker}: duplicated allowance id {key[0]}")
+            raise PayrollCoreError(f"{contract_id}: duplicated allowance id {key[0]}")
         seen.add(assignment_key)
         entry = rate_map[key]
         out[worker].append({"allowance_id": key[0], "level": key[1], **entry})
