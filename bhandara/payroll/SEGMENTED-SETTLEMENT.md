@@ -39,7 +39,8 @@
       "segment_to": "2026-11-15",
       "approval_status": "APPROVED",
       "approval_ref": "SYNTHETIC-CONTRACT-A",
-      "policy_ref": "SYNTHETIC-DAY-PRORATION"
+      "policy_ref": "SYNTHETIC-DAY-PRORATION",
+      "amount_basis": "FULL_CYCLE"
     },
     {
       "employee_id": "0001",
