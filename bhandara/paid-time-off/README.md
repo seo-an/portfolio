@@ -1,8 +1,8 @@
 # Paid Time Off — 한국 연차유급휴가 Tool
 
-> **현재 기준: 2026-11-18, PR #43 병합 후.** Entitlement·Deduction Quantity·Allocation·Expiry/Carryover·사용내역·Closing의 **독립 Python 계산 및 Excel 경로**가 구현되어 있습니다. 합성자료 CI와 사용자 서버 테스트를 통과했지만 실제 인사자료 운영 검증과 JSON 기반 선택적 Tool CLI는 **이번 PR에서 구현**했고, Gearbox/Slack 운영 연결은 **아직 수행하지 않았습니다**.
+> **현재 기준: 2026-11-19, PR #56 병합 후.** Entitlement·Deduction Quantity·Allocation·Expiry/Carryover·사용내역·Closing의 독립 계산·Excel 및 **JSON 기반 선택적 Tool Flow/CLI 구현과 합성·서버 테스트를 완료**했습니다. **Gearbox/Slack 운영 연결 및 실자료 검증은 미완료**입니다.
 >
-> 기존 `pto-calculator` v0.2.1과 Gearbox 호환성 기준은 변경하지 않았습니다. 실제 운영 활성화보다 **PTO 전체 Flow 및 독립 Module 계약 정리**가 현 우선순위입니다.
+> 기존 `pto-calculator` v0.2.1과 Gearbox 호환성 기준은 변경하지 않았습니다. 신규 PTO Tool 독립 실행은 준비되었으며 **다음 본선은 Payroll 설계**, 운영 연결은 별도 트랙입니다.
 
 ## 1. 핵심 구조
 
@@ -44,11 +44,11 @@
 | Deduction Quantity | `calculation.py`, `runner.run_deduction_quantity()`, 차감요약/상세 Excel, 숨김 정확한 분자·분모 | 직원별 1일 기준시간 자동 정책 연결 |
 | Allocation | `allocation.py`, 발생·사용 신청별 배정, 음수 부족분, 미래 예약 | 외부 자동 상계 API(만들지 않기로 결정) |
 | 발생자료 결합 | `source_join.py`, 당년 Entitlement·외부 대휴·Closing 잔여를 ID로 결합 | 실자료 연속운영 검증 |
-| 사용내역 | `runner_usage.py`, `usage-ledger-result.xlsx` | 공개 Tool CLI 연결 |
+| 사용내역 | `runner_usage.py`, `usage-ledger-result.xlsx` | JSON CLI에서 선택 실행 가능; 운영 연결은 후속 |
 | Expiry & Carryover | `expiry-carryover/calculation.py`, 만료·이월·수당 검토 표시 | 권리·현금 지급 법적 판정 |
 | Closing | `closing/calculation.py` + `runner_closing.py`, `closing-result.xlsx` | 자동 마감 승인 및 월별/분기별 실제 운영 |
 | Use Promotion | 독립 Module 미구현 | 대상·기한·통지·증빙·결과 계약 협의 |
-| Tool 운영 | 독립 라이브러리 호출 경로만 | 신규 JSON Tool CLI는 구현; module.json/설정 전환·Gearbox/Slack 운영 연동은 후속 |
+| Tool CLI | `tool_cli.py`, `config.example.json`, `run.py bhandara paid-time-off` | 선택 Flow/독립 CLI 구현; Gearbox/Slack 운영 연동 미완료 |
 
 ## 3. 입력 자료와 원본의 소유권
 
@@ -138,7 +138,7 @@ python3 -m unittest discover -s bhandara/tests -p 'test_*.py'
 
 ## 7. 다음 설계 과제
 
-1. **PTO 선택적 Flow/CLI**: 단계별 선택 및 결과 인계는 JSON Tool CLI로 구현했습니다. 실제 운영 자료 검증과 다중 실행 운영 정책은 후속입니다.
+1. **PTO 선택적 Flow/CLI 완료**: JSON으로 단계별 선택 및 결과 인계 가능. 현장/운영 자료 검증은 미완료입니다.
 2. **Use Promotion**: 법정/사내 정책 및 대상·통지·증빙·결과 인계 계약 협의. Closing의 외부 Y/N 상태와 분리합니다.
 3. **연도·분기 마감 연결 점검**: 확정 Closing→다음 기간 사용내역, 1월 Opening, 변경·취소/미상계 부족분 연속성. 실자료 대신 먼저 합성 시나리오·정합성 검토.
 4. **공개 Tool 경계**: `module.json`/Module별 `user_settings.py`, 단독 실행 CLI, RUNBOOK, 입력·출력 정본 정의.
