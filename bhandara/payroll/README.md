@@ -122,6 +122,10 @@
 
 [Worktime Bridge 계약](WORKTIME-BRIDGE.md) · `worktime_bridge.py`의 `build_payroll_worktime_review()`는 독립 Worktime의 단일 10열 Excel을 대상으로 월/주급 산정기간·직원 ID를 검증하고, 조기출근·지연퇴근·휴무일 출근 등 **검토 필요 사실**만 분류한다. 실제 승인 근로시간·야간/휴일 가산·임금액은 산정하지 않으며, 검토용 Payroll Output도 항상 `PARTIAL_REVIEW_ONLY`다. Worktime 자료는 Payroll 기존 7개 입력 시트에 추가하지 않는다.
 
+## P1-2: 검증 근로·승인 구간의 금액 후보 계산
+
+[가산수당 후보 계약](OVERTIME-CANDIDATES.md). `overtime_candidates.py`는 기존 초과근무 규칙과 **외부 검증 실제 근로구간/승인구간/분모·반올림 정책**을 명시적으로 결합해 추가 지급액 **후보**를 계산한다. `overtime_preview.py`는 이를 기존 `payroll-result.xlsx`의 동적 초과근무수당 열에 반영하되, **지급합계/공제합계/실지급액은 공란**, 직원 상태는 `PARTIAL_REVIEW_ONLY`로 고정한다. 승인근거 문자열의 실제 진위 검증, 법적 가산 중복·휴일 판정·휴가/입퇴사 정산과 JSON Tool CLI는 미구현이다. 7개 고정 Payroll Excel 파일·기존 Worktime 10열은 변경하지 않는다.
+
 ## 실행 / 테스트
 
 ```bash
