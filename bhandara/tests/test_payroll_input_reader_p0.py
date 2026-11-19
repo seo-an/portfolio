@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
+from unittest.mock import patch
 
 from openpyxl import Workbook
 
@@ -177,6 +178,12 @@ class PayrollExcelInputP0Tests(unittest.TestCase):
         self.put("bonus_budget", rows=[dict(SAMPLES["bonus_budget"], team_id="T", project_id="P")])
         with self.assertRaises(PayrollInputError):
             read_payroll_inputs(self.root, roles=["bonus_budget"])
+
+    def test_modified_file_during_read_is_blocked(self):
+        self.put("contracts")
+        with patch("bhandara.payroll.input_excel.sha256_file", side_effect=["before", "after"]):
+            with self.assertRaisesRegex(PayrollInputError, "changed during read"):
+                read_payroll_inputs(self.root, roles=["contracts"])
 
     def test_preserved_physical_row_numbers_after_blank_row(self):
         self.put("contracts", rows=[SAMPLES["contracts"], {}, dict(SAMPLES["contracts"],
