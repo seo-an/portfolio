@@ -266,14 +266,6 @@ class AttendanceSettlementEvidenceTests(unittest.TestCase):
         with self.assertRaisesRegex(AttendanceSettlementError, "not approved"):
             verify(overtime=[overtime])
 
-    def test_excessive_reduction_is_rejected_by_preview_not_negative_base(self):
-        # This test covers the amount-vs-base check at the recomposition layer.
-        with self.assertRaisesRegex(SettlementPreviewError, "reduction exceeds"):
-            from bhandara.payroll.segmented_settlement import build_segmented_settlement_preview
-            # Excel-backed test class below covers the real Reader path; this
-            # check is also asserted against the integrated builder.
-
-
 class AttendanceSettlementPreviewE2ETests(unittest.TestCase):
     def setUp(self):
         temp = TemporaryDirectory()
