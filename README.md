@@ -1,6 +1,9 @@
 # Portfolio · Bhandara(반다라)
 
-## 현재 개발 현황 (2026-11-19 · 신규 Payroll Output PR #60 병합 후)
+> **현행 개발 상태(2026-11-19):** 신규 Paid Time Off·Worktime JSON Tool CLI, 신규 Payroll P0 Reader·Core·Output 및 P1-1/P1-2 수당 검토 후보(PR #65 병합)까지 구현됐습니다. P1-3 출처 원장 대조는 별도 PR 검증 중입니다. 실제 법정 지급액·공제액·Payroll CLI·운영 연결은 미완료입니다. [최신 남은 일](bhandara/payroll/NEXT-STEPS.md) · [레거시 철수 게이트](bhandara/LEGACY-RETIREMENT.md).
+
+
+## 과거 개발 현황 기록 — Payroll PR #60 시점
 
 신규 Paid Time Off와 Worktime은 각각 **계산 Module·Excel·JSON 기반 선택적 Flow/Tool CLI**를 구현해 사용자 서버 검증 후 병합했습니다. 신규 Payroll은 **계약·고정수당·성과급 계산 코어(PR #59)**와 **동적 단일 급여대장 Output(PR #60)**까지 구현했습니다. 다만 **Excel Reader·업무 계산 연결·초과근무수당·실제 공제액·Payroll JSON CLI는 아직 미구현**이므로 현재 지급·신고에 사용할 수 없습니다.
 
@@ -17,6 +20,12 @@
 현황과 미완료 내역: [전체 개발 상태](bhandara/DEVELOPMENT-STATUS-2026-11-19.md) · [Payroll 남은 구현](bhandara/payroll/NEXT-STEPS.md) · [Payroll Output 계약](bhandara/payroll/OUTPUT-CONTRACT.md) · [일반 사용자 실행서](bhandara/RUNBOOK.md).
 
 아래 내용 중 `*-calculator` 명령은 **기존 구형 계산기 사용법**이며 새 Payroll Tool CLI를 의미하지 않습니다.
+
+## 현재 신규화·레거시 철수 원칙
+
+2026-11-19 기준 신규 `paid-time-off`, `worktime`의 JSON Tool CLI는 구현됐고, 신규 `payroll`의 7종 Excel Reader·계약/수당/성과급 Core·동적 Excel 및 승인구간 기반 가산수당 **검토 후보**(PR #65)까지 병합됐다. **실제 지급·공제·세액·Gearbox 운영 연결은 미완료**이며 신규 Payroll JSON Tool CLI는 아직 없다.
+
+구형 `pto-calculator`, `worktime-calculator`, `payroll-calculator`의 **최종 삭제가 목표**이지만, 신규 Tool·운영 호출·단독 실행과 전체 회귀가 확인된 이후에만 순차적으로 삭제한다. [레거시 철수 게이트](bhandara/LEGACY-RETIREMENT.md).
 
 ## 2단계: Common 라이브러리 / Normalizer 독립 모듈 분리
 
