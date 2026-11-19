@@ -197,17 +197,17 @@ def build_payroll_worktime_review(
     The requested period and selected workers must match both components.
     Source fingerprint checks detect a workbook mutation during inspection.
     """
+    path = Path(worktime_xlsx)
+    if path.name != "worktime-result.xlsx":
+        raise WorktimePayrollBridgeError("WORKTIME: fixed source filename worktime-result.xlsx required")
+    if not path.is_file():
+        raise WorktimePayrollBridgeError("WORKTIME: source file missing")
     register = build_payroll_review_register(
         inputs, period_from=period_from, period_to=period_to,
     )
     contracts = select_contracts_for_period(
         inputs.for_role("contracts"), period_from=period_from, period_to=period_to,
     )
-    path = Path(worktime_xlsx)
-    if path.name != "worktime-result.xlsx":
-        raise WorktimePayrollBridgeError("WORKTIME: fixed source filename worktime-result.xlsx required")
-    if not path.is_file():
-        raise WorktimePayrollBridgeError("WORKTIME: source file missing")
     before = sha256_file(path)
     _verify_worktime_workbook(path)
     rows = read_worktime_xlsx(path)
