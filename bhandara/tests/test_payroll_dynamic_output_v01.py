@@ -59,6 +59,7 @@ class PayrollDynamicRegisterTests(unittest.TestCase):
         self.assertEqual(result["rows"][0]["net_pay"], 3000000)
         self.assertEqual(result["rows"][0]["review_status"], "REVIEW_REQUIRED")
         self.assertEqual(result["approval_state"], "NOT_APPROVED")
+        self.assertNotIn("employee_name", result["rows"][0])
 
     def test_all_zero_items_do_not_create_column(self):
         result = build_payroll_register([employee(fixed_allowances=[item("A", "식대", 0)])])
