@@ -1,0 +1,29 @@
+name: Paid Time Off JSON Tool CLI
+
+on:
+  pull_request:
+    paths:
+      - "bhandara/paid-time-off/**"
+      - "bhandara/tests/test_pto_json_tool_cli.py"
+      - "run.py"
+      - ".github/workflows/pto-json-tool-cli.yml"
+  workflow_dispatch:
+
+jobs:
+  pto-cli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt
+      - name: JSON CLI and current PTO Excel regressions
+        run: |
+          python -m unittest \
+            bhandara.tests.test_pto_json_tool_cli \
+            bhandara.tests.test_paid_time_off_entitlement_excel \
+            bhandara.tests.test_paid_time_off_deduction_excel \
+            bhandara.tests.test_paid_time_off_usage_excel \
+            bhandara.tests.test_paid_time_off_closing_excel -v

@@ -30,7 +30,7 @@ Bhandara 저장소는 공통 `bhandara/data/input/` 체계를 유지하고, Tool
 | `closing/calculation.py` | 분기별 누적 사용·발생/만료·상태 집계 | 순수 계산 완료 |
 | `runner_closing.py` | `closing-result.xlsx`, 다음 기간 인계 | 독립 Excel 완료 |
 | `use-promotion` | 대상·기한·통지·증빙·결과 | **미구현** |
-| 새로운 `paid-time-off` 공개 CLI/manifest, `user_settings.py`, Gearbox/Slack | 단독 Module 선택 실행/운영 연결 | **미구현** |
+| 새로운 `paid-time-off` 공개 JSON CLI/manifest, `user_settings.py`, Gearbox/Slack | JSON으로 선택 실행 가능, manifest·운영 연동은 후속 | **CLI 구현, 운영 미연결** |
 
 **완료라는 말은 합성자료·독립 Python 경로의 완료**를 의미합니다. 실제 직원 원본 처리·승인·배포·운영 E2E를 의미하지 않습니다. 기존 `pto-calculator` v0.2.1 및 Gearbox 호환성 게이트를 건드리지 않았습니다.
 
@@ -146,3 +146,7 @@ PR #43의 GitHub Actions **전체 359 tests / OK**, Shared Excel PASS. 사용자
 5. **Gearbox/Ananda 및 Slack 연동:** 마지막 단계로 미룹니다. 변경 시 별도 저장소/PR과 호환성 테스트·입력 권한·임시파일 정책·실사용 승인 필요.
 
 **현재 사용자 결정:** 실제 PTO 계산 실행은 나중에 수행하며 **구현 구조와 실행 흐름 정리가 먼저**입니다. 이 문서는 설계 판단 및 후속 인수인계 기준입니다.
+
+## JSON Tool CLI 갱신
+
+선택적 단계·입출력 경로·산정 기준일은 `paid-time-off.json`에서 지정합니다. 기존 독립 Runner는 유지하고 `tool_cli.py`에서 명시 선택된 단계의 산출물만 인계합니다. Gearbox/Slack 연동이나 구형 CLI 전환은 수행하지 않았습니다. [계약](TOOL-CLI.md).

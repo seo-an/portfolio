@@ -1,6 +1,6 @@
 # Paid Time Off — 한국 연차유급휴가 Tool
 
-> **현재 기준: 2026-11-18, PR #43 병합 후.** Entitlement·Deduction Quantity·Allocation·Expiry/Carryover·사용내역·Closing의 **독립 Python 계산 및 Excel 경로**가 구현되어 있습니다. 합성자료 CI와 사용자 서버 테스트를 통과했지만 실제 인사자료 운영 검증과 전체 Tool CLI/Gearbox/Slack 연결은 **아직 수행하지 않았습니다**.
+> **현재 기준: 2026-11-18, PR #43 병합 후.** Entitlement·Deduction Quantity·Allocation·Expiry/Carryover·사용내역·Closing의 **독립 Python 계산 및 Excel 경로**가 구현되어 있습니다. 합성자료 CI와 사용자 서버 테스트를 통과했지만 실제 인사자료 운영 검증과 JSON 기반 선택적 Tool CLI는 **이번 PR에서 구현**했고, Gearbox/Slack 운영 연결은 **아직 수행하지 않았습니다**.
 >
 > 기존 `pto-calculator` v0.2.1과 Gearbox 호환성 기준은 변경하지 않았습니다. 실제 운영 활성화보다 **PTO 전체 Flow 및 독립 Module 계약 정리**가 현 우선순위입니다.
 
@@ -48,7 +48,7 @@
 | Expiry & Carryover | `expiry-carryover/calculation.py`, 만료·이월·수당 검토 표시 | 권리·현금 지급 법적 판정 |
 | Closing | `closing/calculation.py` + `runner_closing.py`, `closing-result.xlsx` | 자동 마감 승인 및 월별/분기별 실제 운영 |
 | Use Promotion | 독립 Module 미구현 | 대상·기한·통지·증빙·결과 계약 협의 |
-| Tool 운영 | 독립 라이브러리 호출 경로만 | 새 `module.json`, `user_settings.py`, `bhandara/run.py` 공개 명령, Gearbox/Slack 연동 |
+| Tool 운영 | 독립 라이브러리 호출 경로만 | 신규 JSON Tool CLI는 구현; module.json/설정 전환·Gearbox/Slack 운영 연동은 후속 |
 
 ## 3. 입력 자료와 원본의 소유권
 
@@ -138,7 +138,7 @@ python3 -m unittest discover -s bhandara/tests -p 'test_*.py'
 
 ## 7. 다음 설계 과제
 
-1. **PTO 전체 선택적 Flow**: 어떤 입력이 있으면 어떤 단계를 연결하는지, 단독 Module 호출과 Tool 결과를 어떻게 구분할지. 논리적 Flow만 정의합니다.
+1. **PTO 선택적 Flow/CLI**: 단계별 선택 및 결과 인계는 JSON Tool CLI로 구현했습니다. 실제 운영 자료 검증과 다중 실행 운영 정책은 후속입니다.
 2. **Use Promotion**: 법정/사내 정책 및 대상·통지·증빙·결과 인계 계약 협의. Closing의 외부 Y/N 상태와 분리합니다.
 3. **연도·분기 마감 연결 점검**: 확정 Closing→다음 기간 사용내역, 1월 Opening, 변경·취소/미상계 부족분 연속성. 실자료 대신 먼저 합성 시나리오·정합성 검토.
 4. **공개 Tool 경계**: `module.json`/Module별 `user_settings.py`, 단독 실행 CLI, RUNBOOK, 입력·출력 정본 정의.
@@ -150,3 +150,7 @@ python3 -m unittest discover -s bhandara/tests -p 'test_*.py'
 - PR #41 Allocation과 Expiry 책임 분리, #42 발생 ID·원본 결합·사용내역 Excel, **#43 Closing 분기 마감보고서**까지 병합.
 - PR #43: GitHub Actions 전체 359 tests / OK, 공유 Excel CI PASS. 사용자 서버에서도 기능·회귀·Gearbox 호환성 테스트 통과 후 병합 확인.
 - 실제 운영 도입·새 Tool 활성화·실자료 실행은 **아직 하지 않았습니다**.
+
+## 새 JSON Tool CLI
+
+사용자가 JSON에서 `as_of_date`, `input_root`, `output_root`, `steps`를 지정하고 `python3 run.py bhandara paid-time-off`로 실행합니다. 상세: [JSON Tool CLI 계약](TOOL-CLI.md). 구형 `pto-calculator` CLI는 그대로 유지합니다.
