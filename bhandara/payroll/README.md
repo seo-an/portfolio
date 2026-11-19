@@ -1,6 +1,6 @@
-# Payroll — 신규 도구 개발 (계약·고정수당·성과급 계산 코어 v0.1)
+# Payroll — 신규 계약·수당·성과급 코어 + 동적 급여대장 Output (2026-11-19)
 
-> **현재 상태: PARTIAL_REVIEW_ONLY.** 이 폴더는 `payroll-calculator/`를 교체하지 않는다. 아직 독립 Tool CLI, Excel Reader/Writer, 초과근무 지급, 보험료·공제, 순지급액, Gearbox 연동이 없다. 이 PR의 계산 결과는 지급·신고·회계 확정 자료가 아니다.
+> **현재 상태: PARTIAL_REVIEW_ONLY.** [PR #59](https://github.com/seo-an/portfolio/pull/59)의 **계약·고정수당·성과급 코어**와 [PR #60](https://github.com/seo-an/portfolio/pull/60)의 **단일 동적 Excel 출력 모델/Writer**까지 병합됐다. **아직 없는 것은 Excel Reader, 계산 결과→출력 Adapter, 초과근무 지급시간/금액, 실제 보험·세금 공제액, 선택 Flow·독립 JSON Tool CLI, Gearbox/Slack 연결**이다. 이 결과는 지급·신고·회계 확정 자료가 아니며 구형 `payroll-calculator/`도 교체하지 않는다.
 
 ## 목표: 입력별 계산, 개인별 합산
 
@@ -11,7 +11,7 @@
 
 ## 고정 파일명: 하나의 역할 = 하나의 Excel 파일
 
-**7개 파일을 `bhandara/data/input/payroll/`에 각각 둔다.** 하나의 다중 시트 통합 Excel은 신규 입력 계약이 아니다. 각 파일은 표의 시트 **하나만** 포함하며, 파일명/시트명/헤더 정본은 [`input-files.json`](input-files.json)으로 고정한다.
+**실행 시 선택한 `input_root/payroll/`에 7개 파일을 각각 둔다(미구현 Reader에 적용할 계약).** 하나의 다중 시트 통합 Excel은 신규 입력 계약이 아니다. 각 파일은 표의 시트 **하나만** 포함하며, 파일명/시트명/헤더 정본은 [`input-files.json`](input-files.json)으로 고정한다.
 
 | 파일명 | 시트명 | 역할 |
 |---|---|---|
@@ -29,7 +29,7 @@
 - `pay-contract.CONTRACTS.deduction_code → deduction-map.DEDUCTION MAP.deduction_code`
 - `bonus-allocation.bonus_id → bonus-budget.BONUS BUDGET.bonus_id`
 
-**입력 샘플 v0.4**는 채팅에서 개별 XLSX 7개와 `README.md`를 ZIP으로 제공했다. 공개 Git에는 Excel 바이너리를 자동 커밋하지 않았다. 신규 Tool CLI/Excel Reader는 **아직 미구현**이므로, `input-files.json`은 향후 Reader가 따라야 할 파일 계약이지 현재 자동 실행을 의미하지 않는다.
+**분리형 입력 샘플 ZIP**은 채팅에서 7개 XLSX로 제공했다. GitHub main의 공개 샘플 경로에서 `pay-contract.xlsx`는 확인됐지만 나머지 6개 신규 XLSX는 2026-11-19 조회 당시 확인되지 않았다. 기존 `pay-contract.xlsx`의 실제 시트가 새 `CONTRACTS` 단일 시트 규격인지도 검증 전이다. 신규 Tool CLI/Excel Reader는 **아직 미구현**이므로 `input-files.json`은 향후 Reader를 위한 계약이지 현재 자동 실행을 의미하지 않는다.
 
 ## 각 Excel의 입력 헤더 계약
 
@@ -103,7 +103,7 @@
 
 ## 동적 급여대장 Output v0.1
 
-- 신규 순수 출력 모델: [`output.py`](output.py) (`build_payroll_register`).
+- 신규 순수 출력 모델: [`output.py`](output.py) (`build_payroll_register`) — [PR #60](https://github.com/seo-an/portfolio/pull/60) 병합 완료.
 - 2단 헤더, 동적 항목열, 직원별 공란 및 고정 파일명 `payroll-result.xlsx` 단일 `PAYROLL` 시트 Writer: [`output_excel.py`](output_excel.py).
 - 전체 직원 중 1명이라도 **0원이 아닌** 수당·성과급·초과근무수당·공제가 있으면 해당 항목 ID별 열이 생긴다. 모두 0원이면 열은 생기지 않는다.
 - 지급합계·공제합계·실지급액은 **해당 계산 완료를 입력에서 명시한 경우에만** 채운다. 모든 금액이 있어도 지급 승인 상태는 아니다.
@@ -116,4 +116,4 @@
 python3 -m unittest bhandara.tests.test_payroll_core_v1 -v
 ```
 
-독립 Payroll Tool CLI 및 최종 급여대장 Excel은 다음 단계에서 만든다. `payroll-calculator` 구형 입력/결과를 새 Worktime `WORKTIME` Excel로 자동 대체하지 않는다. 새 Tool 계약이나 버전이 바뀔 때는 Gearbox 호환성 검증이 필수이며, 현재 `agent-config`는 사용자 지시에 따라 PAUSE 중이다.
+**Excel 출력기와 확정 Output 계약은 이미 구현했다.** 남은 것은 입력 Excel Reader, 기간·ID·표시명 Adapter, 실제 초과근무·공제 산정, 선택적 Payroll Tool CLI 및 전체 Flow 연결이다. [우선순위와 선행조건](NEXT-STEPS.md)을 따른다. `payroll-calculator` 구형 입력/결과를 새 Worktime `WORKTIME` Excel로 자동 대체하지 않는다. 새 Tool 계약이나 버전이 바뀔 때는 Gearbox 호환성 검증이 필수이며, 현재 `agent-config`는 사용자 지시에 따라 PAUSE 중이다.
