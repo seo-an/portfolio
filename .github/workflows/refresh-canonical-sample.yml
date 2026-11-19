@@ -31,6 +31,8 @@ jobs:
       - name: Update the ONE tracked sample/input directory
         run: python bhandara/examples/sample/refresh.py --apply
       - name: Validate all calculators and workbook contracts
+        env:
+          BHANDARA_RUN_SAMPLE_GENERATOR_TESTS: "1"
         run: python -m unittest discover -s bhandara/tests -p "test_*.py" -v
       - name: Commit refreshed Excel files on PR branch only
         shell: bash
