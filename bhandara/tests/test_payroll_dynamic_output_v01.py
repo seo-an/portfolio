@@ -194,6 +194,8 @@ class PayrollDynamicRegisterTests(unittest.TestCase):
             write_payroll_result_xlsx(result, path)
             with self.assertRaisesRegex(PayrollOutputError, "already exists"):
                 write_payroll_result_xlsx(result, path)
+            with self.assertRaisesRegex(PayrollOutputError, "fixed output filename"):
+                write_payroll_result_xlsx(result, Path(tmp) / "wrong.xlsx")
             invalid = deepcopy(result)
             invalid["approval_state"] = "APPROVED"
             with self.assertRaisesRegex(PayrollOutputError, "contract"):
