@@ -312,6 +312,44 @@ class SegmentedSettlementPreviewP15aTests(unittest.TestCase):
         result = self.view(data, split_plan())
         self.assertEqual(result["payroll_register"]["rows"][0]["base_pay"], 1001)
 
+    def test_calendar_day_rounding_only_after_employee_period_aggregation(self):
+        data = self.prepare(contracts=[contract(contract_amount=1005)])
+        spec = plan(
+            facts=[employment(hired="2026-11-30")],
+            allocations=[allocated(start="2026-11-30")],
+        )
+        down = self.view(data, spec)
+        self.assertEqual(down["payroll_register"]["rows"][0]["base_pay"], 33)
+        spec["rounding_mode"] = "HALF_UP"
+        half_up = self.view(data, spec)
+        self.assertEqual(half_up["payroll_register"]["rows"][0]["base_pay"], 34)
+
+    def test_total_contract_reconciliation_is_kept_before_partial_proration(self):
+        mapping = [deepcopy(SAMPLES["fixed_allowance_map"])]
+        assignments = [
+            dict(contract_id="C-OLD", allowance_id="001", level="L1"),
+        ]
+        data = self.prepare(
+            contracts=[contract(amount_type="TOTAL", contract_amount=3000000,
+                                declared_base_amount=2900000)],
+            mapping=mapping, assignments=assignments,
+        )
+        spec = plan(
+            facts=[employment(hired="2026-11-16")],
+            allocations=[allocated(start="2026-11-16")],
+        )
+        good = self.view(data, spec)
+        self.assertEqual(good["payroll_register"]["rows"][0]["base_pay"], 1450000)
+        self.assertEqual(good["payroll_register"]["rows"][0]["fixed_allowances:001"], 50000)
+
+        bad = self.prepare(
+            contracts=[contract(amount_type="TOTAL", contract_amount=3000000,
+                                declared_base_amount=2800000)],
+            mapping=mapping, assignments=assignments,
+        )
+        with self.assertRaisesRegex(ValueError, "TOTAL base"):
+            self.view(bad, spec)
+
     def test_bonus_paid_once_from_external_budget_allocation_not_prorated(self):
         data = self.prepare(
             budgets=[dict(SAMPLES["bonus_budget"], budget_amount=1000)],
