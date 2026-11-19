@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from collections import defaultdict
 from datetime import date, datetime, timedelta
-from decimal import Decimal
 import re
 from typing import Any, Iterable, Mapping
 
@@ -23,7 +22,7 @@ class AttendanceSettlementError(ValueError):
 
 PLAN_FIELDS = frozenset({
     "schema_version", "period_from", "period_to", "snapshot_ref",
-    "settlement_snapshot_ref", "worktime_sha256", "events",
+    "settlement_snapshot_ref", "worktime_sha256", "absence_codes", "events",
 })
 EVENT_FIELDS = frozenset({
     "event_id", "employee_id", "work_date", "contract_id",
@@ -121,6 +120,15 @@ def _preflight_source(
         raise AttendanceSettlementError("attendance_plan: Worktime fingerprint mismatch")
     if not isinstance(source["events"], (list, tuple)):
         raise AttendanceSettlementError("attendance_plan.events: list required")
+    codes = source["absence_codes"]
+    if not isinstance(codes, (list, tuple)) or not codes:
+        raise AttendanceSettlementError("attendance_plan.absence_codes: explicit nonempty list required")
+    if any(not isinstance(v, str) or not v.strip() for v in codes):
+        raise AttendanceSettlementError("absence_codes: nonempty text codes required")
+    if len(set(codes)) != len(codes):
+        raise AttendanceSettlementError("absence_codes: duplicate classification")
+    for code in codes:
+        _text(code, "absence_codes")
     return snapshot, source["period_to"]
 
 
@@ -253,6 +261,10 @@ def reconcile_attendance_adjustments(
         if scheduled is None or scheduled == 0 or requested_minutes > scheduled:
             raise AttendanceSettlementError("attendance_event: scheduled-minute coverage unresolved")
         if kind == "LEAVE":
+            if worktime["attendance_type"] in attendance_plan["absence_codes"]:
+                raise AttendanceSettlementError(
+                    "attendance_event: declared absence status conflicts with leave"
+                )
             request_id = _text(row["leave_request_id"], "leave_request_id")
             if (worktime["leave_request_id"] != request_id
                     or worktime["leave_type"] != code):
@@ -262,6 +274,10 @@ def reconcile_attendance_adjustments(
                 raise AttendanceSettlementError("attendance_event: leave request shared across workers/types")
             leave_references[request_id] = (worker, code)
         else:
+            if code not in attendance_plan["absence_codes"]:
+                raise AttendanceSettlementError(
+                    "attendance_event: absence code is not declared by business policy"
+                )
             if row["leave_request_id"] is not None or (
                 worktime["attendance_type"] != code
                 or worktime["leave_type"] is not None
@@ -297,6 +313,11 @@ def reconcile_attendance_adjustments(
         tagged = row["leave_type"] is not None or row["leave_request_id"] is not None
         if tagged and (worker, day) not in reviewed_days:
             raise AttendanceSettlementError("WORKTIME: unmatched leave fact; silent omission forbidden")
+        if (row["attendance_type"] in attendance_plan["absence_codes"]
+                and (worker, day) not in reviewed_days):
+            raise AttendanceSettlementError(
+                "WORKTIME: declared absence code without reviewed pay event"
+            )
         if row["attendance_type"] is not None and (worker, day) not in reviewed_days:
             unclassified_attendance.append({
                 "employee_id": worker, "work_date": day,
