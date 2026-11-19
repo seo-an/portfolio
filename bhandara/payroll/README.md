@@ -1,6 +1,6 @@
 # Payroll — 신규 계약·수당·성과급 코어 + 동적 급여대장 Output (2026-11-19)
 
-> **현재 상태: PARTIAL_REVIEW_ONLY.** [PR #59](https://github.com/seo-an/portfolio/pull/59)의 **계약·고정수당·성과급 코어**와 [PR #60](https://github.com/seo-an/portfolio/pull/60)의 **단일 동적 Excel 출력 모델/Writer**까지 병합됐다. **P0-1 Excel Reader는 병합됐고, P0-2의 정확한 산정기간 선택과 P0-3의 검토용 Core→Output Adapter는 별도 PR에서 추가한다. 실제 입퇴사·재계약 일할, 초과근무 지급시간/금액, 보험·세금 공제액, 선택 Flow·독립 JSON Tool CLI, Gearbox/Slack 연결은 여전히 없다**이다. 이 결과는 지급·신고·회계 확정 자료가 아니며 구형 `payroll-calculator/`도 교체하지 않는다.
+> **현재 상태: PARTIAL_REVIEW_ONLY.** P0 코어·단일 동적 Excel Output(PR #59/#60), P0-1 독립 Reader(PR #62), P0-2/3 정확 산정기간·검토용 Adapter(PR #63), P1-1 Worktime 근무사실 검토 Bridge(PR #64)는 **모두 병합 완료**. P1-2 승인구간 기반 **수당 금액 후보**는 후속 PR에서 계산하지만, 실제 지급 승인·근로/휴가·중복가산·입퇴사 정산·보험/세금·독립 JSON CLI 및 Gearbox/Slack 연결은 미구현이다. 이 결과는 지급·신고·회계 확정 자료가 아니며 구형 `payroll-calculator/`도 교체하지 않는다.
 
 ## 목표: 입력별 계산, 개인별 합산
 
@@ -132,4 +132,4 @@
 python3 -m unittest bhandara.tests.test_payroll_core_v1 -v
 ```
 
-**Excel Reader와 P0 검토용 기간/ID/표시명 Adapter는 구현 단계다.** 실제 계약 유효기간과 일할, 인정 초과근무·공제액 산정, 선택적 Payroll Tool CLI와 전체 Flow 연결은 남았다. [우선순위와 선행조건](NEXT-STEPS.md)을 따른다. `payroll-calculator` 구형 입력/결과를 새 Worktime `WORKTIME` Excel로 자동 대체하지 않는다. 새 Tool 계약이나 버전이 바뀔 때는 Gearbox 호환성 검증이 필수이며, 현재 `agent-config`는 사용자 지시에 따라 PAUSE 중이다.
+**Excel Reader, P0 검토용 기간/ID/표시명 Adapter, P1-1 Worktime 사실 검토는 병합됐다.** 실제 계약 유효기간과 일할, 인정 초과근무·공제액 산정, 선택적 Payroll Tool CLI와 전체 Flow 연결은 남았다. [우선순위와 선행조건](NEXT-STEPS.md)을 따른다. `payroll-calculator` 구형 입력/결과를 새 Worktime `WORKTIME` Excel로 자동 대체하지 않는다. 새 Tool 계약이나 버전이 바뀔 때는 Gearbox 호환성 검증이 필수이며, 현재 `agent-config`는 사용자 지시에 따라 PAUSE 중이다.
