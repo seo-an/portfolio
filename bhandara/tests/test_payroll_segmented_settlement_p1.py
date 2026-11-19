@@ -112,7 +112,7 @@ class SettlementCoverageP15aTests(unittest.TestCase):
                     allocations=[allocated(start="2026-11-11")])
         result = self.coverage(spec=spec)
         self.assertEqual(result["segments_by_employee"]["0001"][0]["days"], 20)
-        with self.assertRaisesRegex(SettlementCoverageError, "gap or overlap"):
+        with self.assertRaisesRegex(SettlementCoverageError, "outside declared contract/employment"):
             self.coverage(spec=plan(facts=[employment(hired="2026-11-11")]))
 
     def test_termination_inside_month_must_end_on_last_employed_day(self):
