@@ -18,6 +18,7 @@ from zipfile import BadZipFile
 from openpyxl import load_workbook
 from bhandara.common.io.xlsx_stream import XlsxStreamError, open_xlsx_rows
 from bhandara.common.validation.headers import HeaderContractError, is_blank, parse_headers
+from bhandara.common.utils.hashing import sha256_file
 
 
 class PayrollInputError(ValueError):
@@ -173,6 +174,7 @@ def _read_one(path: Path, role: str, spec: Mapping[str, Any]) -> tuple[dict[str,
     if not path.is_file():
         raise PayrollInputError(f"{role}: missing workbook {path.name}")
     try:
+        source_digest = sha256_file(path)
         book = load_workbook(path, read_only=True, data_only=False, keep_links=False)
         try:
             if book.sheetnames != [spec["sheet"]]:
@@ -202,6 +204,8 @@ def _read_one(path: Path, role: str, spec: Mapping[str, Any]) -> tuple[dict[str,
                 if not indexed:
                     raise PayrollInputError("contracts: at least one contract required")
                 _validate_periods(indexed)
+            if sha256_file(path) != source_digest:
+                raise PayrollInputError(f"{role}: workbook changed during read")
             return tuple(row for _, row in indexed)
     except PayrollInputError:
         raise
