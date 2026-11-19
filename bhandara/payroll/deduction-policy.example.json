@@ -1,62 +1,48 @@
 {
-  "schema_version": "1.0",
-  "purpose": "DEDUCTION_POLICY_SCHEMA_ONLY_NOT_APPROVED",
-  "currency": "KRW",
-  "notes": "No official rates or worker amounts are approved in this example; null means cannot calculate.",
-  "items": [
-    {
-      "deduction_code": "NATIONAL_PENSION",
-      "effective_from": "2026-01-01",
-      "effective_to": null,
-      "assessment_basis": "EXTERNALLY_VERIFIED_PENSION_BASE",
-      "employee_rate": null,
-      "employer_rate": null,
-      "assessment_floor": null,
-      "assessment_ceiling": null,
+  "schema_version": "1.1",
+  "purpose": "BASIS_RULES_ONLY_NO_PAYROLL_DEDUCTION_CALCULATION",
+  "rate_source": {
+    "workbook_sheet": "DEDUCTION MAP",
+    "lookup": "CONTRACTS.deduction_code -> DEDUCTION MAP.deduction_code",
+    "rate_units": "decimal fractions; 4.75% = 0.0475",
+    "notes": "No employee_id or worker-specific rate rows; four employee contribution rates are owned by the Excel mapping sheet"
+  },
+  "basis_rules": {
+    "national_pension": {
+      "rate_field": "national_pension",
+      "assessment_basis": "externally_confirmed_standard_monthly_income",
+      "employee_share": true,
       "rounding_rule": null,
-      "source_url": null
+      "source": "https://www.nps.or.kr/pnsinfo/ntpsklg/getOHAF0097M0.do"
     },
-    {
-      "deduction_code": "HEALTH_INSURANCE",
-      "effective_from": "2026-01-01",
-      "effective_to": null,
-      "assessment_basis": "EXTERNALLY_VERIFIED_HEALTH_BASE",
-      "employee_rate": null,
-      "employer_rate": null,
-      "assessment_floor": null,
-      "assessment_ceiling": null,
+    "health_insurance": {
+      "rate_field": "health_insurance",
+      "assessment_basis": "externally_confirmed_monthly_remuneration",
+      "employee_share": true,
       "rounding_rule": null,
-      "source_url": null
+      "source": "https://www.nhis.or.kr/renewal_popup/poster/20260204_poster_longdesc_1.html"
     },
-    {
-      "deduction_code": "LONG_TERM_CARE",
-      "effective_from": "2026-01-01",
-      "effective_to": null,
-      "assessment_basis": "EXTERNALLY_VERIFIED_HEALTH_CONTRIBUTION",
-      "employee_rate": null,
-      "employer_rate": null,
+    "longterm_care": {
+      "rate_field": "longterm_care",
+      "assessment_basis": "calculated_employee_health_insurance_contribution",
+      "employee_share": true,
       "rounding_rule": null,
-      "source_url": null
+      "source": "https://m.korea.kr/briefing/pressReleaseView.do?newsId=156725039&pWise=mSub&pWiseSub=C10"
     },
-    {
-      "deduction_code": "EMPLOYMENT_INSURANCE",
-      "effective_from": "2026-01-01",
-      "effective_to": null,
-      "assessment_basis": "EXTERNALLY_VERIFIED_EMPLOYMENT_BASE",
-      "employee_rate": null,
-      "employer_rate": null,
+    "employment_insurance": {
+      "rate_field": "employment_insurance",
+      "assessment_basis": "externally_confirmed_employment_insurance_remuneration",
+      "employee_share": true,
       "rounding_rule": null,
-      "source_url": null
-    },
-    {
-      "deduction_code": "WORKERS_COMPENSATION",
-      "effective_from": "2026-01-01",
-      "effective_to": null,
-      "assessment_basis": "EMPLOYER_ONLY",
-      "employee_rate": "0",
-      "employer_rate": null,
-      "rounding_rule": null,
-      "source_url": null
+      "source": "https://www.work24.go.kr/cm/c/f/1100/selecSystInfo.do?systId=SI00000419"
     }
+  },
+  "effective_dating": "Issue a new deduction_code when statutory contribution rates or calculation bases change; validate official effective period before applying",
+  "limitations": [
+    "Contract base_pay alone cannot determine the insurance assessment bases",
+    "No statutory amounts, eligibility, exemptions or collection notices computed",
+    "Employer-only worker compensation insurance is not employee deduction",
+    "Unspecified rounding, insured status, bases, ceilings or relief means BLOCKED/REVIEW, never silently zero",
+    "Does not handle income tax or local income tax"
   ]
 }
