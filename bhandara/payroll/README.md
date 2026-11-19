@@ -43,6 +43,14 @@
 | BONUS BUDGET | bonus_id, team_id, project_id, budget_amount | 팀/프로젝트 **둘 중 정확히 하나**. 별도 증빙으로 대상 소속 확인 필요 |
 | BONUS ALLOCATION | bonus_id, employee_id, allocation_ratio | 각 bonus_id별 0~1의 합계 = 1. 배분율 30%는 `0.3` |
 
+## 공개 샘플과 실행 입력 경로는 별도
+
+**공개 샘플 정본**은 `bhandara/examples/sample/input/payroll/` 아래에 고정 파일명 7개를 두는 것이다. 기존 `bhandara/examples/sample/input/` 합성 샘플 체계에 추가하는 경로이며, `refresh.py --apply`나 기존 공개 샘플을 임의로 덮어쓰지 않는다.
+
+**실행 입력 위치**는 별개다: `input_root/payroll/` 아래에 같은 7개 파일명을 배치한다. `input_root`는 향후 Tool CLI 설정 JSON에서 선택한다. 이 PR에는 Excel Reader/CLI가 아직 없다.
+
+2026-11-19 합성 Excel 파일은 대화에서 제공하는 **별도 ZIP 다운로드**이며, 현재 PR의 Git 추적 대상에 바이너리 XLSX를 추가한 것은 아니다. 사용자 로컬에서 샘플을 설치하려면 저장소 루트에서 ZIP을 풀기 전에 파일명 충돌 여부를 확인하고, 샘플 폴더만 추가하면 된다. 실제 직원 자료를 공개 샘플이나 Git에 넣어서는 안 된다.
+
 ## 계약 갱신과 ID 연결 원칙
 
 - `CONTRACTS.contract_id`는 계약 버전별 고유 ID다. 한 시점의 대상 계약에서 중복되면 오류다.
@@ -59,7 +67,7 @@
 - `resolve_contract_pay(contracts)`: 대상 계약을 직원당 한 개씩 입력받고 기본급/기준 일급을 보존한다. 연봉은 명시된 지급 횟수로만 나눈다. **BASE** 계약은 계약금액을 기본급으로 해석하고 고정수당을 더한다. **TOTAL** 계약은 명시된 `declared_base_amount`와 수당 합계가 계약총액과 일치해야 한다. 합계로 기본급 자동 역산 금지.
 - `resolve_fixed_allowances(contracts, mapping, assignments)`: 수당 ID+Level 금액을 직원에 연결한다. 계약 ID를 통해 직원과 연결한다. 중복 배정, 매핑 누락, 존재하지 않는 계약 ID는 차단한다.
 - `resolve_deduction_mapping(contracts, mapping)`: 계약에 기록한 `deduction_code`로 국민연금·건강보험·장기요양·고용보험의 **근로자 부담율** 네 개를 조회한다. 매핑 ID 중복, 누락, 0~1 범위 밖 비율을 차단한다. 실제 공제액 계산과 별개다.
-- `allocate_performance_bonus(contracts, budgets, assignments): 보너스별 배분율 100% 확인, 원 단위 잔액은 **가장 큰 소수 잔여 → 직원 ID** 순서로 나눠 예산 보존.
+- `allocate_performance_bonus(contracts, budgets, assignments)`: 보너스별 배분율 100% 확인, 원 단위 잔액은 **가장 큰 소수 잔여 → 직원 ID** 순서로 나눠 예산 보존.
 - `build_partial_payroll(contracts, allowances, bonuses)`: 기본급+고정수당+성과급 **일부 합계**만 표시. 언제나 `PARTIAL_REVIEW_ONLY`, `OVERTIME_PAY/DEDUCTIONS/NET_PAY` 미산정.
 
 `payment_date`, `calculation_period_*`는 전달받은 문자열을 추적하기만 한다. 날짜 형식·적용기간 중복/선택 검증은 아직 없으므로 이 코어만으로 전체 급여 실행 준비가 됐다고 판단하면 안 된다. 초과근무 시간 및 일할·퇴직 계산에 쓰일 `daily_base_rate`는 이번 단계에서 **보존만** 한다. 근로시간 관련 정보는 Worktime의 스케줄/실근로 결과에서 가져오며, CONTRACTS의 `standard_day_minutes`는 **삭제**했다. 일할계산과 배율 적용 산식은 후속 구현.
