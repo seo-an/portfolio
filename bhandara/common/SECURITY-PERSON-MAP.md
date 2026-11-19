@@ -75,6 +75,12 @@ result = normalize_vendor_excel(
 
 동일 파일에 기존 `ID_MAP`과 신규 `PERSON MAP`을 무조건 중복 유지해야 한다는 뜻이 아니라, **두 리더의 계약과 전환 시점을 분리**했다는 의미입니다. 운영 시스템을 전환하기 전 기존 의존성을 별도 검토해야 합니다.
 
+## 통합 합성 샘플 생성
+
+`bhandara/examples/sample/generate.py --output-dir /tmp/bhandara-sample-80`을 사용자가 **명시적으로 실행할 때에만** 한 세트의 합성 샘플을 생성합니다. 생성되는 `common/id-map.xlsx`에는 구형 `ID_MAP` 및 `EXTERNAL`과 함께 신규 `PERSON MAP`, `DEPARTMENT MAP`, `AREA MAP`을 넣습니다. 기존 코드의 개인별 `security_id`와 신규 매핑의 업체 `security_id`는 서로 다른 시트에서만 사용합니다. 구형 계산기의 매핑을 신규 매핑으로 은밀하게 대체하지 않습니다.
+
+생성된 신규 `PERSON MAP`은 가상 직원 80명의 CAPS 등록 및 같은 직원의 SECOM/TELECOP 추가 등록 2개 행을 포함합니다. 업체별 추가 열은 생성하지 않습니다. 정식 공개 샘플 교체는 `refresh.py --apply`의 별도 명시적 실행만 허용합니다. 일반 코드 변경·CI는 샘플을 자동 갱신하지 않습니다.
+
 ## 상태 및 테스트
 
 - 합성 예제로만 검증하며 실제 직원·회사 식별 자료를 공개 Git에 보관하지 않습니다.
