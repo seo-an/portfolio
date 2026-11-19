@@ -41,6 +41,9 @@
 
 ## P1: Worktime·승인된 근로의 급여 지급 판단
 
+**P1-1 구현:** `worktime_bridge.py`와 [WORKTIME-BRIDGE.md](WORKTIME-BRIDGE.md) 추가. Worktime 10열 XLSX의 기간·직원·분값/ID를 검증하여 잠재 검토 코드를 생성하지만, **지급 인정시간과 금액은 아직 계산하지 않는다**. P1-2에는 별도의 승인된 구간/휴가/스케줄 및 정책·일급 분모 계약이 필요하다. 서버 검증·병합 전 구현 완료로 취급하지 않는다.
+
+
 - 신규 Worktime 인계: `worktime-result.xlsx` / `WORKTIME` 10열. 시간 사실은 `scheduled_min`, `actual_min`, `clock_in_delta_min`, `clock_out_delta_min` **네 개**이며, `actual_min=null`은 0이 아니다.
 - 출근 Δ = 예정−기록, 퇴근 Δ = 기록−예정. **둘 다 승인이 아니라 시각 비교 사실**이다. `actual_min`에 포함된 시간을 다시 더하지 않는다.
 - 조기출근/지연퇴근/연장·야간·휴일/잔업 지급 규칙, 최저 인정시간·미승인 처리, 정산단위, 구간·일자 넘김, 중첩수당 적용과 수당 기준 일급 배율을 사용자가 정의한 `overtime-rules.xlsx`에 맞춘다. **일급×배율의 분할 시간 환산 방법은 정책으로 확정**한다. 임의로 `standard_day_minutes`를 계약에 복원하지 않는다.
