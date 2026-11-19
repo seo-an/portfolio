@@ -69,8 +69,8 @@ def write_payroll_result_xlsx(result: Mapping[str, Any], path: str | Path) -> Pa
     """Write PAYROLL sheet with grouped headers, no overwrite and blank omissions."""
     columns, rows = _validate_result(result)
     target = Path(path)
-    if target.suffix.lower() != ".xlsx":
-        raise PayrollOutputError("output must be .xlsx")
+    if target.name != FILENAME:
+        raise PayrollOutputError(f"fixed output filename required: {FILENAME}")
     if target.exists():
         raise PayrollOutputError("output already exists; do not overwrite")
     if not target.parent.is_dir():
