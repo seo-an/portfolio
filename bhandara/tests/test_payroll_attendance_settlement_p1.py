@@ -57,6 +57,7 @@ def wage_plan(*, items=None, sha="a"*64, **updates):
         "snapshot_ref": "HR-LEAVE-2026-11-SYNTHETIC",
         "settlement_snapshot_ref": "SYNTHETIC-EMPLOYMENT-SNAPSHOT",
         "worktime_sha256": sha,
+        "absence_codes": ["ABSENCE"],
         "events": [] if items is None else items,
     }
     source.update(updates)
@@ -138,6 +139,15 @@ class AttendanceSettlementEvidenceTests(unittest.TestCase):
             verify(items=[])
         with self.assertRaisesRegex(AttendanceSettlementError, "unmatched leave"):
             verify(items=[], worktime=[fact(leave_type="ANNUAL")])
+
+    def test_declared_absence_code_without_adjustment_is_not_ignored(self):
+        with self.assertRaisesRegex(AttendanceSettlementError, "absence code without reviewed"):
+            verify(items=[], worktime=[absence_fact()])
+        with self.assertRaisesRegex(AttendanceSettlementError, "absence code is not declared"):
+            verify(items=[event(treatment="UNPAID_ABSENCE", code="NO_SHOW", amount=50000)],
+                   worktime=[absence_fact(attendance_type="NO_SHOW")])
+        with self.assertRaisesRegex(AttendanceSettlementError, "absence status conflicts"):
+            verify(worktime=[leave_fact(attendance_type="ABSENCE")])
 
     def test_unclassified_attendance_is_reviewed_but_not_paid_or_deducted(self):
         result = verify(items=[], worktime=[fact(attendance_type="LATE")])
@@ -240,6 +250,9 @@ class AttendanceSettlementEvidenceTests(unittest.TestCase):
             {"period_to": "2026-12-01"},
             {"snapshot_ref": ""},
             {"events": None},
+            {"absence_codes": []},
+            {"absence_codes": ["ABSENCE", "ABSENCE"]},
+            {"absence_codes": ["=FORMULA"]},
             {"unexpected": True},
         ):
             with self.subTest(change=change), self.assertRaises(AttendanceSettlementError):
