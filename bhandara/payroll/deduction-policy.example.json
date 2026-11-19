@@ -1,0 +1,62 @@
+{
+  "schema_version": "1.0",
+  "purpose": "DEDUCTION_POLICY_SCHEMA_ONLY_NOT_APPROVED",
+  "currency": "KRW",
+  "notes": "No official rates or worker amounts are approved in this example; null means cannot calculate.",
+  "items": [
+    {
+      "deduction_code": "NATIONAL_PENSION",
+      "effective_from": "2026-01-01",
+      "effective_to": null,
+      "assessment_basis": "EXTERNALLY_VERIFIED_PENSION_BASE",
+      "employee_rate": null,
+      "employer_rate": null,
+      "assessment_floor": null,
+      "assessment_ceiling": null,
+      "rounding_rule": null,
+      "source_url": null
+    },
+    {
+      "deduction_code": "HEALTH_INSURANCE",
+      "effective_from": "2026-01-01",
+      "effective_to": null,
+      "assessment_basis": "EXTERNALLY_VERIFIED_HEALTH_BASE",
+      "employee_rate": null,
+      "employer_rate": null,
+      "assessment_floor": null,
+      "assessment_ceiling": null,
+      "rounding_rule": null,
+      "source_url": null
+    },
+    {
+      "deduction_code": "LONG_TERM_CARE",
+      "effective_from": "2026-01-01",
+      "effective_to": null,
+      "assessment_basis": "EXTERNALLY_VERIFIED_HEALTH_CONTRIBUTION",
+      "employee_rate": null,
+      "employer_rate": null,
+      "rounding_rule": null,
+      "source_url": null
+    },
+    {
+      "deduction_code": "EMPLOYMENT_INSURANCE",
+      "effective_from": "2026-01-01",
+      "effective_to": null,
+      "assessment_basis": "EXTERNALLY_VERIFIED_EMPLOYMENT_BASE",
+      "employee_rate": null,
+      "employer_rate": null,
+      "rounding_rule": null,
+      "source_url": null
+    },
+    {
+      "deduction_code": "WORKERS_COMPENSATION",
+      "effective_from": "2026-01-01",
+      "effective_to": null,
+      "assessment_basis": "EMPLOYER_ONLY",
+      "employee_rate": "0",
+      "employer_rate": null,
+      "rounding_rule": null,
+      "source_url": null
+    }
+  ]
+}
