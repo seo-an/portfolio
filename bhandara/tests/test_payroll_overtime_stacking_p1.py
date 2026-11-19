@@ -122,14 +122,11 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
 
     def test_same_category_overlap_blocks_even_if_rules_differ(self):
         two_overtime = rate(rule_id="OT02", category="OVERTIME", minimum_minutes=0)
-        a = approved(segment_id="A002", rule_id="OT02",
-                     approval_ref="APPROVED-2", classification_ref="CLASS-2",
-                     base_pay_includes_time=True, base_inclusion_ref="BASE-2",
-                     start_at="BAD") if False else approved(
-                         segment_id="A002", rule_id="OT02",
-                         approval_ref="APPROVED-2", classification_ref="CLASS-2",
-                         base_pay_includes_time=True, base_inclusion_ref="BASE-2",
-                     )
+        a = approved(
+            segment_id="A002", rule_id="OT02",
+            approval_ref="APPROVED-2", classification_ref="CLASS-2",
+            base_pay_includes_time=True, base_inclusion_ref="BASE-2",
+        )
         with self.assertRaisesRegex(OvertimeCandidateError, "same-category"):
             candidate(approvals=[approved(), a],
                       other_rules=[two_overtime],
