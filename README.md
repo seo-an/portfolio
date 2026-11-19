@@ -1,6 +1,6 @@
 # Portfolio · Bhandara(반다라)
 
-> **현행 개발 상태(2026-11-19):** 신규 Paid Time Off·Worktime JSON Tool CLI, 신규 Payroll P0 Reader·Core·단일 Excel Output, P1-1~4 근무사실/승인구간 수당 후보·원장 대조·중복가산(PR #64~#67 병합)까지 구현됐습니다. P1-5a 재직·계약분할 일할 후보(PR #68)까지 병합됐습니다. P1-5b-1 휴가·결근 근거 대조·명시된 기본급 차감 후보는 후속 PR 검증 중입니다. 실제 법정 지급액·공제액·Payroll CLI·운영 연결은 미완료입니다. [최신 남은 일](bhandara/payroll/NEXT-STEPS.md) · [레거시 철수 게이트](bhandara/LEGACY-RETIREMENT.md).
+> **현행 개발 상태(2026-11-19):** 신규 Paid Time Off·Worktime JSON Tool CLI, 신규 Payroll P0 Reader·Core·단일 Excel Output, P1-1~4 근무사실/승인구간 수당 후보·원장 대조·중복가산(PR #64~#67 병합)까지 구현됐습니다. P1-5a 재직·계약분할 일할 후보(PR #68)까지 병합됐습니다. P1-5b-1 휴가·결근 근거 대조·명시된 기본급 차감 후보(PR #69)까지 병합됐습니다. P1-5b-2a 계약분할 초과근무 합산은 후속 PR 검증 중입니다. 실제 법정 지급액·공제액·Payroll CLI·운영 연결은 미완료입니다. [최신 남은 일](bhandara/payroll/NEXT-STEPS.md) · [레거시 철수 게이트](bhandara/LEGACY-RETIREMENT.md).
 
 
 ## 과거 개발 현황 기록 — Payroll PR #60 시점
@@ -23,7 +23,7 @@
 
 ## 현재 신규화·레거시 철수 원칙
 
-2026-11-19 기준 신규 `paid-time-off`, `worktime`의 JSON Tool CLI는 구현됐고, 신규 `payroll`의 7종 Excel Reader·계약/수당/성과급 Core·동적 Excel 및 승인구간 수당 검토 후보·출처원장 대조·명시적 중복가산(PR #65~#67)까지 병합됐다. P1-5a 입퇴사/재계약 일할(PR #68)까지 병합됐다. P1-5b-1 휴가·결근 승인 원장/Worktime 일치 및 기본급 차감 후보는 별도 PR로 검증 중이다. **실제 지급·공제·세액·Gearbox 운영 연결은 미완료**이며 신규 Payroll JSON Tool CLI는 아직 없다.
+2026-11-19 기준 신규 `paid-time-off`, `worktime`의 JSON Tool CLI는 구현됐고, 신규 `payroll`의 7종 Excel Reader·계약/수당/성과급 Core·동적 Excel 및 승인구간 수당 검토 후보·출처원장 대조·명시적 중복가산(PR #65~#67)까지 병합됐다. P1-5a 입퇴사/재계약 일할(PR #68)까지 병합됐다. P1-5b-1 휴가·결근 승인 원장/Worktime 일치 및 기본급 차감 후보(PR #69)까지 병합됐다. P1-5b-2a 계약분할별 초과근무 금액 후보는 별도 신규 어댑터 PR로 검증 중이다. **실제 지급·공제·세액·Gearbox 운영 연결은 미완료**이며 신규 Payroll JSON Tool CLI는 아직 없다.
 
 구형 `pto-calculator`, `worktime-calculator`, `payroll-calculator`의 **최종 삭제가 목표**이지만, 신규 Tool·운영 호출·단독 실행과 전체 회귀가 확인된 이후에만 순차적으로 삭제한다. [레거시 철수 게이트](bhandara/LEGACY-RETIREMENT.md).
 
