@@ -209,7 +209,11 @@ def _read_one(path: Path, role: str, spec: Mapping[str, Any]) -> tuple[dict[str,
             return tuple(row for _, row in indexed)
     except PayrollInputError:
         raise
-    except (OSError, BadZipFile, XlsxStreamError, HeaderContractError, ValueError, TypeError) as exc:
+    except HeaderContractError as exc:
+        raise PayrollInputError(f"{role}: header: {exc}") from exc
+    except XlsxStreamError as exc:
+        raise PayrollInputError(f"{role}: {exc}") from exc
+    except (OSError, BadZipFile, ValueError, TypeError) as exc:
         raise PayrollInputError(f"{role}: invalid workbook/header ({type(exc).__name__})") from exc
 
 
