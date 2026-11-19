@@ -101,6 +101,15 @@
 
 `payroll_taxability`는 **급여 지급시의 세무상 분류 후보**이며, 연말정산 시뮬레이션을 뜻하지 않는다. 예시의 식대 금액/구분은 법적 비과세 적용 여부를 확정하지 않는다.
 
+## 동적 급여대장 Output v0.1
+
+- 신규 순수 출력 모델: [`output.py`](output.py) (`build_payroll_register`).
+- 2단 헤더, 동적 항목열, 직원별 공란 및 고정 파일명 `payroll-result.xlsx` 단일 `PAYROLL` 시트 Writer: [`output_excel.py`](output_excel.py).
+- 전체 직원 중 1명이라도 **0원이 아닌** 수당·성과급·초과근무수당·공제가 있으면 해당 항목 ID별 열이 생긴다. 모두 0원이면 열은 생기지 않는다.
+- 지급합계·공제합계·실지급액은 **해당 계산 완료를 입력에서 명시한 경우에만** 채운다. 모든 금액이 있어도 지급 승인 상태는 아니다.
+- 계산 결과→출력 모델의 항목 ID/표시명/완료여부를 결합하는 adapter는 아직 미구현이다. 실제 공제액 및 Worktime 초과근무급여도 미산정.
+- 정식 규칙: [Payroll Output 계약](OUTPUT-CONTRACT.md). 테스트: `bhandara.tests.test_payroll_dynamic_output_v01`.
+
 ## 실행 / 테스트
 
 ```bash
