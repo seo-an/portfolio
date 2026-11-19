@@ -27,7 +27,7 @@ EMPLOYMENT_FIELDS = frozenset({
 })
 ALLOCATION_FIELDS = frozenset({
     "employee_id", "contract_id", "segment_from", "segment_to",
-    "approval_status", "approval_ref", "policy_ref",
+    "approval_status", "approval_ref", "policy_ref", "amount_basis",
 })
 
 
@@ -153,6 +153,8 @@ def validate_settlement_coverage(
         contract_id = _text(source["contract_id"], "allocations.contract_id")
         approval_ref = _text(source["approval_ref"], "allocations.approval_ref")
         policy_ref = _text(source["policy_ref"], "allocations.policy_ref")
+        if source["amount_basis"] != "FULL_CYCLE":
+            raise SettlementCoverageError("allocations: explicit FULL_CYCLE contract amount basis required")
         if source["approval_status"] != "APPROVED":
             raise SettlementCoverageError("allocations: APPROVED status required")
         if approval_ref in refs:
@@ -180,6 +182,7 @@ def validate_settlement_coverage(
             "segment_from": start.isoformat(), "segment_to": end.isoformat(),
             "days": (end - start).days + 1, "denominator_days": denominator,
             "approval_ref": approval_ref, "policy_ref": policy_ref,
+            "amount_basis": "FULL_CYCLE",
             "employment_ref": fact["evidence_ref"],
         })
 
