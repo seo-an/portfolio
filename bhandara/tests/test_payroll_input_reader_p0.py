@@ -107,7 +107,7 @@ class PayrollExcelInputP0Tests(unittest.TestCase):
     def test_missing_duplicate_header_and_formula_fail(self):
         columns = SCHEMA["workbooks"]["contracts"]["columns"]
         self.put("contracts", headers=columns[:-1])
-        with self.assertRaises(PayrollInputError):
+        with self.assertRaisesRegex(PayrollInputError, "missing required header: payment_date"):
             read_payroll_inputs(self.root, roles=["contracts"])
         self.put("contracts", headers=columns + ["employee_id"])
         with self.assertRaises(PayrollInputError):
