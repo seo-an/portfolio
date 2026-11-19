@@ -63,8 +63,9 @@ class IntegratedExampleTests(unittest.TestCase):
             self.assertEqual(vendor_ids.count("CAPS"), 80)
             self.assertEqual(vendor_ids.count("SECOM"), 1)
             self.assertEqual(vendor_ids.count("TELECOP"), 1)
-            self.assertEqual(tuple(book["AREA MAP"][1][i].value for i in range(2)),
-                             ("area", "security_area_id"))
+            self.assertEqual(
+                next(book["AREA MAP"].values), ("area", "security_area_id")
+            )
             self.assertEqual(len(list(book["DEPARTMENT MAP"].values)) - 1, 8)
             self.assertEqual(len(list(book["AREA MAP"].values)) - 1, 3)
         finally:
