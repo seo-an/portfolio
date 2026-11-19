@@ -29,6 +29,25 @@
 
 완전한 [입출력 계약](../ACCESS-EXCEL-CONTRACT.md)을 따릅니다. 업체 원본의 초 단위 시각을 버리지 않습니다.
 
+## Common Excel 직접 연결 (신규)
+
+새 계약에서는 **업체별 전용 열 없이** `common/id-map.xlsx`의 `PERSON MAP`을 사용합니다. `security_id`는 직원별 유일 번호가 아니라 `CAPS`/`SECOM`/`TELECOP` 업체 구분입니다. 같은 직원이 여러 업체에 등록됐다면 업체마다 한 행을 두고, 선택한 `vendor`의 행만 해석기로 전달합니다.
+
+```python
+from bhandara.worktime.vendor_adapters import normalize_vendor_excel
+
+result = normalize_vendor_excel(
+    "/private/input/caps-original.xlsx",
+    "/private/output/access-events.xlsx",
+    vendor="CAPS",
+    id_map_path="/private/input/common/id-map.xlsx",
+)
+# 결과는 Attendance Verification용 출입기 record
+# result["identity_mapping_reviews"]는 업체 ID 누락/참조 오류 진단
+```
+
+기존 호출자가 `identities`를 직접 전달하는 API는 유지합니다. **두 입력을 동시에 주면 오류**가 나며 어느 쪽이 정본인지 추측하지 않습니다. 새 매핑의 시트/열과 외부 ID 충돌 규칙은 [Common 계약](../../common/SECURITY-PERSON-MAP.md)에서 확인할 수 있습니다.
+
 ## 순수 함수 및 파일 변환
 
 ```python

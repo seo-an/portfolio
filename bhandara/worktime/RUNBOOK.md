@@ -55,7 +55,7 @@ CAPS / SECOM / KT_TELECOP 원본
 - **유효 출근·퇴근 명시 기록**이 있으면 이를 우선합니다. 일반 출입만 있으면 첫·마지막 유효 출입을 후보로 만들되 `confirmed=false`를 유지합니다.
 - **원본 초 단위 시각**은 `event_timestamp` 및 후보 시각에 남깁니다.
 - **추가 업체·다른 헤더 버전**은 새 프로필·합성 테스트를 구현해야 합니다. 새 원본을 자동으로 추측해 매핑하지 않습니다.
-- **자동 연결 미완료:** 호출 측이 검증한 직원 ID 매핑을 `identities`로 전달해야 하며 Common Excel에서 자동으로 연결하는 전체 입력 Flow는 아직 구현하지 않았습니다.
+- **Common 매핑 직접 연결(신규 API):** `vendor_adapters.normalize_vendor_excel(..., id_map_path="/private/input/common/id-map.xlsx")`에서 신규 `PERSON MAP`의 `security_id` 업체 선택 및 `DEPARTMENT MAP` 조회를 지원합니다. 기존 `identities` 직접 전달 방식도 유지합니다. 다만 Worktime 통합 CLI가 자동으로 해당 경로를 선택하는 전체 입력 Flow는 아직 구현하지 않았습니다. 다중 업체에 같은 직원이 등록되면 `PERSON MAP`에서 행을 늘리고 업체별로 필터링하며, 임의 추가 열은 읽지 않습니다.
 
 세부 스키마: [ACCESS-EXCEL-CONTRACT.md](ACCESS-EXCEL-CONTRACT.md), [업체별 어댑터](vendor_adapters/README.md).
 

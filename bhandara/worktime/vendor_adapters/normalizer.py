@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from bhandara.common.io.input_layout import InputLayoutError, hash_file, read_sheet
+from bhandara.common.io.security_person_map import read_security_person_map
 from bhandara.worktime.access_source import write_access_events_xlsx
 
 from .profiles import PROFILES, VendorProfile
@@ -254,13 +255,29 @@ def normalize_vendor_excel(
     output_path: str | Path,
     *,
     vendor: str,
-    identities: Iterable[Mapping[str, Any]],
+    identities: Iterable[Mapping[str, Any]] | None = None,
     sheet_name: str | None = None,
+    id_map_path: str | Path | None = None,
 ) -> dict[str, Any]:
-    """Read one vendor's source sheet and write identical canonical Excel."""
+    """Read one vendor's source and write the existing canonical Excel.
+
+    Explicit identities (legacy/tests) OR the Common PERSON MAP workbook
+    must be supplied. Vendor filtering occurs before the existing adapter
+    validates and uses its `identities` rows.
+    """
     profile = PROFILES.get(vendor)
     if profile is None:
         raise VendorSourceError("unknown vendor profile")
+    if (identities is None) == (id_map_path is None):
+        raise VendorSourceError("provide exactly one of identities or id_map_path")
+    mapping_issues: list[dict[str, Any]] = []
+    if id_map_path is not None:
+        try:
+            mapped = read_security_person_map(id_map_path, vendor=vendor)
+        except (InputLayoutError, OSError) as exc:
+            raise VendorSourceError(str(exc)) from exc
+        identities = mapped["identities"]
+        mapping_issues = mapped["issues"]
     path = Path(source_path)
     try:
         raw = read_sheet(path, profile.required, sheet_name=sheet_name)
@@ -281,6 +298,8 @@ def normalize_vendor_excel(
         "normalized_events": len(events),
         "source_reviews": len(reviews),
         "excluded": sum(row["status"] == "EXCLUDED" for row in reviews),
-        "status": ("PASS" if events and all(r["status"] == "EXCLUDED" for r in reviews)
+        "identity_mapping_reviews": mapping_issues,
+        "status": ("PASS" if events and not mapping_issues
+                   and all(r["status"] == "EXCLUDED" for r in reviews)
                    else "REVIEW_REQUIRED"),
     }
