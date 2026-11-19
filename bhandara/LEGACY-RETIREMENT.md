@@ -9,6 +9,8 @@
 - 공개 샘플 `bhandara/examples/sample/input/payroll/pay-contract.xlsx`는 기존 활성 시트 방식일 수 있으며, 새 `payroll/input-files.json`의 **7개 별도 XLSX**와 자동 호환한다고 인정하지 않는다.
 - `agent-config` / Gearbox의 실제 기존 Calculator 호출, 버전·권한·Slack 입력/출력 연결은 아직 운영 전환/회귀 검증이 필요하다. `agent-config`는 사용자 재개 지시까지 PAUSE.
 
+> **Payroll 진행 업데이트:** PR #71 Flow 경량화(계약 검증·Worktime 파싱·Output 생성 각 1회) 병합 완료. 다음 P1-5b-2b-1 PTO Closing/복수 휴가 **읽기 전용 대조**를 검증 중이며, 실제 유급·무급·고정수당 처리 및 P2/P3·운영 전환 전 레거시 삭제는 하지 않는다.
+
 ## 순서대로 철수
 
 | 단계 | 통과 기준 | 삭제 가능 여부 |
