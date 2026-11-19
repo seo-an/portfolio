@@ -6,9 +6,9 @@
 
 | 이미 완료 | 다음 구현 필요 |
 |---|---|
-| `payroll/core.py`: `resolve_contract_pay`(ANNUAL/MONTHLY/WEEKLY, BASE/TOTAL, 일급 참조), `resolve_fixed_allowances`(contract_id→allowance_id+level), `resolve_deduction_mapping`(4개 비율만 조회), `allocate_performance_bonus`(예산×배분율), `build_partial_payroll`(검토용 부분 지급합계) | 독립 7개 Excel Reader 및 대상 계약·기간 선택, 실제 급여 반영시간·가산수당 계산, 보험료 산정기준 및 공제금액 계산, 입퇴사·연차 일할/정산, 지급항목 표시명/상태 Adapter, 정상 완료 판단 |
-| `payroll/input-files.json`: 고정 7개 파일명·시트·헤더 | JSON 설정 기반 선택적 Tool CLI, `input_root/output_root`, `steps`, 재실행 `run_id`, 외부 결과 참조/인계 및 예외 격리 |
-| `payroll/output.py`: `build_payroll_register`, 동적 항목 열, 지급/공제 완료 여부에 따른 합계 | 계산 코어와 Output의 **ID→표시명·금액·검토상태 연결**; 미확정 금액 0과 미확정 null 구별 |
+| `payroll/core.py`: 계약/수당/성과급 코어. `input_excel.py`: 7종 Reader. `contract_period.py`: 정확 산정기간만 선택. `review_adapter.py`: 지급항목 표시명 및 검토용 Output 결합 | 계약의 실제 법적 유효기간·중간 변경/입퇴사 일할, 승인된 추가근로/휴가 정산, 보험료·세금 공제액, 완료상태 판정 |
+| `payroll/input-files.json`: 고정 7개 파일명·시트 및 v1.1 표시명 필드 | JSON 설정 기반 선택적 Tool CLI, `input_root/output_root`, `steps`, 재실행 `run_id`, 외부 결과 참조/인계 및 예외 격리 |
+| `payroll/output.py`: `build_payroll_register`, 동적 열/조건부 합계; P0 Adapter는 항상 미완료 플래그 전달 | 실제 산정 검증 후 직원별 `earnings_complete`/`deductions_complete`를 책임 있게 판정할 연결 |
 | `payroll/output_excel.py`: `write_payroll_result_xlsx`, **`payroll-result.xlsx`/`PAYROLL` 단일 시트**, 2단 헤더, 미수령 공란, 덮어쓰기 차단 | 전체 Flow의 끝에서 해당 Writer 호출, 검증된 산출물로 실제 출력 검증 |
 | `payroll-calculator/`: 구형 계산기의 검증된 코드와 테스트 유지 | 재사용 후보 확인 후 별도 Adapter; 구형 Worktime JSON에 신규 Worktime XLSX를 곧장 전달하는 행위 금지 |
 
