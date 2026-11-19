@@ -56,6 +56,7 @@ def allocated(contract_id="C-OLD", start=FROM, end=TO, worker="0001", **updates)
         "approval_status": "APPROVED",
         "approval_ref": f"APPROVAL-{contract_id}",
         "policy_ref": "EXTERNAL-CALENDAR-DAYS-SYNTHETIC",
+        "amount_basis": "FULL_CYCLE",
     }
     row.update(updates)
     return row
@@ -156,6 +157,7 @@ class SettlementCoverageP15aTests(unittest.TestCase):
             {"period_from": "2026-10-01"},
             {"allocations": [allocated(approval_status="PENDING")]},
             {"allocations": [allocated(policy_ref="")]},
+            {"allocations": [allocated(amount_basis="ALREADY_PRORATED")]},
             {"allocations": [allocated(approval_ref="")]},
             {"employment_facts": [employment(status="PENDING")]},
             {"employment_facts": [employment(evidence_ref="")]},
