@@ -5,7 +5,7 @@ P1/P2 own overtime/leave adjustments, insurance/tax and eligibility evidence.
 """
 from __future__ import annotations
 
-from typing import Any, Mapping
+from typing import Any, Mapping, Iterable
 
 from bhandara.payroll.contract_period import select_contracts_for_period
 from bhandara.payroll.core import (
@@ -66,6 +66,7 @@ def build_payroll_review_register(
     *,
     period_from: str,
     period_to: str,
+    overtime_candidates: Mapping[str, Iterable[Mapping[str, Any]]] | None = None,
 ) -> dict[str, Any]:
     """Produce the final *layout*, but with intentionally incomplete pay totals.
 
@@ -100,6 +101,8 @@ def build_payroll_review_register(
         inputs.for_role("bonus_budget"), id_field="bonus_id", label_field="bonus_name",
     )
 
+    if overtime_candidates is not None and set(overtime_candidates) - set(contracts):
+        raise PayrollPreviewError("overtime_candidates: unknown selected employee")
     rows: list[dict[str, Any]] = []
     for worker in sorted(contracts):
         rows.append({
@@ -111,7 +114,8 @@ def build_payroll_review_register(
             "performance_bonuses": _as_items(
                 bonuses[worker], bonus_names, id_field="bonus_id",
             ),
-            "overtime_allowances": [],  # NOT evidence of zero overtime
+            # Calculated candidate items do NOT imply complete/approved overtime.
+            "overtime_allowances": list((overtime_candidates or {}).get(worker, ())),
             "deductions": [],  # insurance/tax rates are NOT monetary deductions
             "earnings_complete": False,
             "deductions_complete": False,
