@@ -126,6 +126,10 @@
 
 [가산수당 후보 계약](OVERTIME-CANDIDATES.md). `overtime_candidates.py`는 기존 초과근무 규칙과 **외부 검증 실제 근로구간/승인구간/분모·반올림 정책**을 명시적으로 결합해 추가 지급액 **후보**를 계산한다. `overtime_preview.py`는 이를 기존 `payroll-result.xlsx`의 동적 초과근무수당 열에 반영하되, **지급합계/공제합계/실지급액은 공란**, 직원 상태는 `PARTIAL_REVIEW_ONLY`로 고정한다. 승인근거 문자열의 실제 진위 검증, 법적 가산 중복·휴일 판정·휴가/입퇴사 정산과 JSON Tool CLI는 미구현이다. 7개 고정 Payroll Excel 파일·기존 Worktime 10열은 변경하지 않는다.
 
+## P1-3: 별도 원장 출처 대조
+
+[근무·승인 출처 대조](EVIDENCE-RECONCILIATION.md). `evidence_reconciliation.py`는 P1-2 근로/승인/분류/기본급 포함 사실을 **별도로 취득한 원장 스냅샷**과 대조한다. 근로·결재 참조의 내용 불일치·취소·중복을 차단하고, `evidence_preview.py`가 기존 동적 검토용 대장에 연결한다. 출처 레코드 자체의 **진위/승인자 권한/원장 완전성은 이 함수가 인증하지 않는다**. 지급액은 여전히 후보다.
+
 ## 실행 / 테스트
 
 ```bash
