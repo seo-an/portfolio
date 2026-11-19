@@ -35,15 +35,13 @@
 - `TOTAL`: `base_salary`를 포함한 명시된 지급항목의 **합계가 계약총액과 동일해야** 함. 자동 역산하지 않음.
 - `RATE`: 시급·일급으로 기존 Worktime 자료의 시간·일수를 적용.
 - 계약 형태는 `resources/contract-types.json`에서 확인하며 **ID 접두어로 추정하지 않음**.
-- 현재 v2는 직원 근로소득용 계약에 한정합니다. 외부 용역/법인 계약 인계와 과세·비과세 금액 산출은 별도 후속 변경이며, 잘못된 자동 확정은 금지합니다.
+- 현재 v2는 **직원 근로소득용 계약과 별도 명시된 외부 용역/법인 계약**을 입력할 수 있습니다. 용역금액은 Worktime 인계를 바탕으로 검토용 추정만 수행하며 지급 승인·원천세 신고를 하지 않습니다.
 
 [실제 두 시트 예제 XLSX](examples/contract-v2-two-sheet.demo.xlsx) ·
 [비개발자용 입력 방법](RUNBOOK.md) ·
 [두 시트 계약 회귀 테스트](../tests/test_payroll_contract_facts_v2.py)
 
-기존 80명 공통 샘플은 아직 단일 시트+별도 수당파일 방식(legacy)으로
-유지되며, 마이그레이션 이전 계약금액의 의미를 자동으로 추측하지 않습니다.
-원래 계산 엔진·퇴직/입사·근태·승인 상태는 변경하지 않습니다.
+현재 80명 공개 통합 샘플은 `pay-contract.xlsx`의 **`Contracts` + `Components` 두 시트**를 사용합니다. 기존 단일 시트·별도 수당파일 방식은 호환성 경로로 유지하지만 정식 공개 샘플에는 포함하지 않습니다. 계약금액의 의미를 자동으로 추측하지 않으며 원래 계산 엔진·퇴직/입사·근태·승인 상태를 변경하지 않습니다.
 
 ## v2 용역 계약: 추가 Excel 없이 Worktime으로 검토
 
@@ -82,7 +80,7 @@ python run.py bhandara payroll-calculator --period 2026-07
 원본이 바뀌면 재계산을 요구합니다.
 [80명 실물 샘플](../examples/sample/input/).
 
-> **실제 사용하려는 분:** [급여 계산기 RUNBOOK](RUNBOOK.md)에 `pay-contract.xlsx`·`pay-contract-components.xlsx`·`payroll-input.xlsx` 작성법, 활성 시트, 정확한 헤더, 폴더 구성 및 JSON에서 바꿀 항목을 모아 뒀습니다. [바로 수정할 수 있는 급여 설정 JSON 틀](examples/payroll-config.user-template.json)도 제공하며, **이 README는 개발자·설치 담당자용 기술·코드 계약·검증 문서**입니다.
+> **실제 사용하려는 분:** [급여 계산기 RUNBOOK](RUNBOOK.md)에 현행 `pay-contract.xlsx`의 `Contracts`·`Components` 두 시트와 `payroll-input.xlsx` 작성법을 정리했습니다. `pay-contract-components.xlsx`는 구형 단일 시트 계약 방식에만 해당합니다. [급여 설정 JSON 틀](examples/payroll-config.user-template.json)도 참고하세요. **이 README는 개발자·설치 담당자용 기술·검증 문서**입니다.
 
 
 **기존 Gearbox 급여 계산기를 공개 저장소에서 독립 실행하도록 이전한 모듈**이다. 보상 정보, 월별 급여 입력, 근무시간 결과, 급여항목·회사 정책을 이용해 **검토용 급여 계산 결과**를 만든다.
