@@ -13,6 +13,10 @@ from decimal import Decimal, InvalidOperation, ROUND_DOWN, ROUND_HALF_UP
 import re
 from typing import Any, Iterable, Mapping
 
+from bhandara.payroll.overtime_stacking import (
+    OvertimeStackingError, review_approved_stacking,
+)
+
 
 class OvertimeCandidateError(ValueError):
     """Insufficient evidence or ambiguous pay rules: fail the candidate run."""
@@ -219,7 +223,8 @@ def calculate_overtime_candidates(
     Factor is TOTAL_RATE if base is excluded; TOTAL_RATE-1 if independently
     proven already included in base. This is an arithmetic convention for
     preview, NOT an assertion of labor-law eligibility or complete payment.
-    Overlapping approved segments (including across categories) are refused.
+    Overlapping approved segments are refused unless explicitly permitted by
+    exact active-category sets; duplicate ordinary base pay is always blocked.
     """
     if not contracts:
         raise OvertimeCandidateError("contracts: selected worker contracts required")
@@ -238,7 +243,7 @@ def calculate_overtime_candidates(
         worktime[key] = None if minutes is None else _decimal(minutes, "actual_min", integral=True)
 
     evidence = _work_evidence(verified_work, set(contracts), worktime)
-    occupied: dict[str, list[tuple[datetime, datetime]]] = defaultdict(list)
+    stacking_segments: list[dict[str, Any]] = []
     segment_ids: set[str] = set()
     amounts: dict[tuple[str, str], Decimal] = defaultdict(Decimal)
     durations: dict[tuple[str, str], int] = defaultdict(int)
@@ -265,12 +270,16 @@ def calculate_overtime_candidates(
         if (parent["employee_id"] != employee or parent["work_date"] != row["work_date"]
                 or not parent["start"] <= start or end > parent["end"]):
             raise OvertimeCandidateError("approved_segment: outside verified actual work interval")
-        occupied[employee].append((start, end))
-
         rule_id = _text(row["rule_id"], "rule_id")
         if rule_id not in rules:
             raise OvertimeCandidateError("approved_segment: unmatched rule_id")
         rule = rules[rule_id]
+        stacking_segments.append({
+            "employee_id": employee, "segment_id": segment_id,
+            "start_at": start, "end_at": end,
+            "category": rule["category"],
+            "base_pay_includes_time": row["base_pay_includes_time"],
+        })
         if not _qualifies(start, end, rule["from"], rule["to"]):
             raise OvertimeCandidateError("approved_segment: outside qualifying clock window")
         if minutes < rule["minimum_minutes"]:
@@ -291,7 +300,14 @@ def calculate_overtime_candidates(
         durations[item] += minutes
         audit[item].append(segment_id)
 
-    _no_overlap(occupied, "approved_segment")
+    # Perform the half-open time sweep *before* publishing any monetary result.
+    # A missing policy keeps P1-2's original strict no-overlap behavior.
+    try:
+        stacking_review = review_approved_stacking(
+            stacking_segments, overlap_policy=policy.get("overlap_policy"),
+        )
+    except OvertimeStackingError as exc:
+        raise OvertimeCandidateError(str(exc)) from exc
     rows = []
     for (employee, rule_id), amount in sorted(amounts.items()):
         rows.append({
@@ -308,5 +324,6 @@ def calculate_overtime_candidates(
         "rows": rows,
         "earnings_complete": False,
         "payable_minutes_finalized": False,
+        "stacking_review": stacking_review,
         "approval_state": "NOT_APPROVED",
     }
