@@ -49,13 +49,14 @@
       "segment_to": "2026-11-30",
       "approval_status": "APPROVED",
       "approval_ref": "SYNTHETIC-CONTRACT-B",
-      "policy_ref": "SYNTHETIC-DAY-PRORATION"
+      "policy_ref": "SYNTHETIC-DAY-PRORATION",
+      "amount_basis": "FULL_CYCLE"
     }
   ]
 }
 ```
 
-위 계약 `C-OLD`와 `C-NEW`는 **기존 CONTRACTS Excel에 각각 별개의 contract_id로 존재**해야 한다. 두 행의 선언 급여기간은 각각 11월 1~15일, 11월 16~30일일 수 있다. 월급 금액은 **월 전체에 대응하는 기준 월급**으로 입력해야 한다. 기존 Core는 이를 계약별 월 전체 금액으로 읽고, 외부 승인 배정 기간만큼만 P1-5a에서 일할계산한다. 월중 입사자가 계약 Excel에 11월 1~30일 전체 급여기간 하나를 가진 경우에도 배정 구간을 **실제 입사일~말일**로 제한할 수 있다.
+위 계약 `C-OLD`와 `C-NEW`는 **기존 CONTRACTS Excel에 각각 별개의 contract_id로 존재**해야 한다. 두 행의 선언 급여기간은 각각 11월 1~15일, 11월 16~30일일 수 있다. 월급 금액은 **월 전체에 대응하는 기준 월급**으로 입력해야 한다. 기존 Core는 이를 계약별 월 전체 금액으로 읽고, **각 배정에 `amount_basis=FULL_CYCLE`이 명시된 경우에만** 외부 승인 배정 기간만큼 P1-5a에서 일할계산한다. 이미 일할계산된 계약금액을 입력했다면 이 경로에서 다시 일할하면 안 된다. 월중 입사자가 계약 Excel에 11월 1~30일 전체 급여기간 하나를 가진 경우에도 배정 구간을 **실제 입사일~말일**로 제한할 수 있다.
 
 ### 계산과 원 단위 처리
 
