@@ -8,7 +8,9 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+from zipfile import BadZipFile
 from openpyxl import load_workbook
+from openpyxl.utils.exceptions import InvalidFileException
 from typing import Any, Iterable, Mapping
 
 from bhandara.common.utils.hashing import sha256_file
@@ -179,7 +181,7 @@ def _verify_worktime_workbook(path: Path) -> None:
             book.close()
     except WorktimePayrollBridgeError:
         raise
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, BadZipFile, InvalidFileException) as exc:
         raise WorktimePayrollBridgeError("WORKTIME: cannot inspect source workbook") from exc
 
 
