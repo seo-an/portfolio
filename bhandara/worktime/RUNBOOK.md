@@ -1,6 +1,6 @@
 # Worktime 사용·검증 실행서 (신규 세 Module, 2026-11-18)
 
-> **개발·검증용 실행서**입니다. 신규 `bhandara/worktime/`은 독립 계산·입력 정규화 경로를 구현한 단계로, 공개 통합 CLI 및 Gearbox/Slack 운영 연동은 아직 하지 않았습니다. 기존 `bhandara/worktime-calculator/`는 별도 실행 가능한 구형 계산기이며 **현재도 유지**합니다.
+> **개발·검증용 실행서**입니다. 신규 `bhandara/worktime/`은 독립 계산·입력 정규화에 더해 **스케줄 ID 매핑 Reader, 단일 일자별 결과 Excel Writer/Reader**까지 구현했습니다. 공개 통합 CLI 및 Gearbox/Slack 운영 연동은 아직 하지 않았습니다. 기존 `bhandara/worktime-calculator/`는 별도 실행 가능한 구형 계산기이며 **현재도 유지**합니다.
 
 ## 1. 어떤 기능이 어디에 있나요?
 
@@ -10,7 +10,9 @@
 | Attendance Verification | `worktime/attendance-verification/` | 장부↔출입기 증빙, 스케줄 대비 출근·퇴근 **부호 있는 시각 차이** 보존 |
 | Worktime Compliance | `worktime/worktime-compliance/` | 확인된 근로·휴게 사실의 기준 적합성, **확인 휴게−필수 휴게** 차이 보존 |
 | 보안업체 원본 해석 | `worktime/vendor_adapters/` | CAPS·세콤·KT텔레캅 제공 예제에 맞춘 원본 열/시각/식별자 변환 |
-| 표준 Excel | `worktime/access_source.py` | 모든 업체에 동일한 `access-events.xlsx` v0.2 작성·읽기·검증 인계 |
+| 표준 출입기 Excel | `worktime/access_source.py` | 모든 업체에 동일한 `access-events.xlsx` v0.2 작성·읽기·검증 인계 |
+| 스케줄 매핑 | `worktime/schedule/mapping.py` | `work-schedule.xlsx`의 `SCHEDULE MAP`·`ASSIGNMENTS` 읽기 |
+| 단일 결과 | `worktime/output.py`·`output_excel.py` | 소정·실제·출근Δ·퇴근Δ와 외부 근태/휴가 참조를 한 시트에 기록 |
 
 **Attendance Detection은 삭제한 기획**이며 별도 Module이 없습니다. 근무 종류나 지각·조퇴·야근을 시각 차이만으로 확정하지 않습니다.
 
@@ -100,14 +102,31 @@ sudo docker exec -w /opt/agent-config \
 
 ## 6. 다음 개발 단계 (미완료)
 
-1. **공통 입력 정본 계약:** Schedule·근태장부·휴게 증빙·외부 사유/승인 자료의 Excel 컬럼, 직원 ID 매핑, 근무일/익일 종료 규칙을 정합니다. 기존 PTO 입력을 무조건 덮어쓰지 않습니다.
-2. **실제 업무용 Excel 입출력:** 업체별 표준 `access-events.xlsx` 외에 신규 Worktime의 스케줄·검증·Compliance 결과 Excel 표준 서식을 정의하고 Writer/Reader를 연결합니다.
+1. **매핑/Output 기본 계약 완료:** `SCHEDULE MAP`, `ASSIGNMENTS`, `WORKTIME` 단일 출력은 이미 구현되어 있습니다. 공개 샘플 Excel에는 기존 첫 시트만 있을 수 있으니 자동 교체하지 않습니다.
+2. **추가 입력 사실 계약:** 근태장부·휴게 증빙과 외부 확정 근태/휴가 신청 참조의 실제 회사별 입력 방식을 정합니다. 기존 PTO를 자동 변환하지 않습니다.
 3. **모듈 조합 Flow와 공개 Tool CLI:** 소스 파일을 불러와 독립 Module을 순서대로 호출하고 결과·검토 파일을 생성합니다. 불필요한 API/DB는 도입하지 않습니다.
 4. **현실 데이터 예외 검증:** 분할근무·자정/익일 퇴근·시차출퇴근·휴일 예정 근무·복수 출입/미인증 등 **합성자료 기반** 회귀를 확장합니다.
 5. **Gearbox 연결:** Bhandara 변경마다 `gearbox/_tests/run.py`와 `core_run.py` 등 기존 호환성을 검증합니다. 운영 파일 수집·보관 정책(임시 캐시 3시간, 원본 장기보관 금지)은 별도 연결 시 준수합니다.
 6. **구형 계산기 전환 및 정리:** 새 계산 결과의 계약·샘플·Gearbox 사용 경로가 검증되기 전에는 `worktime-calculator/`를 제거하거나 기존 Payroll 인계 경로를 바꾸지 않습니다.
 
-**아직 확정하지 않은 것:** 지각/조퇴·연장·야간근무의 승인 판단, 임금 계산, 근로시간제별 예외 정책, 실제 휴게 증빙의 입수 방식, Closing 및 외부 시스템 자동 연결.
+**아직 확정하지 않은 것:** 지각/조퇴·연장·야간근무의 승인 판단(Payroll/외부 정책 담당), 임금 계산, 근로시간제별 예외 정책, 실제 휴게 증빙의 입수 방식, 다중 배정/분할근무, Closing 및 외부 시스템 자동 연결.
+
+### 신규 Worktime Output 사용 계약
+
+- `read_schedule_mapping(path, period_from=..., period_to=...)`: 스케줄 ID별 정의와 날짜별 배정 읽기.
+- `for_attendance_verification(schedule_rows)`: 익일 종료 시각을 검증 모듈용 ISO 날짜시간으로 변환.
+- `build_worktime_result(schedule_rows, attendance_verification, worktime_compliance, period_from=..., period_to=..., attendance_facts=...)`: 3개 모듈의 **이미 계산한 결과**와 외부 근태/휴가 사실을 일별로 결합.
+- `write_worktime_xlsx(result, path)`, `read_worktime_xlsx(path)`: `WORKTIME` 한 시트, 10컬럼 Excel 결과 작성/읽기. 기존 파일 덮어쓰기 불가.
+- 결과에서 상태·승인·유급시간 산정·급여 금액은 생성하지 않음. 미확인 실제근로는 0이 아닌 공란.
+- 구형 Worktime/Payroll과 자동 연결되지 않으므로 CLI나 Gearbox에서 **신규 결과를 기존 Payroll JSON인 것처럼 전달하지 말 것.**
+
+테스트:
+
+```bash
+python -m unittest bhandara.tests.test_worktime_schedule_mapping bhandara.tests.test_worktime_output_v01 -v
+```
+
+세부 규격: [스케줄 매핑](SCHEDULE-MAP-CONTRACT.md), [단일 Output](OUTPUT-CONTRACT.md).
 
 ## 7. 관련 문서
 
