@@ -28,6 +28,13 @@ class PayrollInputFilesContractTests(unittest.TestCase):
         cls.data = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
         cls.files = cls.data["workbooks"]
 
+    def test_sample_location_separate_from_runtime_input(self):
+        self.assertEqual(self.data["sample_directory"],
+                         "bhandara/examples/sample/input/payroll")
+        self.assertEqual(self.data["input_directory"], "payroll")
+        self.assertNotEqual(self.data["sample_directory"],
+                            self.data["input_directory"])
+
     def test_fixed_filename_roles(self):
         self.assertEqual(self.data["tool"], "payroll")
         self.assertEqual(self.data["schema_version"], "1.0")
