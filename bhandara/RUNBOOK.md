@@ -1,6 +1,6 @@
 # 반다라 사용 안내서 — 처음 사용하는 사람을 위한 설명
 
-> **최신 안내(2026-11-19):** 신규 `paid-time-off`와 `worktime` Tool 모두 JSON 설정 기반 CLI를 사용할 수 있습니다. 아래 `*-calculator` 예시는 구형 계산기용이며 여전히 지원합니다. 신규 Tool은 Gearbox/Slack 운영과 연결되지 않았고, 신규 Payroll은 아직 설계 전입니다. [개발 현황](DEVELOPMENT-STATUS-2026-11-19.md).
+> **최신 안내(2026-11-19, PR #60 병합 후):** 신규 `paid-time-off`와 `worktime` Tool은 JSON 설정 기반 CLI를 사용할 수 있습니다. 신규 `payroll`은 **계약·수당·성과급 코어와 동적 Excel Output만 구현**했으며, 별도 Excel Reader/JSON Tool CLI/실제 공제·초과근무 산정 및 둘 사이 연결은 아직 없습니다. 아래 `*-calculator` 예시는 **구형** 계산기용이며 여전히 지원합니다. 신규 Tool은 Gearbox/Slack 운영과 연결되지 않았고 `agent-config` 작업은 PAUSE입니다. [개발 현황](DEVELOPMENT-STATUS-2026-11-19.md) · [Payroll 남은 작업](payroll/NEXT-STEPS.md).
 
 ### 신규 Tool — 매번 명령어 수정하지 않음
 
@@ -15,6 +15,15 @@ python3 run.py bhandara worktime
 - [Worktime JSON 예제 및 사용법](worktime/TOOL-CLI.md) — `period_from/period_to`, `steps` 등.
 - **실자료를 곧바로 붙이지 말고 합성자료로 입출력 계약을 검증하세요.** Slack/Hermes에서 파일을 업로드했다고 새 Tool 계산이 시작되지는 않습니다.
 
+
+### 신규 Payroll은 아직 직접 실행하는 CLI가 아닙니다
+
+현재 새 `bhandara/payroll/`의 계약·수당·성과급 함수는 **검토용 부분 계산 코어**이고, `payroll-result.xlsx` Writer는 이미 계산된 금액 항목을 받아서 **표시만** 합니다. 둘을 자동 연결하는 코드가 없으며, 새 `python3 run.py bhandara payroll` 명령은 아직 지원한다고 안내하면 안 됩니다.
+
+- 입력 계약: [분리형 Excel 7개](payroll/input-files.json). `input_root/payroll/`의 각각 한 시트 Excel로 읽는 Reader는 아직 구현하지 않았습니다.
+- 출력 계약: [`payroll-result.xlsx`/`PAYROLL`](payroll/OUTPUT-CONTRACT.md). 50명 중 1명만 특정 수당을 받더라도 그 수당 열이 생성되고, 미해당 직원 셀은 공란입니다.
+- 기존 `payroll-calculator`의 아래 명령은 구형 계산기 호출이며, **새 Payroll Tool의 지급액이 계산된다는 뜻이 아닙니다**.
+- 설치된 공개 샘플 폴더의 `pay-contract.xlsx`를 새 `CONTRACTS` 단일 시트 계약으로 간주하지 마세요. 신규 나머지 6개 파일의 실제 Git 반영 및 시트/헤더 검증도 아직 확인해야 합니다.
 
 Normalizer는 계산 전에 반드시 실행해야 하는 단계가 아닙니다.
 해당 계산기가 이미 읽을 수 있는 파일이라면 바로 PTO·Worktime·Payroll을 실행하세요.
