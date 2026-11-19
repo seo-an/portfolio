@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import importlib.util
 import json
+import os
 import tempfile
 import unittest
 from decimal import Decimal
@@ -33,9 +34,68 @@ class IntegratedExampleTests(unittest.TestCase):
         self.destination = Path(self.temp.name) / "sample-80"
 
     def _generate(self):
+        if os.environ.get("BHANDARA_RUN_SAMPLE_GENERATOR_TESTS") != "1":
+            self.skipTest(
+                "Sample generator is opt-in; set "
+                "BHANDARA_RUN_SAMPLE_GENERATOR_TESTS=1 to run generation tests"
+            )
         demo = _load_generator().generate(self.destination)
         self.assertEqual(demo, self.destination)
         return demo / "input"
+
+    def test_new_security_mapping_sheets_follow_current_form(self):
+        from bhandara.common.io.security_person_map import read_security_person_map
+
+        source = self._generate()
+        book = load_workbook(source / "common/id-map.xlsx", read_only=True)
+        try:
+            self.assertEqual(
+                book.sheetnames,
+                ["ID_MAP", "EXTERNAL", "PERSON MAP", "DEPARTMENT MAP", "AREA MAP"],
+            )
+            persons = list(book["PERSON MAP"].values)
+            self.assertEqual(persons[0], (
+                "employee_id", "name", "security_department_id", "security_id",
+                "worker_id", "payroll_id", "security_person_id", "main_area",
+            ))
+            self.assertEqual(len(persons) - 1, 82)  # 80 CAPS plus two extra vendor rows
+            vendor_ids = [row[3] for row in persons[1:]]
+            self.assertEqual(vendor_ids.count("CAPS"), 80)
+            self.assertEqual(vendor_ids.count("SECOM"), 1)
+            self.assertEqual(vendor_ids.count("TELECOP"), 1)
+            self.assertEqual(tuple(book["AREA MAP"][1][i].value for i in range(2)),
+                             ("area", "security_area_id"))
+            self.assertEqual(len(list(book["DEPARTMENT MAP"].values)) - 1, 8)
+            self.assertEqual(len(list(book["AREA MAP"].values)) - 1, 3)
+        finally:
+            book.close()
+
+        caps = read_security_person_map(
+            source / "common/id-map.xlsx", vendor="CAPS"
+        )
+        secom = read_security_person_map(
+            source / "common/id-map.xlsx", vendor="SECOM"
+        )
+        telecop = read_security_person_map(
+            source / "common/id-map.xlsx", vendor="KT_TELECOP"
+        )
+        self.assertEqual(len(caps["identities"]), 80)
+        self.assertEqual(len(secom["identities"]), 1)
+        self.assertEqual(len(telecop["identities"]), 1)
+        self.assertEqual(caps["issues"], [])
+        self.assertEqual(secom["issues"], [])
+        self.assertEqual(telecop["issues"], [])
+
+    def test_refresh_without_apply_does_not_generate_or_modify_excel(self):
+        refresh_path = ROOT / "bhandara/examples/sample/refresh.py"
+        spec = importlib.util.spec_from_file_location(
+            "bhandara_refresh_manual_only", refresh_path
+        )
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        result = module.refresh_sample(apply=False)
+        self.assertEqual(result["status"], "NOT_RUN_EXPLICIT_APPLY_REQUIRED")
+        self.assertFalse(self.destination.exists())
 
     def test_integrated_demo_is_generated_without_legacy_service_files(self):
         source = self._generate()
