@@ -73,26 +73,21 @@ def _aggregate_contract_components(
     return base, fixed_totals, audit
 
 
-def build_segmented_settlement_preview(
+def _build_segmented_components(
     inputs: PayrollInputs,
     *,
-    settlement_plan: Mapping[str, Any],
+    coverage: Mapping[str, Any],
     period_from: str,
     period_to: str,
     base_reductions: Mapping[str, int] | None = None,
 ) -> dict[str, Any]:
-    """Render the *same* one-sheet review-only register using explicit splits.
+    """Return reviewed employee items without prematurely rendering Output.
 
-    No final earnings/deduction flags are accepted from the plan. Overtime
-    candidates and unpaid leave adjustments are intentionally NOT inferred or
-    incorporated in P1-5a; this is a distinct alternative to the P0 exact-
-    contract preview, not a silent replacement for it.
+    The integrated Payroll flow can attach other vetted components first,
+    then build the dynamic one-sheet register exactly once. The public
+    P1-5a preview below retains its existing input/output contract.
     """
     _require_roles(inputs)
-    coverage = validate_settlement_coverage(
-        inputs.for_role("contracts"), plan=settlement_plan,
-        period_from=period_from, period_to=period_to,
-    )
     allowance_rows = inputs.for_role("fixed_allowance_map")
     allowance_assignments = inputs.for_role("allowance_assignments")
     names = _names_for_ids(
@@ -157,9 +152,8 @@ def build_segmented_settlement_preview(
             "leave_settlement": "NOT_ASSESSED",
             "overtime_reconciliation": "NOT_ASSESSED",
         })
-    register = build_payroll_register(rows)
     return {
-        "payroll_register": register,
+        "payroll_rows": rows,
         "settlement_review": {
             "schema_version": "0.1",
             "period_from": period_from,
@@ -182,4 +176,28 @@ def build_segmented_settlement_preview(
         },
         "status": "PARTIAL_REVIEW_ONLY",
         "approval_state": "NOT_APPROVED",
+    }
+
+
+def build_segmented_settlement_preview(
+    inputs: PayrollInputs,
+    *,
+    settlement_plan: Mapping[str, Any],
+    period_from: str,
+    period_to: str,
+    base_reductions: Mapping[str, int] | None = None,
+) -> dict[str, Any]:
+    """Preserve the published P1-5a partial register and status contract."""
+    coverage = validate_settlement_coverage(
+        inputs.for_role("contracts"), plan=settlement_plan,
+        period_from=period_from, period_to=period_to,
+    )
+    components = _build_segmented_components(
+        inputs, coverage=coverage,
+        period_from=period_from, period_to=period_to,
+        base_reductions=base_reductions,
+    )
+    return {
+        "payroll_register": build_payroll_register(components["payroll_rows"]),
+        **{key: value for key, value in components.items() if key != "payroll_rows"},
     }

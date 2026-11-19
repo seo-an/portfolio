@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping
 
 from bhandara.common.utils.hashing import sha256_file
-from bhandara.payroll.attendance_preview import build_attendance_adjusted_preview
+from bhandara.payroll.attendance_reconciliation import reconcile_attendance_adjustments
 from bhandara.payroll.core import resolve_contract_pay
 from bhandara.payroll.evidence_reconciliation import reconcile_overtime_evidence
 from bhandara.payroll.input_excel import PayrollInputs
@@ -25,6 +25,8 @@ from bhandara.payroll.overtime_candidates import (
 )
 from bhandara.payroll.output import build_payroll_register
 from bhandara.payroll.settlement_coverage import validate_settlement_coverage
+from bhandara.payroll.segmented_settlement import _build_segmented_components
+from bhandara.payroll.worktime_bridge import _verify_worktime_workbook, review_worktime_facts
 from bhandara.worktime.output_excel import read_worktime_xlsx
 
 
@@ -34,8 +36,6 @@ class ContractOvertimeAdapterError(ValueError):
 
 ROLLUP_FIELDS = frozenset({"mode", "policy_ref"})
 ROLLUP_MODE = "ROUND_PER_CONTRACT_RULE_THEN_SUM"
-ITEM_CATEGORIES = ("fixed_allowances", "performance_bonuses", "deductions")
-
 
 def _text(value: Any, name: str) -> str:
     if not isinstance(value, str) or not value.strip():
@@ -139,52 +139,25 @@ def _worktime_for_contract(
     ]
 
 
-def _merge_candidates(
-    original: Mapping[str, Any],
+def _attach_overtime_items(
+    payroll_rows: list[dict[str, Any]],
     candidate_rows: Iterable[Mapping[str, Any]],
-) -> dict[str, Any]:
-    """Rehydrate the existing dynamic register via its public columns/rows.
-
-    The output's dynamic item columns are already filtered to nonzero amounts.
-    Keep the existing base, fixed allowances, bonuses, and employee names,
-    preserving the user's one-sheet Output and completion-gate contracts.
-    """
-    columns = original["columns"]
-    if any(col.get("source") == "overtime_allowances" for col in columns):
-        raise ContractOvertimeAdapterError("register: overtime already present; double-payment blocked")
-    by_worker: dict[str, list[dict[str, Any]]] = defaultdict(list)
-    for row in candidate_rows:
-        by_worker[row["employee_id"]].append({
-            "item_id": row["item_id"], "label": row["label"],
-            "amount": row["amount"],
+) -> None:
+    """Append checked item amounts before the one and only Output render."""
+    roster = {row["employee_id"]: row for row in payroll_rows}
+    for item in candidate_rows:
+        employee = roster.get(item["employee_id"])
+        if employee is None:
+            raise ContractOvertimeAdapterError("candidate: employee not present in register")
+        if employee["overtime_allowances"]:
+            if any(old["item_id"] == item["item_id"]
+                   for old in employee["overtime_allowances"]):
+                raise ContractOvertimeAdapterError("candidate: duplicate overtime item")
+        employee["overtime_allowances"].append({
+            "item_id": item["item_id"],
+            "label": item["label"],
+            "amount": item["amount"],
         })
-    valid = {row["employee_id"] for row in original["rows"]}
-    if set(by_worker) - valid:
-        raise ContractOvertimeAdapterError("candidate: employee not present in register")
-    merged = []
-    for employee in original["rows"]:
-        worker = employee["employee_id"]
-        source = {
-            "employee_id": worker,
-            "base_pay": employee["base_pay"],
-            "overtime_allowances": by_worker.get(worker, []),
-            "earnings_complete": False,
-            "deductions_complete": False,
-        }
-        if "employee_name" in employee:
-            source["employee_name"] = employee["employee_name"]
-        for category in ITEM_CATEGORIES:
-            source[category] = [
-                {
-                    "item_id": column["item_id"],
-                    "label": column["label"],
-                    "amount": employee[column["key"]],
-                }
-                for column in columns if column.get("source") == category
-                and employee.get(column["key"]) is not None
-            ]
-        merged.append(source)
-    return build_payroll_register(merged)
 
 
 def build_contract_scoped_overtime_preview(
@@ -229,19 +202,36 @@ def build_contract_scoped_overtime_preview(
     if path.name != "worktime-result.xlsx" or not path.is_file():
         raise ContractOvertimeAdapterError("WORKTIME: worktime-result.xlsx required")
     fingerprint = sha256_file(path)
-    # P1-5b-1 checks leave/absence vs submitted overtime intervals before
-    # applying any base adjustment. It also checks Worktime's source SHA.
-    attendance_preview = build_attendance_adjusted_preview(
-        inputs, path,
-        settlement_plan=settlement_plan, attendance_plan=attendance_plan,
-        period_from=period_from, period_to=period_to,
-        approved_overtime_segments=source_approvals,
-    )
-    if sha256_file(path) != fingerprint:
-        raise ContractOvertimeAdapterError("WORKTIME: source changed during attendance review")
+    # Worktime: inspect and parse once for every downstream fact/approval
+    # check. No intermediate Payroll register is built at this stage.
+    _verify_worktime_workbook(path)
     worktime_rows = read_worktime_xlsx(path)
     if sha256_file(path) != fingerprint:
-        raise ContractOvertimeAdapterError("WORKTIME: source changed during overtime review")
+        raise ContractOvertimeAdapterError("WORKTIME: source changed during read")
+    attendance = reconcile_attendance_adjustments(
+        coverage, worktime_rows,
+        attendance_plan=attendance_plan, worktime_sha256=fingerprint,
+        approved_overtime_segments=source_approvals,
+    )
+    worktime_review = review_worktime_facts(
+        worktime_rows, employee_ids=coverage["segments_by_employee"],
+        period_from=period_from, period_to=period_to,
+    )
+    components = _build_segmented_components(
+        inputs, coverage=coverage,
+        period_from=period_from, period_to=period_to,
+        base_reductions=attendance["base_reductions_by_employee"],
+    )
+    settlement_review = components["settlement_review"]
+    settlement_review["paid_leave_verification"] = (
+        "LISTED_EVENTS_MATCH_WORKTIME_NOT_AUTHENTICATED"
+    )
+    settlement_review["worktime_integration"] = (
+        "FACTS_REVIEWED_NOT_PAYROLL_APPROVAL"
+    )
+    settlement_review["overtime_reconciliation"] = (
+        "LISTED_APPROVED_SEGMENTS_CHECKED_NOT_COMPLETE"
+    )
 
     aggregated: dict[tuple[str, str], dict[str, Any]] = {}
     scoped_reviews: list[dict[str, Any]] = []
@@ -283,10 +273,16 @@ def build_contract_scoped_overtime_preview(
         })
 
     rows = [aggregated[key] for key in sorted(aggregated)]
-    # Audit traceability is not an approval. The separate registry was checked
-    # for content consistency, not independently authenticated.
-    out = dict(attendance_preview)
-    out["payroll_register"] = _merge_candidates(attendance_preview["payroll_register"], rows)
+    # Only one dynamic Output render. Approval and completion remain false.
+    _attach_overtime_items(components["payroll_rows"], rows)
+    out = {
+        "payroll_register": build_payroll_register(components["payroll_rows"]),
+        "settlement_review": settlement_review,
+        "status": "PARTIAL_REVIEW_ONLY",
+        "approval_state": "NOT_APPROVED",
+        "attendance_review": attendance,
+        "worktime_review": worktime_review,
+    }
     out["overtime_candidate_review"] = {
         "schema_version": "0.1",
         "rows": rows,
@@ -302,11 +298,6 @@ def build_contract_scoped_overtime_preview(
         key: value for key, value in reviewed_evidence.items()
         if key not in ("verified_work", "approved_segments")
     }
-    out["settlement_review"]["overtime_reconciliation"] = (
-        "LISTED_APPROVED_SEGMENTS_CHECKED_NOT_COMPLETE"
-    )
-    out["status"] = "PARTIAL_REVIEW_ONLY"
-    out["approval_state"] = "NOT_APPROVED"
     if sha256_file(path) != fingerprint:
         raise ContractOvertimeAdapterError("WORKTIME: source changed after candidate composition")
     return out
