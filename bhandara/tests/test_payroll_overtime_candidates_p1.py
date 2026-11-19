@@ -237,7 +237,10 @@ class ApprovedOvertimeCandidateTests(unittest.TestCase):
                               "bonus_budget", "bonus_allocation", "overtime_rules")
             for role in selected_roles:
                 spec = SCHEMA["workbooks"][role]
-                data = [] if role in ("bonus_budget", "bonus_allocation") else [SAMPLES[role]]
+                data = [] if role in ("bonus_budget", "bonus_allocation") else [
+                    dict(SAMPLES[role], daily_base_rate=96000) if role == "contracts"
+                    else SAMPLES[role]
+                ]
                 sheet = Workbook()
                 sheet.active.title = spec["sheet"]
                 sheet.active.append(spec["columns"])
