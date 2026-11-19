@@ -1,15 +1,9 @@
 name: Refresh canonical 80-person Excel sample
 
+# Never regenerate or commit sample Excel on push or pull_request.
+# Maintainers must explicitly start this workflow from the Actions UI.
 on:
-  push:
-    branches-ignore:
-      - main
-    paths:
-      - "bhandara/examples/sample/**"
-      - "bhandara/tests/test_integrated_v2_example.py"
-      - "bhandara/tests/test_shared_input_layout.py"
-      - "bhandara/tests/_seed_fixture.py"
-      - ".github/workflows/refresh-canonical-sample.yml"
+  workflow_dispatch:
 
 permissions:
   contents: write
