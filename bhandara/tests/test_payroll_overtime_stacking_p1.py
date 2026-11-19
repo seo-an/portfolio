@@ -130,9 +130,12 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
             segment_id="A002", rule_id="OT02",
             approval_ref="APPROVED-2", classification_ref="CLASS-2",
             base_pay_includes_time=True, base_inclusion_ref="BASE-2",
+            start="2026-11-02T22:00", end="2026-11-02T23:00",
         )
         with self.assertRaisesRegex(OvertimeCandidateError, "same-category"):
-            candidate(approvals=[approved(), a],
+            candidate(approvals=[
+                approved(start="2026-11-02T22:00", end="2026-11-02T23:00"), a
+            ],
                       other_rules=[two_overtime],
                       config=stacking_policy(sets=[{"categories": ["OVERTIME", "NIGHT"],
                                            "unpaid_base_owner": "OVERTIME"}]))
@@ -228,6 +231,36 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
         )
         self.assertEqual(result["stacking_review"]["overlap_slices"][0]["overlap_minutes"], 120)
         self.assertEqual([x["amount"] for x in result["rows"]], [12000, 36000])
+
+    def test_source_stacking_rejects_non_minute_boundaries(self):
+        from datetime import datetime
+        rows = [{
+            "employee_id": "0001", "segment_id": "A001",
+            "start_at": datetime(2026, 11, 2, 22, 0, 5),
+            "end_at": datetime(2026, 11, 2, 23, 0),
+            "category": "OVERTIME", "base_pay_includes_time": False,
+        }]
+        with self.assertRaisesRegex(OvertimeStackingError, "valid naive interval"):
+            review_approved_stacking(rows, overlap_policy=None)
+
+    def test_sub_one_x_overlap_component_cannot_be_hidden_by_other_minutes(self):
+        low_night = rate(
+            rule_id="N01", category="NIGHT", qualifying_from="22:00",
+            qualifying_to="06:00", minimum_minutes=0,
+            daily_rate_multiplier="0.5",
+        )
+        with self.assertRaisesRegex(OvertimeCandidateError, "negative premium"):
+            calculate(
+                rules=[rate(minimum_minutes=0), low_night],
+                worktime=[work(actual_min=120)],
+                work_segments=[verified(start="2026-11-02T21:00",
+                                        end="2026-11-02T23:00")],
+                approvals=pair(),
+                rate_policy=policy(
+                    rule_labels={"OT01": "연장", "N01": "야간"},
+                    overlap_policy=stacking_policy(),
+                ),
+            )
 
     def test_no_policy_does_not_block_independent_employees_simultaneously(self):
         from datetime import datetime
