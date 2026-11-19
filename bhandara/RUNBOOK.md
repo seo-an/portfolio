@@ -1,6 +1,6 @@
 # 반다라 사용 안내서 — 처음 사용하는 사람을 위한 설명
 
-> **현재 기준:** 신규 Payroll의 7개 분리 Excel Reader와 Core→Output Adapter, Worktime 검토·초과근무 수당 **후보 금액**·명시적 중복가산(P1-4)까지 구현됐습니다. 입퇴사·재계약 달력일수 정산(P1-5a)은 별도 검토용 함수로 구현 중입니다. 아직 신규 Payroll의 JSON Tool CLI나 실제 공제액·최종 급여 산정은 제공하지 않습니다. 아래에 남아 있는 구형 `*-calculator` 예제는 **레거시 사용법**입니다. [신규 Payroll 상태](payroll/NEXT-STEPS.md) · [레거시 철수 기준](LEGACY-RETIREMENT.md).
+> **현재 기준:** 신규 Payroll의 7개 분리 Excel Reader와 Core→Output Adapter, Worktime 검토·초과근무 수당 **후보 금액**·명시적 중복가산(P1-4)까지 구현됐습니다. 입퇴사·재계약 달력일수 정산(P1-5a)은 검토용 함수로 병합됐습니다. P1-5b-1 휴가·결근 승인근거/근태 일치·명시적 차감액 반영은 별도 PR 검증 중입니다. 아직 신규 Payroll의 JSON Tool CLI나 실제 공제액·최종 급여 산정은 제공하지 않습니다. 아래에 남아 있는 구형 `*-calculator` 예제는 **레거시 사용법**입니다. [신규 Payroll 상태](payroll/NEXT-STEPS.md) · [레거시 철수 기준](LEGACY-RETIREMENT.md).
 
 
 > **과거 안내(PR #60 병합 당시):** 신규 `paid-time-off`와 `worktime` Tool은 JSON 설정 기반 CLI를 사용할 수 있습니다. 신규 `payroll`은 **계약·수당·성과급 코어와 동적 Excel Output만 구현**했으며, 별도 Excel Reader/JSON Tool CLI/실제 공제·초과근무 산정 및 둘 사이 연결은 아직 없습니다. 아래 `*-calculator` 예시는 **구형** 계산기용이며 여전히 지원합니다. 신규 Tool은 Gearbox/Slack 운영과 연결되지 않았고 `agent-config` 작업은 PAUSE입니다. [개발 현황](DEVELOPMENT-STATUS-2026-11-19.md) · [Payroll 남은 작업](payroll/NEXT-STEPS.md).
