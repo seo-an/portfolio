@@ -244,7 +244,7 @@ def calculate_overtime_candidates(
 
     evidence = _work_evidence(verified_work, set(contracts), worktime)
     stacking_segments: list[dict[str, Any]] = []
-    segment_unit_rates: dict[str, tuple[str, str, Decimal]] = {}
+    segment_unit_rates: dict[str, tuple[str, str, Decimal, Decimal]] = {}
     segment_ids: set[str] = set()
     amounts: dict[tuple[str, str], Decimal] = defaultdict(Decimal)
     durations: dict[tuple[str, str], int] = defaultdict(int)
@@ -296,7 +296,9 @@ def calculate_overtime_candidates(
         if factor < 0:
             raise OvertimeCandidateError("rule multiplier smaller than included base rate")
         label = _text(labels.get(rule_id), "rule_labels")
-        segment_unit_rates[segment_id] = (employee, rule_id, daily_rate / divisor)
+        segment_unit_rates[segment_id] = (
+            employee, rule_id, daily_rate / divisor, rule["multiplier"],
+        )
         item = (employee, rule_id)
         amounts[item] += daily_rate * Decimal(minutes) * factor / divisor
         durations[item] += minutes
@@ -322,7 +324,13 @@ def calculate_overtime_candidates(
         for segment_id in overlap["segment_ids"]:
             if segment_id == owner:
                 continue
-            employee, rule_id, one_minute_base = segment_unit_rates[segment_id]
+            employee, rule_id, one_minute_base, total_multiplier = (
+                segment_unit_rates[segment_id]
+            )
+            if total_multiplier < 1:
+                raise OvertimeCandidateError(
+                    "approved stacking: unpaid ordinary base cannot make negative premium"
+                )
             amounts[(employee, rule_id)] -= (
                 one_minute_base * Decimal(overlap["overlap_minutes"])
             )
