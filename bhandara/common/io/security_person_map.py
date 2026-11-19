@@ -89,15 +89,15 @@ def read_security_person_map(path: str | Path, *, vendor: str) -> dict[str, Any]
         raise InputLayoutError("unsupported security vendor")
     path = Path(path)
     rows = read_sheet(path, PERSON_COLUMNS, sheet_name=PERSON_SHEET)
-    departments, dept_issues = _reference_map(
+    departments, _ = _reference_map(
         path, sheet_name=DEPARTMENT_SHEET,
         key_field="security_department_id", value_field="department",
     )
-    areas, area_issues = _reference_map(
+    areas, _ = _reference_map(
         path, sheet_name=AREA_SHEET,
         key_field="security_area_id", value_field="area",
     )
-    issues = dept_issues + area_issues
+    issues: list[dict[str, Any]] = []
     stable: dict[str, dict[str, str]] = {}
     worker_owners: dict[str, str] = {}
     payroll_owners: dict[str, str] = {}
@@ -165,13 +165,12 @@ def read_security_person_map(path: str | Path, *, vendor: str) -> dict[str, Any]
                     f"{PERSON_SHEET} row {number}: duplicate vendor/department/person key"
                 )
             raw_keys.add(raw_key)
-        elif dept_id or person_id:
+        elif (dept_id or person_id) and code == vendor_key:
             issues.append(_issue(PERSON_SHEET, number, "INCOMPLETE_SECURITY_PERSON_KEY"))
-        if record["main_area"] and record["main_area"] not in areas:
-            issues.append(_issue(PERSON_SHEET, number, "MAIN_AREA_UNMAPPED"))
-
         if code != vendor_key:
             continue
+        if record["main_area"] and record["main_area"] not in areas:
+            issues.append(_issue(PERSON_SHEET, number, "MAIN_AREA_UNMAPPED"))
         if not dept_id or not person_id:
             issues.append(_issue(PERSON_SHEET, number, "SECURITY_PERSON_KEY_MISSING"))
             continue
