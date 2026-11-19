@@ -14,12 +14,15 @@
 - 원본 출입기록은 업체별 `vendor_adapters/`에서 표준 `access-events.xlsx` v0.2로 변환합니다. 출력 시트 `Access Events`, `Attendance Candidates`, `Source Review`, `Metadata`는 업체와 무관하게 동일합니다.
 - `Attendance Candidates`의 첫/마지막 출입은 항상 `confirmed=false`입니다. **근태장부와 서로 다른 증빙으로 보존**합니다.
 - 시차출퇴근·추가근무 등 **사유는 외부 입력을 그대로 보존**합니다. 기록의 방향(더 일찍/늦게)은 계산 가능하지만 승인된 근로 유형은 자동 확정하지 않습니다.
-- 신규 Worktime의 **스케줄 ID 매핑 Reader**, **단일 일자별 사실 Output Excel Writer/Reader**는 구현했습니다. 아직 통합 Flow/CLI와 Gearbox/Slack 연결, Worktime Closing은 후속 작업입니다.\n- Output은 소정·실제·출근 변화량·퇴근 변화량 네 시간 컬럼과 스케줄 ID·외부 근태/휴가 참조만 보존하며, 상태·급여 반영시간·수당 판정 컬럼을 만들지 않습니다.
+- 신규 Worktime의 **스케줄 ID 매핑 Reader**, **단일 일자별 사실 Output Excel Writer/Reader**는 구현했습니다. 아직 통합 Flow/CLI와 Gearbox/Slack 연결, Worktime Closing은 후속 작업입니다.
+- Output은 소정·실제·출근 변화량·퇴근 변화량 네 시간 컬럼과 스케줄 ID·외부 근태/휴가 참조만 보존하며, 상태·급여 반영시간·수당 판정 컬럼을 만들지 않습니다.
 - 기존 `worktime-calculator`는 그대로 유지하며 신 Tool 경로를 검증한 이후에 전환합니다. PTO·Payroll의 별도 입력/계산 계약은 건드리지 않습니다.
 
 ## 상세 계약
 
-- [Schedule](schedule/README.md)\n- [스케줄 ID 매핑 계약](SCHEDULE-MAP-CONTRACT.md)\n- [Worktime 최종 결과 10컬럼 계약](OUTPUT-CONTRACT.md)
+- [Schedule](schedule/README.md)
+- [스케줄 ID 매핑 계약](SCHEDULE-MAP-CONTRACT.md)
+- [Worktime 최종 결과 10컬럼 계약](OUTPUT-CONTRACT.md)
 - [Attendance Verification](attendance-verification/README.md)
 - [Worktime Compliance](worktime-compliance/README.md)
 - [업체 공통 출입기 Excel 계약](ACCESS-EXCEL-CONTRACT.md)
