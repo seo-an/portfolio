@@ -182,7 +182,7 @@ def execute(config_path: str | Path) -> dict[str, str]:
                 ledger_rows, evidence["events"], period_from=from_date,
                 period_to=to_date,
                 schedule_rows=for_attendance_verification(schedule_rows),
-                candidate_rows=evidence["candidates"],
+                candidate_rows=evidence["attendance_candidates"],
             )
             verification = report
             artifact = _safe_json_write(report, output / "attendance-verification-result.json")
