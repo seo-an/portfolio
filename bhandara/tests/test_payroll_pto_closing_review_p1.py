@@ -259,6 +259,86 @@ class PTOClosingBridgeTests(unittest.TestCase):
             with self.subTest(changed=changed), self.assertRaises(PTOClosingReviewError):
                 self.review(claims=[changed, self.claims[1]])
 
+    def test_existing_payroll_flow_consumes_optional_pto_review_without_extra_output(self):
+        """Uses the real XLSX Reader and the same one-pass output pipeline."""
+        from openpyxl import Workbook, load_workbook
+        from bhandara.payroll.contract_scoped_overtime import (
+            build_contract_scoped_overtime_preview,
+        )
+        from bhandara.payroll.input_excel import read_payroll_inputs
+        from bhandara.payroll.output_excel import write_payroll_result_xlsx
+        from bhandara.tests.test_payroll_contract_scoped_overtime_p1 import (
+            ROLES, ROLLUP, source_registry,
+        )
+        from bhandara.tests.test_payroll_input_reader_p0 import SCHEMA, SAMPLES
+        from bhandara.tests.test_payroll_attendance_settlement_p1 import event, wage_plan
+        from bhandara.tests.test_payroll_overtime_candidates_p1 import policy, rate
+        from bhandara.tests.test_payroll_segmented_settlement_p1 import contract, plan
+        from bhandara.worktime.output_excel import write_worktime_xlsx
+
+        self.files()
+        (self.root / "payroll").mkdir()
+        samples = {
+            "contracts": [contract()],
+            "allowance_assignments": [],
+            "fixed_allowance_map": [deepcopy(SAMPLES["fixed_allowance_map"])],
+            "bonus_budget": [], "bonus_allocation": [],
+            "overtime_rules": [rate(minimum_minutes=0)],
+        }
+        for role in ROLES:
+            spec = SCHEMA["workbooks"][role]
+            book = Workbook()
+            book.active.title = spec["sheet"]
+            book.active.append(spec["columns"])
+            for record in samples[role]:
+                book.active.append([record.get(name) for name in spec["columns"]])
+            book.save(self.root / "payroll" / spec["filename"])
+            book.close()
+        inputs = read_payroll_inputs(self.root, roles=ROLES)
+        worktime = self.root / "worktime-result.xlsx"
+        write_worktime_xlsx(
+            {"schema_version": "0.1", "rows": self.worktime}, worktime,
+        )
+        attendance = event(
+            treatment="PAID_LEAVE", amount=0, code="ANNUAL_QUARTER",
+            request_id="R1", start_at="2026-11-02T09:00",
+            end_at="2026-11-02T11:00", approved_minutes=120,
+        )
+        result = build_contract_scoped_overtime_preview(
+            inputs, worktime,
+            settlement_plan=plan(),
+            attendance_plan=wage_plan(
+                items=[attendance], sha=sha256_file(worktime)
+            ),
+            period_from="2026-11-01", period_to="2026-11-30",
+            verified_work=[], approved_segments=[],
+            evidence_registry=source_registry(
+                [], [], [rate(minimum_minutes=0)],
+            ),
+            rate_policy=policy(
+                reference_day_minutes_by_contract={"C-OLD": 480},
+            ),
+            rollup_policy=ROLLUP,
+            pto_sources={
+                "usage_file": self.usage_path,
+                "closing_file": self.closing_path,
+                "deduction_file": self.deduction_path,
+                "pto_claims": self.claims,
+            },
+        )
+        self.assertTrue(result["pto_closing_review"]["multiple_requests_per_workday"])
+        self.assertEqual(result["payroll_register"]["rows"][0]["base_pay"], 3000000)
+        self.assertIsNone(result["payroll_register"]["rows"][0]["gross_pay"])
+        self.assertIsNone(result["payroll_register"]["rows"][0]["net_pay"])
+        self.assertEqual(result["status"], "PARTIAL_REVIEW_ONLY")
+        result_file = self.root / "payroll-result.xlsx"
+        write_payroll_result_xlsx(result["payroll_register"], result_file)
+        output = load_workbook(result_file, read_only=True)
+        try:
+            self.assertEqual(output.sheetnames, ["PAYROLL"])
+        finally:
+            output.close()
+
     def test_one_request_day_no_unsupported_multiplicity_claim(self):
         self.details = [self.details[0]]
         self.deductions = [self.deductions[0]]
