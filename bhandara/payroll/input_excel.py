@@ -48,6 +48,7 @@ DECIMAL_FIELDS = frozenset({
     "daily_rate_multiplier", "allocation_ratio",
 })
 INTEGER_FIELDS = frozenset({"installments_per_year", "minimum_minutes"})
+DISPLAY_FIELDS = frozenset({"allowance_name", "bonus_name"})
 DATE_FIELDS = frozenset({
     "calculation_period_from", "calculation_period_to", "payment_date",
     "effective_from", "effective_to",
@@ -114,6 +115,10 @@ def _cell(value: Any, role: str, number: int, field: str) -> Any:
     if field in ID_FIELDS:
         if not isinstance(value, str):
             _fail(role, number, field, "ID must be Excel text (leading zeros preserved)")
+        return value.strip()
+    if field in DISPLAY_FIELDS:
+        if not isinstance(value, str) or value.strip()[0] in ("=", "+", "-", "@", "\t", "\r", "\n"):
+            _fail(role, number, field, "plain safe text label required")
         return value.strip()
     if field in DATE_FIELDS:
         return _date(value, role, number, field)
@@ -200,6 +205,13 @@ def _read_one(path: Path, role: str, spec: Mapping[str, Any]) -> tuple[dict[str,
                 _validate_role_row(role, number, row)
                 indexed.append((number, row))
             _validate_unique(role, indexed)
+            if role == "fixed_allowance_map":
+                names: dict[str, str] = {}
+                for number, row in indexed:
+                    allowance_id, name = row["allowance_id"], row["allowance_name"]
+                    if allowance_id in names and names[allowance_id] != name:
+                        _fail(role, number, "allowance_name", "same allowance ID has inconsistent labels across levels")
+                    names[allowance_id] = name
             if role == "contracts":
                 if not indexed:
                     raise PayrollInputError("contracts: at least one contract required")

@@ -1,6 +1,6 @@
 # Payroll — 신규 계약·수당·성과급 코어 + 동적 급여대장 Output (2026-11-19)
 
-> **현재 상태: PARTIAL_REVIEW_ONLY.** [PR #59](https://github.com/seo-an/portfolio/pull/59)의 **계약·고정수당·성과급 코어**와 [PR #60](https://github.com/seo-an/portfolio/pull/60)의 **단일 동적 Excel 출력 모델/Writer**까지 병합됐다. **아직 없는 것은 Excel Reader, 계산 결과→출력 Adapter, 초과근무 지급시간/금액, 실제 보험·세금 공제액, 선택 Flow·독립 JSON Tool CLI, Gearbox/Slack 연결**이다. 이 결과는 지급·신고·회계 확정 자료가 아니며 구형 `payroll-calculator/`도 교체하지 않는다.
+> **현재 상태: PARTIAL_REVIEW_ONLY.** [PR #59](https://github.com/seo-an/portfolio/pull/59)의 **계약·고정수당·성과급 코어**와 [PR #60](https://github.com/seo-an/portfolio/pull/60)의 **단일 동적 Excel 출력 모델/Writer**까지 병합됐다. **P0-1 Excel Reader는 병합됐고, P0-2의 정확한 산정기간 선택과 P0-3의 검토용 Core→Output Adapter는 별도 PR에서 추가한다. 실제 입퇴사·재계약 일할, 초과근무 지급시간/금액, 보험·세금 공제액, 선택 Flow·독립 JSON Tool CLI, Gearbox/Slack 연결은 여전히 없다**이다. 이 결과는 지급·신고·회계 확정 자료가 아니며 구형 `payroll-calculator/`도 교체하지 않는다.
 
 ## 목표: 입력별 계산, 개인별 합산
 
@@ -11,16 +11,16 @@
 
 ## 고정 파일명: 하나의 역할 = 하나의 Excel 파일
 
-**실행 시 선택한 `input_root/payroll/`에 7개 파일을 각각 둔다(미구현 Reader에 적용할 계약).** 하나의 다중 시트 통합 Excel은 신규 입력 계약이 아니다. 각 파일은 표의 시트 **하나만** 포함하며, 파일명/시트명/헤더 정본은 [`input-files.json`](input-files.json)으로 고정한다.
+**실행 시 선택한 `input_root/payroll/`에 7개 파일을 각각 둔다(Reader v1.1 계약).** 하나의 다중 시트 통합 Excel은 신규 입력 계약이 아니다. 각 파일은 표의 시트 **하나만** 포함하며, 파일명/시트명/헤더 정본은 [`input-files.json`](input-files.json)으로 고정한다.
 
 | 파일명 | 시트명 | 역할 |
 |---|---|---|
 | `pay-contract.xlsx` | `CONTRACTS` | 직원·계약 ID, 급여계약·기간·지급일, 공제정책 ID |
 | `allowance-assignments.xlsx` | `ALLOWANCE ASSIGNMENTS` | 계약 ID별 수당 ID·Level 배정 |
-| `fixed-allowance-map.xlsx` | `FIXED ALLOWANCE MAP` | 수당 ID·Level별 금액·급여 지급 시 과세 후보 |
+| `fixed-allowance-map.xlsx` | `FIXED ALLOWANCE MAP` | 수당 ID·이름·Level별 금액·급여 지급 시 과세 후보 |
 | `deduction-map.xlsx` | `DEDUCTION MAP` | 공제정책 ID별 4대보험 근로자 부담 비율 |
 | `overtime-rules.xlsx` | `OVERTIME RULES` | 초과근무 지급 구간·기준·배율 |
-| `bonus-budget.xlsx` | `BONUS BUDGET` | 팀/프로젝트별 성과급 예산 |
+| `bonus-budget.xlsx` | `BONUS BUDGET` | 팀/프로젝트별 성과급 ID·이름·예산 |
 | `bonus-allocation.xlsx` | `BONUS ALLOCATION` | 성과급 ID별 개인 배분율 |
 
 파일 연결:
@@ -29,25 +29,25 @@
 - `pay-contract.CONTRACTS.deduction_code → deduction-map.DEDUCTION MAP.deduction_code`
 - `bonus-allocation.bonus_id → bonus-budget.BONUS BUDGET.bonus_id`
 
-**분리형 입력 샘플 ZIP**은 채팅에서 7개 XLSX로 제공했다. GitHub main의 공개 샘플 경로에서 `pay-contract.xlsx`는 확인됐지만 나머지 6개 신규 XLSX는 2026-11-19 조회 당시 확인되지 않았다. 기존 `pay-contract.xlsx`의 실제 시트가 새 `CONTRACTS` 단일 시트 규격인지도 검증 전이다. 신규 Tool CLI/Excel Reader는 **아직 미구현**이므로 `input-files.json`은 향후 Reader를 위한 계약이지 현재 자동 실행을 의미하지 않는다.
+**분리형 입력 샘플 ZIP**은 채팅에서 7개 XLSX로 제공했다. GitHub main의 공개 샘플 경로에서 `pay-contract.xlsx`는 확인됐지만 나머지 6개 신규 XLSX는 2026-11-19 조회 당시 확인되지 않았다. 기존 `pay-contract.xlsx`의 실제 시트가 새 `CONTRACTS` 단일 시트 규격인지도 검증 전이다. Reader는 P0-1에서 구현됐으나 Tool CLI는 미구현이다. **스키마 v1.1의 `allowance_name`·`bonus_name` 추가로 기존 ZIP은 그대로 재사용할 수 없다.** 공개 샘플 파일은 사용자 승인 없이 덮어쓰지 않는다.
 
 ## 각 Excel의 입력 헤더 계약
 
 | 시트 | 주요 필드 | 비고 |
 |---|---|---|
-| CONTRACTS | employee_id, contract_id, pay_basis, contract_amount, amount_type, installments_per_year, declared_base_amount, daily_base_rate, deduction_code, calculation_period_from, calculation_period_to, payment_date | 적용기간 선택은 **추후 Reader/CLI 책임**; 현재는 *외부에서 대상 기간에 해당하는 계약을 정확히 1행 선택해 전달* |
+| CONTRACTS | employee_id, contract_id, pay_basis, contract_amount, amount_type, installments_per_year, declared_base_amount, daily_base_rate, deduction_code, calculation_period_from, calculation_period_to, payment_date | 명시한 산정기간의 **정확한 일치**만 선택하는 P0-2 함수 제공. 계약의 실제 법적 유효기간 및 일할 판단은 미구현 |
 | ALLOWANCE ASSIGNMENTS | contract_id, allowance_id, level | 계약별 수당 1행. 직원 ID는 CONTRACTS에만 보유하며, ID 앞의 0은 텍스트로 보존 |
-| FIXED ALLOWANCE MAP | allowance_id, level, amount, payroll_taxability, taxability_policy_ref | `TAXABLE|NON_TAXABLE|REVIEW`는 지급 시점의 후보 구분. 법적 한도·자격 검증 미실시 |
+| FIXED ALLOWANCE MAP | allowance_id, allowance_name, level, amount, payroll_taxability, taxability_policy_ref | `TAXABLE|NON_TAXABLE|REVIEW`는 지급 시점의 후보 구분. 법적 한도·자격 검증 미실시 |
 | DEDUCTION MAP | deduction_code, national_pension, health_insurance, longterm_care, employment_insurance, source_ref | 공제 ID별 근로자 부담율(소수 형태, 예: 4.75% → 0.0475). **직원 ID 없음**. 실제 공제액 미산정 |
 | OVERTIME RULES | rule_id, category, qualifying_from, qualifying_to, minimum_minutes, daily_rate_multiplier, policy_ref | 정책 설계 샘플. 초과근무 계산 미구현 |
-| BONUS BUDGET | bonus_id, team_id, project_id, budget_amount | 팀/프로젝트 **둘 중 정확히 하나**. 별도 증빙으로 대상 소속 확인 필요 |
+| BONUS BUDGET | bonus_id, bonus_name, team_id, project_id, budget_amount | 팀/프로젝트 **둘 중 정확히 하나**. 별도 증빙으로 대상 소속 확인 필요 |
 | BONUS ALLOCATION | bonus_id, employee_id, allocation_ratio | 각 bonus_id별 0~1의 합계 = 1. 배분율 30%는 `0.3` |
 
 ## 공개 샘플과 실행 입력 경로는 별도
 
 **공개 샘플 정본**은 `bhandara/examples/sample/input/payroll/` 아래에 고정 파일명 7개를 두는 것이다. 기존 `bhandara/examples/sample/input/` 합성 샘플 체계에 추가하는 경로이며, `refresh.py --apply`나 기존 공개 샘플을 임의로 덮어쓰지 않는다.
 
-**실행 입력 위치**는 별개다: `input_root/payroll/` 아래에 같은 7개 파일명을 배치한다. `input_root`는 향후 Tool CLI 설정 JSON에서 선택한다. 이 PR에는 Excel Reader/CLI가 아직 없다.
+**실행 입력 위치**는 별개다: `input_root/payroll/` 아래에 같은 7개 파일명을 배치한다. `input_root`는 향후 Tool CLI 설정 JSON에서 선택한다. Reader 함수는 구현됐다. 실행용 JSON Tool CLI는 아직 없다.
 
 2026-11-19 합성 Excel 파일은 대화에서 제공하는 **별도 ZIP 다운로드**이며, 현재 PR의 Git 추적 대상에 바이너리 XLSX를 추가한 것은 아니다. 사용자 로컬에서 샘플을 설치하려면 저장소 루트에서 ZIP을 풀기 전에 파일명 충돌 여부를 확인하고, 샘플 폴더만 추가하면 된다. 실제 직원 자료를 공개 샘플이나 Git에 넣어서는 안 된다.
 
@@ -107,12 +107,16 @@
 - 2단 헤더, 동적 항목열, 직원별 공란 및 고정 파일명 `payroll-result.xlsx` 단일 `PAYROLL` 시트 Writer: [`output_excel.py`](output_excel.py).
 - 전체 직원 중 1명이라도 **0원이 아닌** 수당·성과급·초과근무수당·공제가 있으면 해당 항목 ID별 열이 생긴다. 모두 0원이면 열은 생기지 않는다.
 - 지급합계·공제합계·실지급액은 **해당 계산 완료를 입력에서 명시한 경우에만** 채운다. 모든 금액이 있어도 지급 승인 상태는 아니다.
-- 계산 결과→출력 모델의 항목 ID/표시명/완료여부를 결합하는 adapter는 아직 미구현이다. 실제 공제액 및 Worktime 초과근무급여도 미산정.
+- `review_adapter.py`에서 검증된 기본급·고정수당·성과급의 ID/이름/금액을 동적 Output에 연결한다. **완료 플래그는 항상 False**로 유지하며, 실제 공제액·Worktime 추가근무수당·입퇴사 정산은 미산정.
 - 정식 규칙: [Payroll Output 계약](OUTPUT-CONTRACT.md). 테스트: `bhandara.tests.test_payroll_dynamic_output_v01`.
 
 ## Excel Reader (P0-1)
 
-`input_excel.py`의 `read_payroll_inputs(input_root, roles=...)`로 `input-files.json`에 정의된 분리 XLSX를 선택적으로 읽고, 헤더·수식·ID·금액·날짜·참조 관계를 엄격히 검증한다. 계약 유효기간 선택/일할, 사람용 표시명 Adapter, 보험료·실지급액 산정과 Tool CLI는 미연결이다. [사용법·제약 및 검증](INPUT-READER.md) 참고.
+`input_excel.py`의 `read_payroll_inputs(input_root, roles=...)`로 `input-files.json`에 정의된 분리 XLSX를 선택적으로 읽고, 헤더·수식·ID·금액·날짜·참조 관계를 엄격히 검증한다. Reader는 사람용 표시명 열을 엄격히 검증하고, P0-2/3 독립 함수가 산정기간 정확 일치와 검토용 이름 연결을 수행한다. 계약의 실제 효력기간/일할, 보험료·실지급액과 Tool CLI는 미연결이다. [사용법·제약 및 검증](INPUT-READER.md) 참고.
+
+## P0-2/3 계약기간 및 검토용 Output Adapter
+
+[산정기간·스키마 v1.1·Core→Output 연결 및 실행 예시](PERIOD-PREVIEW.md). 요청 구간과 산정기간이 정확히 일치하는 계약만 선택하고, 수당/성과급 이름을 기존 Excel 두 곳에서 읽는다. 인사·노무 관련 실제 계약 효력, 기간 분할과 임금 완결성은 자동 확정하지 않는다.
 
 ## 실행 / 테스트
 
@@ -120,4 +124,4 @@
 python3 -m unittest bhandara.tests.test_payroll_core_v1 -v
 ```
 
-**Excel 출력기와 확정 Output 계약은 이미 구현했다.** 남은 것은 입력 Excel Reader, 기간·ID·표시명 Adapter, 실제 초과근무·공제 산정, 선택적 Payroll Tool CLI 및 전체 Flow 연결이다. [우선순위와 선행조건](NEXT-STEPS.md)을 따른다. `payroll-calculator` 구형 입력/결과를 새 Worktime `WORKTIME` Excel로 자동 대체하지 않는다. 새 Tool 계약이나 버전이 바뀔 때는 Gearbox 호환성 검증이 필수이며, 현재 `agent-config`는 사용자 지시에 따라 PAUSE 중이다.
+**Excel Reader와 P0 검토용 기간/ID/표시명 Adapter는 구현 단계다.** 실제 계약 유효기간과 일할, 인정 초과근무·공제액 산정, 선택적 Payroll Tool CLI와 전체 Flow 연결은 남았다. [우선순위와 선행조건](NEXT-STEPS.md)을 따른다. `payroll-calculator` 구형 입력/결과를 새 Worktime `WORKTIME` Excel로 자동 대체하지 않는다. 새 Tool 계약이나 버전이 바뀔 때는 Gearbox 호환성 검증이 필수이며, 현재 `agent-config`는 사용자 지시에 따라 PAUSE 중이다.

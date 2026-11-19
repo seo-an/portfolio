@@ -23,7 +23,7 @@ SAMPLES = {
                       calculation_period_from="2026-11-01", calculation_period_to="2026-11-30",
                       payment_date="2026-12-05"),
     "allowance_assignments": dict(contract_id="C01", allowance_id="001", level="L1"),
-    "fixed_allowance_map": dict(allowance_id="001", level="L1", amount=100000,
+    "fixed_allowance_map": dict(allowance_id="001", allowance_name="자격수당", level="L1", amount=100000,
                                 payroll_taxability="TAXABLE", taxability_policy_ref=None),
     "deduction_map": dict(deduction_code="D01", national_pension=0.0475,
                           health_insurance=0.03595, longterm_care=0.1314,
@@ -32,7 +32,7 @@ SAMPLES = {
     "overtime_rules": dict(rule_id="OT01", category="OVERTIME", qualifying_from=None,
                            qualifying_to=None, minimum_minutes=30, daily_rate_multiplier=1.5,
                            policy_ref="EXAMPLE-ONLY"),
-    "bonus_budget": dict(bonus_id="B01", team_id="T01", project_id=None,
+    "bonus_budget": dict(bonus_id="B01", bonus_name="성과급", team_id="T01", project_id=None,
                          budget_amount=1000),
     "bonus_allocation": dict(bonus_id="B01", employee_id="0001", allocation_ratio=1),
 }

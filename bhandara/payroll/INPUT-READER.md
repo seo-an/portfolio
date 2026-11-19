@@ -27,8 +27,8 @@ contracts = data.for_role("contracts")
 
 - `calculation_period_from/to`의 중복·형식은 검사하지만 **법적 계약 유효기간으로 간주하지 않습니다.** 직원당 정확히 1개 계약을 선택하거나 재계약 당월의 일할금액을 자동 계산하지 않습니다.
 - 공제율의 적용 시점, 직원의 실제 소속·보너스 자격, Worktime 승인·추가근로, 보험료·세액은 검증/계산하지 않습니다.
-- 사람용 수당·성과급 이름과 동적 Excel Output을 연결하는 Adapter, Tool CLI, Slack 보관 및 지급 승인 기능은 아직 없습니다.
-- `read_payroll_inputs`를 호출하는 단계에서 역할 목록을 명시해야 하며, 독립 Tool의 선택적 `steps` CLI 연결은 P3입니다.
+- 사람용 표시명은 스키마 v1.1의 `allowance_name`·`bonus_name`에 입력한다. `review_adapter.py`가 검증된 이름과 금액을 동적 출력에 연결하지만 **완결된 지급합계나 실지급액을 만들지 않는다.** Tool CLI, Slack 보관 및 지급 승인 기능은 여전히 없습니다.
+- `read_payroll_inputs`를 호출하는 단계에서 역할 목록을 명시해야 하며, 독립 Tool의 선택적 `steps` CLI 연결은 P3입니다. [P0-2/3 산정기간·검토용 연결](PERIOD-PREVIEW.md)을 참고합니다.
 
 ## 검증
 
