@@ -87,6 +87,7 @@ def resolve_contract_pay(contracts: Iterable[Mapping[str, Any]]) -> dict[str, di
             "pay_basis": _value(row, "pay_basis"), "amount_type": kind,
             "contract_cycle_amount": cycle, "base_pay": base,
             "daily_base_rate": daily,
+            "deduction_code": _value(row, "deduction_code"),
             "payment_date": _value(row, "payment_date"),
             "calculation_period_from": _value(row, "calculation_period_from"),
             "calculation_period_to": _value(row, "calculation_period_to"),
@@ -144,6 +145,51 @@ def resolve_fixed_allowances(
         if contract["amount_type"] == "TOTAL" and contract["base_pay"] + fixed != contract["contract_cycle_amount"]:
             raise PayrollCoreError(f"{worker}: TOTAL base + fixed allowances != contract amount")
     return out
+
+
+
+DEDUCTION_RATE_FIELDS = (
+    "national_pension",
+    "health_insurance",
+    "longterm_care",
+    "employment_insurance",
+)
+
+
+def resolve_deduction_mapping(
+    contracts: Mapping[str, Mapping[str, Any]],
+    mapping: Iterable[Mapping[str, Any]],
+) -> dict[str, dict[str, Any]]:
+    """Join an insurance deduction policy by contract.deduction_code.
+
+    The four employee-share rates are decimal fractions (e.g. 4.75% = 0.0475).
+    This only resolves policy *rates*. It intentionally does not multiply them
+    by base salary: each insurance uses its own verified assessment basis, and
+    long-term care is based on the health insurance premium.
+    """
+    policies: dict[str, dict[str, Any]] = {}
+    for row in mapping:
+        policy_id = _value(row, "deduction_code")
+        if policy_id in policies:
+            raise PayrollCoreError(f"{policy_id}: duplicated deduction policy")
+        rates: dict[str, Decimal] = {}
+        for field in DEDUCTION_RATE_FIELDS:
+            rate = _number(row.get(field), f"{policy_id}.{field}")
+            if rate > 1:
+                raise PayrollCoreError(f"{policy_id}.{field}: rate must be 0..1")
+            rates[field] = rate
+        policies[policy_id] = {
+            "deduction_code": policy_id,
+            "rates": rates,
+            "source_ref": str(row.get("source_ref") or "").strip(),
+        }
+    resolved: dict[str, dict[str, Any]] = {}
+    for worker, contract in contracts.items():
+        code = _value(contract, "deduction_code")
+        if code not in policies:
+            raise PayrollCoreError(f"{worker}: unknown deduction_code {code}")
+        resolved[worker] = policies[code].copy()
+    return resolved
 
 
 def allocate_performance_bonus(
