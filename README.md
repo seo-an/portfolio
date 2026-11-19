@@ -1,17 +1,22 @@
 # Portfolio · Bhandara(반다라)
 
-## 현재 개발 현황 (2026-11-19, PR #57 병합 후)
+## 현재 개발 현황 (2026-11-19 · 신규 Payroll Output PR #60 병합 후)
 
-신규 Paid Time Off와 Worktime은 **개별 Module 계산·Excel·JSON 기반 선택적 Flow/Tool CLI까지 구현되어 사용자 서버 검증 후 병합**했습니다. 하지만 기존 Gearbox/Slack 운영 경로는 새 Tool로 전환되지 않았습니다. **다음 구현은 신규 Payroll 설계**이며, Slack 파일 수신 안내(ACK) 뒤 후속 요청에 답하지 않는 문제와 운영 연결은 별도 병행 과제입니다.
+신규 Paid Time Off와 Worktime은 각각 **계산 Module·Excel·JSON 기반 선택적 Flow/Tool CLI**를 구현해 사용자 서버 검증 후 병합했습니다. 신규 Payroll은 **계약·고정수당·성과급 계산 코어(PR #59)**와 **동적 단일 급여대장 Output(PR #60)**까지 구현했습니다. 다만 **Excel Reader·업무 계산 연결·초과근무수당·실제 공제액·Payroll JSON CLI는 아직 미구현**이므로 현재 지급·신고에 사용할 수 없습니다.
 
-- **신규 PTO:** `python3 run.py bhandara paid-time-off` — JSON에서 기준일·입출력 경로·단계 선택. [설정 안내](bhandara/paid-time-off/TOOL-CLI.md).
-- **신규 Worktime:** `python3 run.py bhandara worktime` — JSON에서 기간·입출력 경로·단계 선택. [설정 안내](bhandara/worktime/TOOL-CLI.md).
-- **Worktime Output:** `worktime-result.xlsx`의 단일 `WORKTIME` 10컬럼, 소정·실제·출근Δ·퇴근Δ 네 시간 컬럼. 급여 반영시간, 상태, 승인 판단 없음.
-- **기존 계산기:** `pto-calculator`, `worktime-calculator`, `payroll-calculator`는 구형 독립 실행 및 Gearbox 호환을 위해 그대로 보존합니다.
-- **신규 Payroll:** 아직 Tool 미구현. Worktime 사실·휴가신청·근로계약을 바탕으로 급여 반영 기준시간부터 설계합니다.
-- **Common ID 매핑:** `common/id-map.xlsx`의 `PERSON MAP`, `DEPARTMENT MAP`, `AREA MAP`은 보안업체별 등록을 행으로 관리하며, 구형 `ID_MAP`과 혼합하지 않습니다.
+- **신규 PTO:** `python3 run.py bhandara paid-time-off`; [JSON CLI](bhandara/paid-time-off/TOOL-CLI.md).
+- **신규 Worktime:** `python3 run.py bhandara worktime`; [JSON CLI](bhandara/worktime/TOOL-CLI.md). `worktime-result.xlsx`/`WORKTIME`에는 10개 근무 사실 열만 있고 지급시간/승인 금액이 없습니다.
+- **신규 Payroll 코어:** `bhandara/payroll/core.py`; 계약 `ANNUAL/MONTHLY/WEEKLY`, `BASE/TOTAL`, `contract_id` 중심 수당 ID/Level, `deduction_code`별 **4개 공제율 매핑만 조회**, 팀/프로젝트 성과급 예산 배분.
+- **신규 Payroll Output:** `bhandara/payroll/output.py`, `output_excel.py`; `payroll-result.xlsx`/`PAYROLL` **한 시트, 2단 헤더, 실지급 항목에 따라 동적 열**, 미해당자 공란, 미완료 합계 공란. **Reader/계산 코어와 자동 연결되지 않음.** [Output 정본](bhandara/payroll/OUTPUT-CONTRACT.md).
+- **Payroll 입력:** [고정된 Excel 7개 파일명·시트·필수 헤더](bhandara/payroll/input-files.json). 공개 샘플 ZIP은 대화에서 제공했으나, `main`에는 구형 `pay-contract.xlsx` 외 신규 파일 6개의 등록이 미확인(2026-11-19 조회 기준). 파일 배치와 새 입력 형식의 일치 검증이 남아 있습니다.
+- **기존 계산기:** `pto-calculator`, `worktime-calculator`, `payroll-calculator`는 구형 독립 실행 및 Gearbox 호환을 위해 보존합니다.
+- **Gearbox/Slack:** 신규 Tool 운영 연결은 **미완료**, 파일 수신 ACK 후 새 요청 무응답 문제는 **원인 미확인**. `agent-config` 수정은 **사용자 요청으로 PAUSE** 상태입니다.
 
-전체 상태와 남은 작업은 [Bhandara 개발 현황 및 Payroll 인계](bhandara/DEVELOPMENT-STATUS-2026-11-19.md), 신규 Worktime 세 Module 책임은 [Worktime README](bhandara/worktime/README.md)를 참고하세요. 아래 설명 중 `*-calculator`는 **구형 계산기 사용법**입니다.
+**다음 구현의 우선순위는 새 Payroll 입력 Reader·계약 기간 검증·ID/표시명 Adapter**입니다. 이어서 Worktime 초과근무 산정, 공제액, 독립 JSON CLI를 연결합니다.
+
+현황과 미완료 내역: [전체 개발 상태](bhandara/DEVELOPMENT-STATUS-2026-11-19.md) · [Payroll 남은 구현](bhandara/payroll/NEXT-STEPS.md) · [Payroll Output 계약](bhandara/payroll/OUTPUT-CONTRACT.md) · [일반 사용자 실행서](bhandara/RUNBOOK.md).
+
+아래 내용 중 `*-calculator` 명령은 **기존 구형 계산기 사용법**이며 새 Payroll Tool CLI를 의미하지 않습니다.
 
 ## 2단계: Common 라이브러리 / Normalizer 독립 모듈 분리
 
