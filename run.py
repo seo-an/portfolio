@@ -117,6 +117,21 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.collection == "bhandara":
+        if args.module_id == "paid-time-off":
+            if any((args.data_root, args.run_id, args.source, args.input_dir,
+                    args.normalized, args.output_dir, args.operation, args.manifest,
+                    args.scenario_id, args.isolate_worker_failures, args.period,
+                    args.paths_config, args.worktime_result)):
+                print("PTO_TOOL_INVALID: use the JSON config instead of command arguments",
+                      file=sys.stderr)
+                return 2
+            from importlib import import_module
+            from pathlib import Path
+            tool = import_module("bhandara.paid-time-off.tool_cli")
+            config_path = (Path(args.config) if args.config
+                           else Path(__file__).resolve().parent /
+                           "bhandara/data/config/paid-time-off.json")
+            return tool.main(config_path)
         if args.module_id == "common-normalizer":
             if any((
                 args.input_dir, args.normalized, args.output_dir,
