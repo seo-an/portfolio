@@ -1,6 +1,6 @@
 # 신규 Payroll — 다음 구현 체크리스트 (2026-11-19)
 
-> **다음 대화의 시작점.** Portfolio PR #58(문서), #59(계약·수당·성과급 계산 코어/입력 스키마), #60(동적 단일 Excel Output)은 **모두 병합 완료**. 신규 Payroll이 실자료를 읽어 급여를 끝까지 계산할 수 있다는 뜻은 아니다.
+> **진행 현황:** Portfolio PR #58~#60(문서/코어/동적 단일 Output), #62(7종 Reader), #63(P0 기간·표시명 Adapter), #64(P1-1 Worktime 사실 검토) **병합 완료**. P1-2 승인구간 수당 **후보** 산정은 후속 PR이다. 신규 Payroll이 최종 급여를 확정하거나 지급한다는 뜻은 아니다.
 
 ## 현재 코드와 미구현의 정확한 경계
 
@@ -14,7 +14,7 @@
 
 ## P0: 계산 코어와 실제 Excel 연결 (가장 먼저)
 
-**구현 현황:** P0-1 Reader는 사용자 서버 검증 후 Portfolio PR #62로 병합됐다. P0-2 `contract_period.py`(정확히 일치하는 산정기간만)·P0-3 `review_adapter.py`(ID/이름/금액 및 미완료 플래그)는 후속 PR에 추가했다. [새 스키마와 동작 계약](PERIOD-PREVIEW.md). **법적 계약 유효기간 판정·입퇴사 일할, 변동수당/실제 공제 계산 및 CLI는 여전히 미구현**이며, 후속 PR은 CI/서버 검증과 사용자 병합 전에는 완료로 취급하지 않는다.
+**구현 현황:** P0-1 Reader는 사용자 서버 검증 후 Portfolio PR #62로 병합됐다. P0-2 `contract_period.py`(정확히 일치하는 산정기간만)·P0-3 `review_adapter.py`(ID/이름/금액 및 미완료 플래그)는 PR #63으로 병합됐다. [새 스키마와 동작 계약](PERIOD-PREVIEW.md). **법적 계약 유효기간 판정·입퇴사 일할, 변동수당/실제 공제 계산 및 CLI는 여전히 미구현**이며, 후속 PR은 CI/서버 검증과 사용자 병합 전에는 완료로 취급하지 않는다.
 
 
 1. `input-files.json` 정본으로 7개 **분리 XLSX, 각 1시트**를 엄격히 읽는다. 필수 헤더, 중복 키, ID의 선행 0, 수식 금지, 잘못된 금액/배분율, 기간을 검증한다. **파일이 존재한다는 이유만으로 계산/검토 승인 금지**.
@@ -41,7 +41,7 @@
 
 ## P1: Worktime·승인된 근로의 급여 지급 판단
 
-**P1-1 구현:** `worktime_bridge.py`와 [WORKTIME-BRIDGE.md](WORKTIME-BRIDGE.md) 추가. Worktime 10열 XLSX의 기간·직원·분값/ID를 검증하여 잠재 검토 코드를 생성하지만, **지급 인정시간과 금액은 아직 계산하지 않는다**. P1-2에는 별도의 승인된 구간/휴가/스케줄 및 정책·일급 분모 계약이 필요하다. 서버 검증·병합 전 구현 완료로 취급하지 않는다.
+**P1-1 PR #64 병합 완료:** `worktime_bridge.py`와 [WORKTIME-BRIDGE.md](WORKTIME-BRIDGE.md) 추가. Worktime 10열 XLSX의 기간·직원·분값/ID를 검증하여 잠재 검토 코드를 생성하지만, **지급 인정시간과 금액은 아직 계산하지 않는다**. P1-2에는 별도의 승인된 구간/휴가/스케줄 및 정책·일급 분모 계약이 필요하다. 서버 검증·병합 전 구현 완료로 취급하지 않는다.
 
 
 - 신규 Worktime 인계: `worktime-result.xlsx` / `WORKTIME` 10열. 시간 사실은 `scheduled_min`, `actual_min`, `clock_in_delta_min`, `clock_out_delta_min` **네 개**이며, `actual_min=null`은 0이 아니다.
@@ -97,4 +97,4 @@ sudo docker exec -w /opt/agent-config hermes \
   /opt/hermes/.venv/bin/python -B gearbox/_tests/core_run.py
 ```
 
-**다음 과제:** P0-2/3 PR을 서버에서 검증·병합하고, 법적 유효기간/재계약 분할·입퇴사 정산의 확정 정책을 별도로 설계한다. 이후 P1 인정 근로수당 → P2 보험·세금·정산 → P3 독립 CLI와 합성 E2E. `agent-config`는 PAUSE.
+**다음 과제:** P1-2 수당 후보 PR을 서버에서 검증·병합한다. 이후 실제 승인·분류·휴일·중복가산 및 중도 계약/입퇴사·휴가 정산 정책을 검증하고, P2 보험·세금·정산 → P3 독립 CLI와 합성 E2E를 진행한다. `agent-config`는 PAUSE.
