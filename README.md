@@ -1,18 +1,17 @@
 # Portfolio · Bhandara(반다라)
 
-## Worktime 재설계 현황 (2026-11-18)
+## 현재 개발 현황 (2026-11-19, PR #57 병합 후)
 
-기존 `bhandara/worktime-calculator/`는 **현재 실행 가능한 독립 근무시간 계산기**로 그대로 유지합니다. 새로 재설계 중인 `bhandara/worktime/`은 세 개의 독립 계산 Module을 구현했으며 아직 공개 통합 CLI·Gearbox 운영 Workflow로 연결하지 않았습니다.
+신규 Paid Time Off와 Worktime은 **개별 Module 계산·Excel·JSON 기반 선택적 Flow/Tool CLI까지 구현되어 사용자 서버 검증 후 병합**했습니다. 하지만 기존 Gearbox/Slack 운영 경로는 새 Tool로 전환되지 않았습니다. **다음 구현은 신규 Payroll 설계**이며, Slack 파일 수신 안내(ACK) 뒤 후속 요청에 답하지 않는 문제와 운영 연결은 별도 병행 과제입니다.
 
-- **Schedule:** 근무 예정일/휴무일과 근태장부 **기록 존재 여부**
-- **Attendance Verification:** 예정 출퇴근 시각과 장부·출입기 시각의 **부호 있는 차이** 및 외부 사유
-- **Worktime Compliance:** 검증된 근로·휴게시간의 기준 검토와 **확인 휴게−필수 휴게 차이**
-- **업체별 Excel 해석기:** CAPS·세콤·KT텔레캅 원본 → 업체 공통 `access-events.xlsx` v0.2
+- **신규 PTO:** `python3 run.py bhandara paid-time-off` — JSON에서 기준일·입출력 경로·단계 선택. [설정 안내](bhandara/paid-time-off/TOOL-CLI.md).
+- **신규 Worktime:** `python3 run.py bhandara worktime` — JSON에서 기간·입출력 경로·단계 선택. [설정 안내](bhandara/worktime/TOOL-CLI.md).
+- **Worktime Output:** `worktime-result.xlsx`의 단일 `WORKTIME` 10컬럼, 소정·실제·출근Δ·퇴근Δ 네 시간 컬럼. 급여 반영시간, 상태, 승인 판단 없음.
+- **기존 계산기:** `pto-calculator`, `worktime-calculator`, `payroll-calculator`는 구형 독립 실행 및 Gearbox 호환을 위해 그대로 보존합니다.
+- **신규 Payroll:** 아직 Tool 미구현. Worktime 사실·휴가신청·근로계약을 바탕으로 급여 반영 기준시간부터 설계합니다.
+- **Common ID 매핑:** `common/id-map.xlsx`의 `PERSON MAP`, `DEPARTMENT MAP`, `AREA MAP`은 보안업체별 등록을 행으로 관리하며, 구형 `ID_MAP`과 혼합하지 않습니다.
 
-**별도 Attendance Detection Module은 폐기했습니다.** [신규 Worktime 전체 구조](bhandara/worktime/README.md) 및 [현재 실행·검증 가이드](bhandara/worktime/RUNBOOK.md)를 참고하세요. 아래에 소개된 `run.py bhandara worktime-calculator` 명령은 **구형 계산기 실행 경로**입니다.
-
-**2026-11-19 Common ID Mapping:** `common/id-map.xlsx`의 신규 `PERSON MAP`·`DEPARTMENT MAP`·`AREA MAP`에서 보안업체 식별값(`security_id`)으로 등록 행을 선택합니다. 같은 직원의 복수 업체 등록은 **열이 아닌 행 추가**로 표현합니다. 신규 Worktime의 업체 원본 정규화 API에서 사용하며, 구형 `ID_MAP`/Gearbox 입력 계약은 그대로 유지합니다. [매핑 규칙](bhandara/common/SECURITY-PERSON-MAP.md).
-
+전체 상태와 남은 작업은 [Bhandara 개발 현황 및 Payroll 인계](bhandara/DEVELOPMENT-STATUS-2026-11-19.md), 신규 Worktime 세 Module 책임은 [Worktime README](bhandara/worktime/README.md)를 참고하세요. 아래 설명 중 `*-calculator`는 **구형 계산기 사용법**입니다.
 
 ## 2단계: Common 라이브러리 / Normalizer 독립 모듈 분리
 
