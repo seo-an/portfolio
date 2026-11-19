@@ -55,7 +55,8 @@ CAPS / SECOM / KT_TELECOP 원본
 - **유효 출근·퇴근 명시 기록**이 있으면 이를 우선합니다. 일반 출입만 있으면 첫·마지막 유효 출입을 후보로 만들되 `confirmed=false`를 유지합니다.
 - **원본 초 단위 시각**은 `event_timestamp` 및 후보 시각에 남깁니다.
 - **추가 업체·다른 헤더 버전**은 새 프로필·합성 테스트를 구현해야 합니다. 새 원본을 자동으로 추측해 매핑하지 않습니다.
-- **Common 매핑 직접 연결(신규 API):** `vendor_adapters.normalize_vendor_excel(..., id_map_path="/private/input/common/id-map.xlsx")`에서 신규 `PERSON MAP`의 `security_id` 업체 선택 및 `DEPARTMENT MAP` 조회를 지원합니다. 기존 `identities` 직접 전달 방식도 유지합니다. 다만 Worktime 통합 CLI가 자동으로 해당 경로를 선택하는 전체 입력 Flow는 아직 구현하지 않았습니다. 다중 업체에 같은 직원이 등록되면 `PERSON MAP`에서 행을 늘리고 업체별로 필터링하며, 임의 추가 열은 읽지 않습니다.
+- **Common 매핑 직접 연결(신규 API):** `vendor_adapters.normalize_vendor_excel(..., id_map_path="/private/input/common/id-map.xlsx")`에서 신규 `PERSON MAP`의 `security_id` 업체 선택 및 `DEPARTMENT MAP` 조회를 지원합니다. 보조 장소 시트의 정확한 이름은 **`AREA MAP`**입니다. 기존 `identities` 직접 전달 방식도 유지합니다. 다만 Worktime 통합 CLI가 자동으로 해당 경로를 선택하는 전체 입력 Flow는 아직 구현하지 않았습니다. 다중 업체에 같은 직원이 등록되면 `PERSON MAP`에서 행을 늘리고 업체별로 필터링하며, 임의 추가 열은 읽지 않습니다.
+- **샘플 생성은 명시적으로만 수행:** 통합 생성기 `examples/sample/generate.py`는 호출한 시점에만 새 디렉터리로 출력하며, 공개 샘플을 코드 변경마다 자동 갱신하지 않습니다. 신규 Mapping 테스트에는 [샘플 정책](../examples/sample/README.md)을 참고하세요. `access-events.xlsx`는 Attendance Verification에 입력할 **출입기 record**이며 최종 Worktime 결과 Excel이 아닙니다.
 
 세부 스키마: [ACCESS-EXCEL-CONTRACT.md](ACCESS-EXCEL-CONTRACT.md), [업체별 어댑터](vendor_adapters/README.md).
 

@@ -11,6 +11,8 @@
 
 **별도 Attendance Detection Module은 폐기했습니다.** [신규 Worktime 전체 구조](bhandara/worktime/README.md) 및 [현재 실행·검증 가이드](bhandara/worktime/RUNBOOK.md)를 참고하세요. 아래에 소개된 `run.py bhandara worktime-calculator` 명령은 **구형 계산기 실행 경로**입니다.
 
+**2026-11-19 Common ID Mapping:** `common/id-map.xlsx`의 신규 `PERSON MAP`·`DEPARTMENT MAP`·`AREA MAP`에서 보안업체 식별값(`security_id`)으로 등록 행을 선택합니다. 같은 직원의 복수 업체 등록은 **열이 아닌 행 추가**로 표현합니다. 신규 Worktime의 업체 원본 정규화 API에서 사용하며, 구형 `ID_MAP`/Gearbox 입력 계약은 그대로 유지합니다. [매핑 규칙](bhandara/common/SECURITY-PERSON-MAP.md).
+
 
 ## 2단계: Common 라이브러리 / Normalizer 독립 모듈 분리
 
@@ -53,9 +55,13 @@ Bhandara의 입력 데이터 읽기 계층은 `python-calamine==0.9.1`을 사용
 
 **공개 샘플:** [가상 직원 80명의 실제 Excel](bhandara/examples/sample/input/) · [샘플 설명](bhandara/examples/sample/README.md)
 
-80명 통합 샘플은 **한 세트만 유지**합니다. PTO·Worktime·Payroll의
-입력 구조가 바뀌면 같은 `sample/input/` Excel을 최신 구조로 교체하며
-이전 양식을 별도 legacy/v2 샘플로 보관하지 않습니다.
+80명 통합 샘플은 **한 세트만 유지**합니다. 단, **코드 변경이나 PR만으로
+공개 Excel을 자동 생성·교체하지 않습니다.** 기존 `sample/input/`은 보관된
+합성 샘플이고, 최신 5개 시트(`ID_MAP`, `EXTERNAL`, `PERSON MAP`,
+`DEPARTMENT MAP`, `AREA MAP`)를 포함하는 새로운 세트를 만들려면
+`bhandara/examples/sample/generate.py --output-dir <새 경로>`를 **직접 실행**해야 합니다.
+정식 공개 샘플 교체는 별도 작업에서 `refresh.py --apply`를 명시한 경우만
+허용합니다. [생성·검증·교체 정책](bhandara/examples/sample/README.md).
 
 가장 쉬운 방법은 샘플의 `input/`을 `bhandara/data/input/`에 복사한 뒤
 계산할 **월만 지정**하는 것입니다. 세 계산기는 서로 독립적이며 공통 직원명부와
@@ -73,7 +79,7 @@ cp -R bhandara/examples/sample/input/. bhandara/data/input/
 `payroll/`로 구분합니다. 설정 JSON의 파일 경로 수정은
 **고급 사용자에게만 선택 사항**입니다. 기본 모드에서는 파일명이나 ID가
 맞지 않으면 오류로 알려주며 비슷한 이름을 임의 추측하지 않습니다.
-출입 인증 기록은 자동 확정 근태가 아니며 급여도 검토용입니다. 급여 기본 입력은 `payroll/pay-contract.xlsx`와 `pay-contract-components.xlsx`이며, 시급·일급의 가산수당과 주휴는 별도 검토 대상입니다.
+출입 인증 기록은 자동 확정 근태가 아니며 급여도 검토용입니다. **현행 통합 Payroll 샘플**은 `payroll/pay-contract.xlsx` 한 파일의 `Contracts`·`Components` 시트를 사용합니다. 이전 `pay-contract-components.xlsx` 분리 파일은 현행 통합 샘플에 포함하지 않습니다. 시급·일급의 가산수당과 주휴는 별도 검토 대상입니다.
 
 > **처음 사용하는 인사·총무·급여 담당자라면:** 먼저 [쉬운 사용 안내서](bhandara/RUNBOOK.md)를 읽으세요. **Excel 파일 위치·확장자·활성 시트·1행 열 제목·JSON 설정 수정 위치**를 계산기별로 설명합니다.
 >

@@ -11,9 +11,12 @@ Normalizer를 따로 실행할 경우 결과를 `common/module/normalizer/output
 
 ## 가장 쉬운 첫 실행
 
-[공통 80명 실물 Excel 샘플](examples/sample/input/)의 파일을
-(여기가 최신 통합 샘플 단일 위치입니다. 이전 구조의 복사본을 따로 선택할 필요가 없습니다)
-`bhandara/data/input/` 아래 그대로 복사합니다.
+[공통 80명 실물 Excel 샘플](examples/sample/input/)을 이용할 수 있습니다.
+이 폴더는 **공개된 합성 샘플 한 세트**이며, 코드 변경 때 자동으로 새 Excel로
+덮어쓰지는 않습니다. 최신 Mapping 5개 시트가 필요하면
+[샘플 생성 안내](examples/sample/README.md)에 따라 `generate.py`를 **직접 실행**해
+Git 저장소 밖의 새 폴더에 생성하세요. 계산기 실행용으로 선택한 `input/`을
+`bhandara/data/input/` 아래에 복사하면 됩니다.
 직원명부와 연결정보는 `common/`에 한 번만 두며,
 연차·근태·급여 입력은 각각 `pto/`, `worktime/`,
 `payroll/`에 분리합니다.
@@ -27,6 +30,12 @@ python run.py bhandara payroll-calculator --period 2026-07
 **일반 사용자는 JSON 경로를 수정하지 않습니다.** 급여는 연봉·월급·시급·일급 계약금액과 포함 수당을 읽고 기본급을 산정하며, 시급·일급의 가산수당·주휴는 미산정 검토 대상입니다. 아래 설명의
 수동 설정·정규화 JSON은 기존의 고급 사용자용 실행 방식입니다.
 출입 인증을 출퇴근 승인으로 추정하지 않으며 실제 급여 지급도 하지 않습니다.
+
+**Common Mapping 구분:** 기존 Worktime/Payroll의 `ID_MAP`에 있는
+`security_id`는 개인별 식별자이지만, 신규 Worktime의 `PERSON MAP`
+`security_id`는 `CAPS`·`SECOM`·`TELECOP` 같은 업체 구분값입니다.
+둘을 자동으로 대체하지 않습니다. 신규 출입기 정규화는
+[Common 보안업체 매핑 계약](common/SECURITY-PERSON-MAP.md)을 참고하세요.
 
 **대상:** 인사·총무·급여 업무를 하면서 엑셀과 파일을 다룰 수 있지만 Python이나 개발 도구에는 익숙하지 않은 사용자.
 

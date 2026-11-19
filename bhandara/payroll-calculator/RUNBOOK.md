@@ -116,22 +116,23 @@ python run.py bhandara payroll-calculator
 
 ## 1. 필요한 Excel을 어디에 두나요?
 
-[실제 Excel 샘플](../examples/sample/input/) 폴더를 아래처럼 `bhandara/data/input/`에 복사합니다.
+[공개된 합성 Excel 샘플](../examples/sample/input/) 폴더를 참고하세요. **현행 통합 샘플**의 주요 구성은 아래와 같습니다. 생성기 최신 구조가 필요하면 [수동 샘플 생성 안내](../examples/sample/README.md)에 따라 명시적으로 새 파일을 만들 수 있습니다.
 
 ```text
 bhandara/data/input/
 ├── common/
-│   ├── employee.xlsx                 직원명부
-│   └── id-map.xlsx                   ID_MAP 시트
+│   ├── employee.xlsx          직원명부
+│   └── id-map.xlsx            ID_MAP·EXTERNAL(구형) + PERSON MAP 등(신규)
 └── payroll/
-    ├── pay-contract.xlsx            계약유형·계약금액 (필수)
-    ├── pay-contract-components.xlsx 포함된 월 고정수당 (필수, 없으면 헤더만)
-    ├── payroll-input.xlsx           성과급·월별 조정 (필수)
-    ├── company-policy.json          회사별 계산 정책 (필수)
-    ├── worktime-result.json         Worktime 계산결과 (필수)
-    ├── service-contracts.xlsx       별도 용역계약 (선택)
-    └── service-work-records.xlsx    용역 제공 시간·일수 (선택)
+    ├── pay-contract.xlsx     Contracts + Components 두 시트
+    ├── payroll-input.xlsx    성과급·월별 조정 입력
+    ├── company-policy.json   회사별 계산 정책
+    └── worktime-result.json  명시적으로 인계된 근무시간 결과
 ```
+
+현재 두 시트 계약 방식에서는 `pay-contract-components.xlsx`, `service-contracts.xlsx`,
+`service-work-records.xlsx`를 별도로 사용하지 않습니다. **아래에 설명한 단일 시트
+구형 방식**을 선택한 사용자만 해당 구형 입력 계약을 따릅니다.
 
 기본 입력은 `pay-contract.xlsx`입니다. 예전의 `compensation.xlsx`는
 계약서에서 월 기본급을 도출해 **자동 생성하는 중간 결과**가 되었어요.
@@ -181,13 +182,14 @@ bhandara/data/input/
 `relationship_type`은
 [계약 유형 코드표](resources/contract-types.json)에서 이름을 관리합니다.
 ID의 `E`, `SVC` 같은 접두어로 법적 관계를 추정하지 않습니다.
-**이 단계에서는 근로자 유형의 Payroll 계산만 v2로 실행합니다.**
-독립 용역·외부 법인의 통합 입력은 후속 Worktime 인계 정리까지 마친 뒤 지원하며,
-현재의 두 용역 파일은 기존 모드에서만 사용합니다.
+**현행 v2는 직원 계약과 별도 명시한 외부 용역·법인 계약을 같은
+`Contracts` 시트에 입력할 수 있습니다.** 시간·일수 단가형 용역은
+검증된 Worktime 인계가 필요하며, 외부 용역의 지급·검수·세무 처리는 확정하지
+않습니다. 아래 '외부 용역을 함께 관리하는 방법'을 참고하세요.
 
-**과세·비과세 판정은 아직 자동화하지 않았습니다.**
-지급항목의 합계를 구했다고 원천세·보험 또는 비과세 요건이 확정된 것은 아닙니다.
-세무 분류는 별도 정책과 검증이 붙기 전까지 미판정으로 취급합니다.
+**과세·비과세는 검토 후보를 별도 결과로 출력할 수 있지만 법정 판정·원천세
+계산이 아닙니다.** 지급항목 합계만으로 세무·보험 적용을 확정하지 않으며
+명시적 회사 정책과 근거가 없는 항목은 검토 대상으로 남깁니다.
 
 ### 기존 샘플 사용자에게
 
