@@ -150,6 +150,10 @@
 
 [검증·지급항목 조립·Output 단일화 설계](INTEGRATED-FLOW.md). 확정된 7개 Excel과 Worktime 10열·급여대장 규격은 바꾸지 않고, 월중 계약분할·휴가 정산·초과근무의 **중간 동적 급여대장 재생성**을 제거한다. `segmented_settlement._build_segmented_components()`가 기존 계산 결과를 직원별 항목 목록으로 전달하고 `contract_scoped_overtime.build_contract_scoped_overtime_preview()`에서 Worktime을 한 번 파싱해 전체 검증 뒤 `build_payroll_register()`를 딱 한 번 호출한다. 독립 P1-5a/P1-5b-1 공개 함수의 실행·결과 스키마는 유지한다.
 
+## P1-5b-2b-1: 복수 PTO 신청·확정 Closing 수량 대조
+
+[정확한 PTO Closing/사용 상세 교차검증](PTO-CLOSING-REVIEW.md). 기존 `deduction-quantity-result.xlsx`의 정확한 분자·분모, `usage-ledger-result.xlsx`의 신청/발생 배정 상세, **외부에서 확정한** `closing-result.xlsx`의 월별 숨김 정본을 비교한다. Worktime 10열의 **하루 신청 ID 하나**는 여러 PTO 상세 신청 중 대표 참조와 대조하며, 다른 신청은 외부 승인 상세 명세에서 별도 보존한다. 신규 Payroll Flow의 선택적 `pto_sources` 입력으로 호출하지만 지급/감액 금액은 자동 생성하지 않는다. 이미 확정한 PTO/Worktime 산식과 Excel 계약, Payroll 7개 입력 및 PAYROLL 단일 Output은 수정하지 않는다.
+
 ## 실행 / 테스트
 
 ```bash

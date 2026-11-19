@@ -5,6 +5,8 @@
 
 > **과거 안내(PR #60 병합 당시):** 신규 `paid-time-off`와 `worktime` Tool은 JSON 설정 기반 CLI를 사용할 수 있습니다. 신규 `payroll`은 **계약·수당·성과급 코어와 동적 Excel Output만 구현**했으며, 별도 Excel Reader/JSON Tool CLI/실제 공제·초과근무 산정 및 둘 사이 연결은 아직 없습니다. 아래 `*-calculator` 예시는 **구형** 계산기용이며 여전히 지원합니다. 신규 Tool은 Gearbox/Slack 운영과 연결되지 않았고 `agent-config` 작업은 PAUSE입니다. [개발 현황](DEVELOPMENT-STATUS-2026-11-19.md) · [Payroll 남은 작업](payroll/NEXT-STEPS.md).
 
+> **Payroll P1-5b-2b-1 진행 중:** PTO Closing/사용상세와 Payroll 휴가 승인 기록을 **읽기 전용**으로 대조하는 검토 단계입니다. Closing 자체는 마감 후 외부 `확정` 상태가 아니면 급여 근거로 사용할 수 없고, 복수 PTO 신청 대조 성공도 금전 지급 확정이 아닙니다. [PTO Closing 대조 계약](payroll/PTO-CLOSING-REVIEW.md).
+
 ### 신규 Tool — 매번 명령어 수정하지 않음
 
 사용자 전용 JSON은 공개 Git에서 제외한 `bhandara/data/config/`에 보관합니다. 예제 파일을 복사한 뒤 그 안에서 날짜·입출력 폴더·실행 단계를 바꾸세요. 새로운 명령에는 `--period`, `--input-dir`, `--output-dir`가 필요하지 않습니다.

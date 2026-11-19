@@ -3,6 +3,8 @@
 > **현행 개발 상태(2026-11-19):** 신규 Paid Time Off·Worktime JSON Tool CLI, 신규 Payroll P0 Reader·Core·단일 Excel Output, P1-1~4 근무사실/승인구간 수당 후보·원장 대조·중복가산(PR #64~#67 병합)까지 구현됐습니다. P1-5a 재직·계약분할 일할 후보(PR #68)까지 병합됐습니다. P1-5b-1 휴가·결근 근거 대조·명시된 기본급 차감 후보(PR #69)까지 병합됐습니다. P1-5b-2a 계약분할 초과근무 후보 통합(PR #70)도 병합됐습니다. Payroll Flow 내부 경량화는 별도 리팩터링 PR 검증 중입니다. 실제 법정 지급액·공제액·Payroll CLI·운영 연결은 미완료입니다. [최신 남은 일](bhandara/payroll/NEXT-STEPS.md) · [레거시 철수 게이트](bhandara/LEGACY-RETIREMENT.md).
 
 
+> **Payroll 개발 추가 상태:** #71 통합 Flow 경량화 병합 후 P1-5b-2b-1 PTO Closing·복수 신청의 **검토용 대조**를 별도 PR에서 작업 중입니다. PTO/Worktime 결과는 읽기만 하며 최종 급여 확정·Payroll CLI/운영 전환/레거시 삭제는 아직 하지 않았습니다.
+
 ## 과거 개발 현황 기록 — Payroll PR #60 시점
 
 신규 Paid Time Off와 Worktime은 각각 **계산 Module·Excel·JSON 기반 선택적 Flow/Tool CLI**를 구현해 사용자 서버 검증 후 병합했습니다. 신규 Payroll은 **계약·고정수당·성과급 계산 코어(PR #59)**와 **동적 단일 급여대장 Output(PR #60)**까지 구현했습니다. 다만 **Excel Reader·업무 계산 연결·초과근무수당·실제 공제액·Payroll JSON CLI는 아직 미구현**이므로 현재 지급·신고에 사용할 수 없습니다.

@@ -24,6 +24,7 @@ from bhandara.payroll.overtime_candidates import (
     OvertimeCandidateError, _interval, calculate_overtime_candidates,
 )
 from bhandara.payroll.output import build_payroll_register
+from bhandara.payroll.pto_closing_review import reconcile_pto_closing
 from bhandara.payroll.settlement_coverage import validate_settlement_coverage
 from bhandara.payroll.segmented_settlement import _build_segmented_components
 from bhandara.payroll.worktime_bridge import _verify_worktime_workbook, review_worktime_facts
@@ -173,6 +174,7 @@ def build_contract_scoped_overtime_preview(
     evidence_registry: Mapping[str, Any],
     rate_policy: Mapping[str, Any],
     rollup_policy: Mapping[str, Any],
+    pto_sources: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Contract-scoped approved overtime is a *candidate*, never final wages.
 
@@ -217,6 +219,19 @@ def build_contract_scoped_overtime_preview(
         worktime_rows, employee_ids=coverage["segments_by_employee"],
         period_from=period_from, period_to=period_to,
     )
+    pto_review = None
+    if pto_sources is not None:
+        required = {"usage_file", "closing_file", "deduction_file", "pto_claims"}
+        if not isinstance(pto_sources, Mapping) or set(pto_sources) != required:
+            raise ContractOvertimeAdapterError("pto_sources: four explicit source fields required")
+        pto_review = reconcile_pto_closing(
+            usage_file=pto_sources["usage_file"],
+            closing_file=pto_sources["closing_file"],
+            deduction_file=pto_sources["deduction_file"],
+            pto_claims=pto_sources["pto_claims"],
+            worktime_rows=worktime_rows,
+            period_from=period_from, period_to=period_to,
+        )
     components = _build_segmented_components(
         inputs, coverage=coverage,
         period_from=period_from, period_to=period_to,
@@ -283,6 +298,8 @@ def build_contract_scoped_overtime_preview(
         "attendance_review": attendance,
         "worktime_review": worktime_review,
     }
+    if pto_review is not None:
+        out["pto_closing_review"] = pto_review
     out["overtime_candidate_review"] = {
         "schema_version": "0.1",
         "rows": rows,
