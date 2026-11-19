@@ -1,12 +1,12 @@
 # Payroll — 신규 계약·수당·성과급 코어 + 동적 급여대장 Output (2026-11-19)
 
-> **현재 상태: PARTIAL_REVIEW_ONLY.** P0 코어·단일 동적 Excel Output(PR #59/#60), P0-1 독립 Reader(PR #62), P0-2/3 정확 산정기간·검토용 Adapter(PR #63), P1-1 Worktime 근무사실 검토 Bridge(PR #64)는 **모두 병합 완료**. P1-2 승인구간 기반 **수당 금액 후보**는 후속 PR에서 계산하지만, 실제 지급 승인·근로/휴가·중복가산·입퇴사 정산·보험/세금·독립 JSON CLI 및 Gearbox/Slack 연결은 미구현이다. 이 결과는 지급·신고·회계 확정 자료가 아니며 구형 `payroll-calculator/`도 교체하지 않는다.
+> **현재 상태: PARTIAL_REVIEW_ONLY.** P0 코어·단일 동적 Excel Output(PR #59/#60), P0-1 독립 Reader(PR #62), P0-2/3 정확 산정기간·검토용 Adapter(PR #63), P1-1 Worktime 근무사실 검토 Bridge(PR #64)는 **모두 병합 완료**. P1-2 승인구간 수당 후보(PR #65)와 P1-3 독립 출처원장 내용 대조(PR #66)도 **병합 완료**. P1-4는 정책에 명시한 중복가산 조합의 후보 계산을 추가하되 **법적 정책 인증·실제 지급 승인·휴가/입퇴사 정산·보험/세금·독립 JSON CLI 및 Gearbox/Slack 연결은 미구현**이다. 이 결과는 지급·신고·회계 확정 자료가 아니며 구형 `payroll-calculator/`도 교체하지 않는다.
 
 ## 목표: 입력별 계산, 개인별 합산
 
 1. **개인별 계약·지급 시트**: 매년 갱신되는 계약 ID, 계약유형(`ANNUAL|MONTHLY|WEEKLY`), 계약서 금액, 산정기간, 지급일, 일할계산용 일급(`daily_base_rate`), 공제 정책 선택 ID(`deduction_code`).
 2. **고정수당 매핑 시트**: `allowance_id + level`에 대해 금액 및 **급여 지급 시점** 과세·비과세 구분. 개인별 고정수당 배정은 **계약 ID만 참조하는 ALLOWANCE ASSIGNMENTS 행**으로 보유한다. 직원 ID는 CONTRACTS에서 조회하므로 중복 작성하지 않는다. CSV 문자열 배열을 요구하지 않는다.
-3. **초과근무 기준 시트**: Worktime 사실 + 조기/지연/연장/야간/휴일의 승인·구간·배율·지급규칙을 결합해 변동수당을 만들 계획. **현재 미구현.** Worktime의 `actual_min`과 출퇴근 Δ를 더해서 지급 시간을 추정하면 안 된다. 날짜별 합계만으로 야간·휴일 구간은 확정할 수 없으므로 추가 검증된 구간 증빙이 필요하다.
+3. **초과근무 기준 시트**: Worktime 사실 + 조기/지연/연장/야간/휴일의 승인·구간·배율·지급규칙을 결합해 변동수당을 만들 계획. **P1-2부터 검토 후보 산정 지원. 실제 법적 지급 적격성/승인 증빙의 진위는 미확정.** Worktime의 `actual_min`과 출퇴근 Δ를 더해서 지급 시간을 추정하면 안 된다. 날짜별 합계만으로 야간·휴일 구간은 확정할 수 없으므로 추가 검증된 구간 증빙이 필요하다.
 4. **성과급 두 시트**: `BONUS BUDGET`의 `bonus_id`별 팀 또는 프로젝트 하나와 예산, `BONUS ALLOCATION`의 개인별 배분율을 조인한다.
 
 ## 고정 파일명: 하나의 역할 = 하나의 Excel 파일
@@ -39,7 +39,7 @@
 | ALLOWANCE ASSIGNMENTS | contract_id, allowance_id, level | 계약별 수당 1행. 직원 ID는 CONTRACTS에만 보유하며, ID 앞의 0은 텍스트로 보존 |
 | FIXED ALLOWANCE MAP | allowance_id, allowance_name, level, amount, payroll_taxability, taxability_policy_ref | `TAXABLE|NON_TAXABLE|REVIEW`는 지급 시점의 후보 구분. 법적 한도·자격 검증 미실시 |
 | DEDUCTION MAP | deduction_code, national_pension, health_insurance, longterm_care, employment_insurance, source_ref | 공제 ID별 근로자 부담율(소수 형태, 예: 4.75% → 0.0475). **직원 ID 없음**. 실제 공제액 미산정 |
-| OVERTIME RULES | rule_id, category, qualifying_from, qualifying_to, minimum_minutes, daily_rate_multiplier, policy_ref | 정책 설계 샘플. 초과근무 계산 미구현 |
+| OVERTIME RULES | rule_id, category, qualifying_from, qualifying_to, minimum_minutes, daily_rate_multiplier, policy_ref | 승인된 검증구간에만 적용하는 수당 후보 규칙(법적 적정성 별도 검증) |
 | BONUS BUDGET | bonus_id, bonus_name, team_id, project_id, budget_amount | 팀/프로젝트 **둘 중 정확히 하나**. 별도 증빙으로 대상 소속 확인 필요 |
 | BONUS ALLOCATION | bonus_id, employee_id, allocation_ratio | 각 bonus_id별 0~1의 합계 = 1. 배분율 30%는 `0.3` |
 
@@ -129,6 +129,10 @@
 ## P1-3: 별도 원장 출처 대조
 
 [근무·승인 출처 대조](EVIDENCE-RECONCILIATION.md). `evidence_reconciliation.py`는 P1-2 근로/승인/분류/기본급 포함 사실을 **별도로 취득한 원장 스냅샷**과 대조한다. 근로·결재 참조의 내용 불일치·취소·중복을 차단하고, `evidence_preview.py`가 기존 동적 검토용 대장에 연결한다. 출처 레코드 자체의 **진위/승인자 권한/원장 완전성은 이 함수가 인증하지 않는다**. 지급액은 여전히 후보다.
+
+## P1-4: 정확한 시간 중복·기본 1배분 중복방지
+
+[중복가산 정책·검증 계약](OVERTIME-STACKING.md). 기존 `rate_policy`에 선택적으로 `overlap_policy`를 전달하여, 별도 승인된 연장·야간·휴일 **분류 조합**을 실제 겹치는 시간 구간 단위로 검사한다. 정책이 없으면 모든 중첩을 그대로 차단하고, 지정되지 않은 조합·같은 수당분류 중복·기본급 포함 여부 충돌도 차단한다. 기본급 미포함 시간의 **기준 1배분을 정책에서 지정한 수당에 단 한 번만** 배정한 후 각 수당 후보 금액을 합산한다. 실제 법적 지급 적격성은 검증하지 않는다.
 
 ## 실행 / 테스트
 
