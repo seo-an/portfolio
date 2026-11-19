@@ -1,9 +1,9 @@
 {
   "schema_version": "1.0",
   "tool": "payroll",
-  "status": "READER_IMPLEMENTED_NOT_YET_CONNECTED_TO_CLI",
+  "status": "READER_AND_REVIEW_ADAPTER_NOT_YET_CONNECTED_TO_CLI",
   "input_directory": "payroll",
-  "note": "Seven independent one-sheet workbooks. Runtime inputs are under input_root/payroll; public synthetic samples live separately in bhandara/examples/sample/input/payroll. Binary XLSX files are not committed in this PR.",
+  "note": "Seven separate one-sheet XLSX inputs. Names are explicit in FIXED ALLOWANCE MAP and BONUS BUDGET. Calculation-period fields are not contract legal effective dates. Runtime input_root/payroll, synthetic samples separate. Reader implemented; Tool CLI not yet connected.",
   "workbooks": {
     "contracts": {
       "filename": "pay-contract.xlsx",
@@ -37,6 +37,7 @@
       "sheet": "FIXED ALLOWANCE MAP",
       "columns": [
         "allowance_id",
+        "allowance_name",
         "level",
         "amount",
         "payroll_taxability",
@@ -75,6 +76,7 @@
       "sheet": "BONUS BUDGET",
       "columns": [
         "bonus_id",
+        "bonus_name",
         "team_id",
         "project_id",
         "budget_amount"
