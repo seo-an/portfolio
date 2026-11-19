@@ -14,14 +14,14 @@
 
 ## P0: 계산 코어와 실제 Excel 연결 (가장 먼저)
 
-**구현 진행:** P0-1 분리 XLSX Reader는 `input_excel.py`로 추가되었고 `test_payroll_input_reader_p0.py` 단위 검증을 포함한다. [세부 계약](INPUT-READER.md). 현재 Tool CLI 및 P0-2 법적 계약 유효기간 선택, P0-3 표시명 Adapter는 여전히 미구현이며, CI/서버 검증과 사용자 병합 전에는 완료로 취급하지 않는다.
+**구현 현황:** P0-1 Reader는 사용자 서버 검증 후 Portfolio PR #62로 병합됐다. P0-2 `contract_period.py`(정확히 일치하는 산정기간만)·P0-3 `review_adapter.py`(ID/이름/금액 및 미완료 플래그)는 후속 PR에 추가했다. [새 스키마와 동작 계약](PERIOD-PREVIEW.md). **법적 계약 유효기간 판정·입퇴사 일할, 변동수당/실제 공제 계산 및 CLI는 여전히 미구현**이며, 후속 PR은 CI/서버 검증과 사용자 병합 전에는 완료로 취급하지 않는다.
 
 
 1. `input-files.json` 정본으로 7개 **분리 XLSX, 각 1시트**를 엄격히 읽는다. 필수 헤더, 중복 키, ID의 선행 0, 수식 금지, 잘못된 금액/배분율, 기간을 검증한다. **파일이 존재한다는 이유만으로 계산/검토 승인 금지**.
 2. `CONTRACTS`에서 직원/계약의 **적용기간**을 확정한다. 재계약·연봉협상으로 하나의 급여 산정기간에 계약이 둘 이상 걸치면 **자동으로 한 건을 고르지 않는다**. 기간별 분할 계산/외부 확인 계약을 설계한다. `calculation_period_from/to`는 현재 단순 문자열 보존이며 아직 적용기간 선택이 아니다.
 3. `contract_id`로 고정수당 배정을, `deduction_code`로 공제율 정책을, `bonus_id`로 팀/프로젝트 예산과 직원 배분율을 연결한다. 계약 ID가 바뀌면 옛 수당 배정을 무단 상속하지 않는다.
-4. **출력 표시명**을 공급할 정본을 확정한다. 현재 고정수당 매핑에는 `allowance_id`와 `level`만, 성과급 매핑에는 `bonus_id`만 있고, Output은 `item_id + label + amount`가 필수다. 표시명을 임의 생성하거나 ID를 이름으로 가장하지 않는다. 보너스 예산 배분 직원의 소속·프로젝트 대상 확인도 아직 없다.
-5. `core.py`의 검토용 결과를 `output.py` 입력으로 바꾸는 **명시적 조합 Adapter**를 구현한다. 신규 `payroll-result.xlsx`는 적절한 금액/상태가 전달돼야 생성할 수 있다. Output 구현만으로 급여 산정 기능이 완성된 게 아니다.
+4. **출력 표시명**의 정본은 기존 `FIXED ALLOWANCE MAP.allowance_name`, `BONUS BUDGET.bonus_name`으로 추가했다(스키마 v1.1). 같은 수당 ID는 Level이 달라도 이름을 일치시킨다. 보너스 배정 직원의 실제 소속·프로젝트 참여 증빙은 미확인이다.
+5. `review_adapter.py`가 선택한 계약의 기본급·수당·성과급을 `output.py` 입력으로 연결한다. 지급합계/공제합계/실지급액은 P1/P2 미완료이므로 공란이며, **항상 `PARTIAL_REVIEW_ONLY`**이다. 정식 Tool CLI는 P3로 남긴다.
 
 ### 고정 입력 7개 (`input_root/payroll/`)
 
@@ -34,6 +34,8 @@
 | `overtime-rules.xlsx` | 조기·지연·연장·야간·휴일 판단 기준·승인·구간/배율용 샘플; 실제 계산 미구현 |
 | `bonus-budget.xlsx` | `bonus_id`, 팀 또는 프로젝트 하나, 예산 |
 | `bonus-allocation.xlsx` | `bonus_id + employee_id + allocation_ratio`, ID별 비율 합계 1 |
+
+**스키마 v1.1 유의:** 수당 매핑과 성과급 예산 시트의 `allowance_name`, `bonus_name`이 새 필수 열이다. 이전 ZIP/공개 파일은 최신 스키마를 충족하지 않을 수 있다. 승인 없이 공개 합성 샘플 자동 갱신 금지.
 
 **공개 샘플 업로드 별도 잔여:** `bhandara/examples/sample/input/payroll/pay-contract.xlsx`는 main에서 확인됨. 다른 6개 신규 고정 파일은 2026-11-19 확인 시 GitHub main에서 조회되지 않았음. 이전에 제공된 다운로드 ZIP은 Git commit이나 CLI 자동 인식의 증거가 아니다. 기존 공개 `pay-contract.xlsx`의 **실제 시트/스키마가 새 CONTRACTS 계약과 맞는지도 확인해야 한다**. 정식 공개 샘플은 사용자 승인 없는 `refresh.py --apply`로 덮어쓰지 않는다.
 
@@ -86,4 +88,4 @@ sudo docker exec -w /opt/agent-config hermes \
   /opt/hermes/.venv/bin/python -B gearbox/_tests/core_run.py
 ```
 
-**다음 대화 시작 권장:** “병합된 Payroll 계산 코어와 동적 Output은 유지하고, 7개 독립 Excel의 Reader → 계약 기간 검증·ID/표시명 Adapter를 먼저 구현하자. 이어서 Worktime 급여시간 해석·공제액·JSON Tool CLI로 연결하자. agent-config는 PAUSE.”
+**다음 과제:** P0-2/3 PR을 서버에서 검증·병합하고, 법적 유효기간/재계약 분할·입퇴사 정산의 확정 정책을 별도로 설계한다. 이후 P1 인정 근로수당 → P2 보험·세금·정산 → P3 독립 CLI와 합성 E2E. `agent-config`는 PAUSE.
