@@ -31,12 +31,16 @@ def build_overtime_candidate_preview(
 ) -> dict[str, Any]:
     """Compute evidenced *candidate* components, without claiming wages complete."""
     path = Path(worktime_xlsx)
-    # The P1 bridge enforces the fixed basename, single sheet, text IDs,
-    # duplicate/date/worker constraints and file integrity.
+    # One fingerprint spans both the P1 factual bridge and the monetary preview.
+    # Do not permit two different versions of a Worktime file in one run.
+    if path.name != "worktime-result.xlsx" or not path.is_file():
+        raise ValueError("WORKTIME: required worktime-result.xlsx source missing")
+    source_hash = sha256_file(path)
+    # The P1 bridge enforces single sheet, text IDs, duplicates, date/worker
+    # constraints, and its own in-flight file integrity.
     bridge = build_payroll_worktime_review(
         inputs, path, period_from=period_from, period_to=period_to,
     )
-    source_hash = sha256_file(path)
     rows = read_worktime_xlsx(path)
     if source_hash != sha256_file(path):
         raise ValueError("WORKTIME: source changed during overtime candidate composition")
