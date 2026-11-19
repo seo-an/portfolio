@@ -150,6 +150,61 @@ class ContractScopedOvertimeTests(unittest.TestCase):
             rollup_policy=ROLLUP if rollup is None else rollup,
         )
 
+    def test_integrated_flow_reads_worktime_and_builds_register_once(self):
+        """One Worktime parse, one coverage check, one Output render per run."""
+        from unittest.mock import patch
+        import bhandara.payroll.contract_scoped_overtime as flow
+
+        inputs = self.prepare()
+        fingerprint = self.source_work()
+        with (
+            patch.object(flow, "read_worktime_xlsx",
+                         wraps=flow.read_worktime_xlsx) as read,
+            patch.object(flow, "validate_settlement_coverage",
+                         wraps=flow.validate_settlement_coverage) as coverage,
+            patch.object(flow, "build_payroll_register",
+                         wraps=flow.build_payroll_register) as register,
+        ):
+            result = self.run_preview(inputs=inputs, sha=fingerprint)
+        read.assert_called_once_with(self.workfile)
+        self.assertEqual(coverage.call_count, 1)
+        self.assertEqual(register.call_count, 1)
+        self.assertIsNone(result["payroll_register"]["rows"][0]["net_pay"])
+        self.assertEqual(result["status"], "PARTIAL_REVIEW_ONLY")
+
+    def test_no_overtime_equals_existing_attendance_preview_register_exactly(self):
+        """Existing P1-5b-1 API/output is unchanged by Flow optimization."""
+        from bhandara.payroll.attendance_preview import build_attendance_adjusted_preview
+
+        inputs = self.prepare()
+        fingerprint = self.source_work(data=[leave_fact()])
+        attendance_plan = wage_plan(
+            items=[event(treatment="UNPAID_LEAVE", amount=60000)],
+            sha=fingerprint,
+        )
+        previous = build_attendance_adjusted_preview(
+            inputs, self.workfile, settlement_plan=split_plan(),
+            attendance_plan=attendance_plan, period_from=FROM, period_to=TO,
+        )
+        combined = build_contract_scoped_overtime_preview(
+            inputs, self.workfile, settlement_plan=split_plan(),
+            attendance_plan=attendance_plan, period_from=FROM, period_to=TO,
+            verified_work=[], approved_segments=[],
+            evidence_registry=source_registry([], [], [rate(minimum_minutes=0)]),
+            rate_policy=policy(
+                reference_day_minutes_by_contract={"C-OLD": 480, "C-NEW": 480},
+            ),
+            rollup_policy=ROLLUP,
+        )
+        self.assertEqual(combined["payroll_register"], previous["payroll_register"])
+        self.assertEqual(combined["attendance_review"], previous["attendance_review"])
+        self.assertEqual(combined["worktime_review"], previous["worktime_review"])
+        self.assertEqual(
+            combined["settlement_review"]["employees"],
+            previous["settlement_review"]["employees"],
+        )
+        self.assertIsNone(combined["payroll_register"]["rows"][0]["gross_pay"])
+
     def test_two_contract_rates_rollup_one_overtime_column_without_touching_core(self):
         rows = split()
         rows[0]["daily_base_rate"] = 96000
