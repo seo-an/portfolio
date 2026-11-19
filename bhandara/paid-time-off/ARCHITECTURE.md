@@ -1,6 +1,6 @@
 # Paid Time Off — v3 아키텍처 및 모듈 인계 계약
 
-**기준: 2026-11-18, PR #43 병합 후 / 독립 Excel Flow 구현 단계.** 이 문서는 현재 병합된 코드를 기준으로 작성했습니다. PR #37~#43 초기 설계안 중 본문과 충돌하는 설명은 폐기합니다. 프로젝트 전체 구조는 `Module → Flow(논리적) → Tool → Workflow`입니다.
+**기준: 2026-11-19, PR #56 병합 후 / 독립 Excel 및 JSON 선택적 Tool CLI 구현 완료.** 이 문서는 현재 병합된 코드를 기준으로 작성했습니다. PR #37~#43 초기 설계안 중 본문과 충돌하는 설명은 폐기합니다. 프로젝트 전체 구조는 `Module → Flow(논리적) → Tool → Workflow`입니다.
 
 ## 1. 확정된 구조
 
@@ -30,7 +30,7 @@ Bhandara 저장소는 공통 `bhandara/data/input/` 체계를 유지하고, Tool
 | `closing/calculation.py` | 분기별 누적 사용·발생/만료·상태 집계 | 순수 계산 완료 |
 | `runner_closing.py` | `closing-result.xlsx`, 다음 기간 인계 | 독립 Excel 완료 |
 | `use-promotion` | 대상·기한·통지·증빙·결과 | **미구현** |
-| 새로운 `paid-time-off` 공개 JSON CLI/manifest, `user_settings.py`, Gearbox/Slack | JSON으로 선택 실행 가능, manifest·운영 연동은 후속 | **CLI 구현, 운영 미연결** |
+| 신규 `paid-time-off` JSON Tool CLI | `tool_cli.py`, `config.example.json`, `run.py`의 명시적 선택 단계·경로 | **합성·서버 테스트 후 병합 완료** |\n| Gearbox/Slack 운영 연결 | 원본 수신, 권한·기한, 다중 Tool Workflow | **미연결** |
 
 **완료라는 말은 합성자료·독립 Python 경로의 완료**를 의미합니다. 실제 직원 원본 처리·승인·배포·운영 E2E를 의미하지 않습니다. 기존 `pto-calculator` v0.2.1 및 Gearbox 호환성 게이트를 건드리지 않았습니다.
 
