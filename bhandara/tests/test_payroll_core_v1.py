@@ -4,14 +4,14 @@ from decimal import Decimal
 
 from bhandara.payroll.core import (
     PayrollCoreError, allocate_performance_bonus, build_partial_payroll,
-    resolve_contract_pay, resolve_fixed_allowances,
+    resolve_contract_pay, resolve_fixed_allowances, resolve_deduction_mapping,
 )
 
 
 def contract(employee="E001", **overrides):
     row = dict(employee_id=employee, contract_id=f"C-{employee}",
                pay_basis="MONTHLY", amount_type="BASE", contract_amount=3000000,
-               daily_base_rate=100000,
+               daily_base_rate=100000, deduction_code="INS-2026-A",
                payment_date="2026-12-05", calculation_period_from="2026-11-01",
                calculation_period_to="2026-11-30")
     row.update(overrides)
@@ -27,6 +27,45 @@ class PayrollCoreV1Tests(unittest.TestCase):
                          payroll_taxability="TAXABLE"),
                     dict(allowance_id="002", level="L1", amount=150000,
                          payroll_taxability="NON_TAXABLE", taxability_policy_ref="TEST-MEAL")]
+
+
+    def deduction_policy(self, **overrides):
+        row = dict(deduction_code="INS-2026-A", national_pension="0.0475",
+                   health_insurance="0.03595", longterm_care="0.1314",
+                   employment_insurance="0.009", source_ref="EXAMPLE")
+        row.update(overrides)
+        return row
+
+    def test_deduction_policy_referenced_from_contract_only(self):
+        policies = [self.deduction_policy()]
+        resolved = resolve_deduction_mapping(self.contracts, policies)
+        self.assertEqual(resolved["E001"]["deduction_code"], "INS-2026-A")
+        self.assertEqual(resolved["E002"]["rates"]["longterm_care"], Decimal("0.1314"))
+        self.assertNotIn("employee_id", policies[0])
+        self.assertNotIn("deduction_total", resolved["E001"])
+
+    def test_deduction_policy_follows_new_contract_code(self):
+        changed = resolve_contract_pay([
+            contract("E001", contract_id="C-NEW", deduction_code="INS-2026-B")
+        ])
+        result = resolve_deduction_mapping(
+            changed, [self.deduction_policy(deduction_code="INS-2026-B")])
+        self.assertEqual(result["E001"]["deduction_code"], "INS-2026-B")
+
+    def test_deduction_missing_duplicate_and_invalid_rates_block(self):
+        policy = self.deduction_policy()
+        with self.assertRaisesRegex(PayrollCoreError, "duplicated deduction"):
+            resolve_deduction_mapping(self.contracts, [policy, policy])
+        with self.assertRaisesRegex(PayrollCoreError, "unknown deduction_code"):
+            resolve_deduction_mapping(self.contracts, [])
+        with self.assertRaisesRegex(PayrollCoreError, "rate must be 0..1"):
+            resolve_deduction_mapping(self.contracts, [
+                self.deduction_policy(longterm_care="1.5")
+            ])
+        with self.assertRaises(PayrollCoreError):
+            resolve_deduction_mapping(self.contracts, [
+                self.deduction_policy(health_insurance=None)
+            ])
 
     def test_base_plus_mapped_fixed_allowance(self):
         rows = resolve_fixed_allowances(self.contracts, self.map, [
