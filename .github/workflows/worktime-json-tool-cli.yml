@@ -1,0 +1,33 @@
+name: Worktime JSON Tool CLI
+
+on:
+  pull_request:
+    paths:
+      - "bhandara/worktime/**"
+      - "bhandara/tests/test_worktime_json_tool_cli.py"
+      - "run.py"
+      - ".github/workflows/worktime-json-tool-cli.yml"
+  workflow_dispatch:
+
+jobs:
+  worktime-json-cli:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -r requirements.txt
+      - name: New Worktime JSON CLI and verified Module regression
+        run: |
+          python -m unittest \
+            bhandara.tests.test_worktime_json_tool_cli \
+            bhandara.tests.test_worktime_schedule_mapping \
+            bhandara.tests.test_worktime_output_v01 \
+            bhandara.tests.test_worktime_schedule \
+            bhandara.tests.test_worktime_attendance_verification \
+            bhandara.tests.test_worktime_attendance_deviations \
+            bhandara.tests.test_worktime_compliance \
+            bhandara.tests.test_worktime_rest_deviations \
+            bhandara.tests.test_worktime_access_xlsx_contract -v

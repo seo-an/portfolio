@@ -1,6 +1,6 @@
 # Worktime 사용·검증 실행서 (신규 세 Module, 2026-11-18)
 
-> **개발·검증용 실행서**입니다. 신규 `bhandara/worktime/`은 독립 계산·입력 정규화에 더해 **스케줄 ID 매핑 Reader, 단일 일자별 결과 Excel Writer/Reader**까지 구현했습니다. 공개 통합 CLI 및 Gearbox/Slack 운영 연동은 아직 하지 않았습니다. 기존 `bhandara/worktime-calculator/`는 별도 실행 가능한 구형 계산기이며 **현재도 유지**합니다.
+> **개발·검증용 실행서**입니다. 신규 `bhandara/worktime/`은 독립 계산·입력 정규화에 더해 **스케줄 ID 매핑 Reader, 단일 일자별 결과 Excel Writer/Reader**까지 구현했습니다. JSON 기반 선택적 Tool CLI는 구현했지만 Gearbox/Slack 운영 연동은 아직 하지 않았습니다. 기존 `bhandara/worktime-calculator/`는 별도 실행 가능한 구형 계산기이며 **현재도 유지**합니다.
 
 ## 1. 어떤 기능이 어디에 있나요?
 
@@ -104,7 +104,7 @@ sudo docker exec -w /opt/agent-config \
 
 1. **매핑/Output 기본 계약 완료:** `SCHEDULE MAP`, `ASSIGNMENTS`, `WORKTIME` 단일 출력은 이미 구현되어 있습니다. 공개 샘플 Excel에는 기존 첫 시트만 있을 수 있으니 자동 교체하지 않습니다.
 2. **추가 입력 사실 계약:** 근태장부·휴게 증빙과 외부 확정 근태/휴가 신청 참조의 실제 회사별 입력 방식을 정합니다. 기존 PTO를 자동 변환하지 않습니다.
-3. **모듈 조합 Flow와 공개 Tool CLI:** 소스 파일을 불러와 독립 Module을 순서대로 호출하고 결과·검토 파일을 생성합니다. 불필요한 API/DB는 도입하지 않습니다.
+3. **모듈 조합 Flow와 공개 Tool CLI:** JSON 기반 선택적 실행과 Module JSON 결과, 단일 Worktime Excel 인계는 구현했습니다. 실제 현장 데이터 계약·운영 연결은 별도 검증합니다.
 4. **현실 데이터 예외 검증:** 분할근무·자정/익일 퇴근·시차출퇴근·휴일 예정 근무·복수 출입/미인증 등 **합성자료 기반** 회귀를 확장합니다.
 5. **Gearbox 연결:** Bhandara 변경마다 `gearbox/_tests/run.py`와 `core_run.py` 등 기존 호환성을 검증합니다. 운영 파일 수집·보관 정책(임시 캐시 3시간, 원본 장기보관 금지)은 별도 연결 시 준수합니다.
 6. **구형 계산기 전환 및 정리:** 새 계산 결과의 계약·샘플·Gearbox 사용 경로가 검증되기 전에는 `worktime-calculator/`를 제거하거나 기존 Payroll 인계 경로를 바꾸지 않습니다.
@@ -137,3 +137,9 @@ python -m unittest bhandara.tests.test_worktime_schedule_mapping bhandara.tests.
 - [출입 Excel 출력 규격](ACCESS-EXCEL-CONTRACT.md)
 - [업체별 원본 해석기](vendor_adapters/README.md)
 - [구형 Worktime 계산기 실행서](../worktime-calculator/RUNBOOK.md)
+
+## 신규 JSON Tool CLI
+
+개인 설정 `bhandara/data/config/worktime.json`을 작성한 뒤 `python3 run.py bhandara worktime`로 실행합니다. `period_from`, `period_to`, 입력/출력 디렉터리, `steps`, 외부 확인된 근로시간·정책을 모두 JSON에 지정합니다. `run_id=auto`면 재실행 시 신규 결과 디렉터리를 만듭니다.
+
+**입력 Excel은 기존 구형 파일과 호환된다고 가정하지 않습니다.** 새 시트 이름·열과 독립 산출물은 [TOOL-CLI.md](TOOL-CLI.md)에 명시되어 있습니다. 기존 `worktime-calculator` 및 Gearbox 운영 경로는 변경하지 않습니다.
