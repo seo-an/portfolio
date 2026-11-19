@@ -92,6 +92,32 @@ class SecurityPersonMappingTests(unittest.TestCase):
         caps = read_security_person_map(self.mapping, vendor="caps")
         self.assertNotIn("user_extra_column", caps["identities"][0])
 
+    def test_unsupported_extra_column_formula_is_not_read(self):
+        from openpyxl import load_workbook
+        book = load_workbook(self.mapping)
+        try:
+            book["PERSON MAP"]["I2"] = "=1/0"
+            book.save(self.mapping)
+        finally:
+            book.close()
+        result = read_security_person_map(self.mapping, vendor="CAPS")
+        self.assertEqual(len(result["identities"]), 2)
+
+    def test_formula_in_supported_field_is_rejected(self):
+        from openpyxl import load_workbook
+        book = load_workbook(self.mapping)
+        try:
+            book["PERSON MAP"]["G2"] = "=1+1"
+            book.save(self.mapping)
+        finally:
+            book.close()
+        with self.assertRaisesRegex(InputLayoutError, "formula in supported column"):
+            read_security_person_map(self.mapping, vendor="CAPS")
+
+    def test_vendor_repeated_across_people_is_valid(self):
+        result = read_security_person_map(self.mapping, vendor="CAPS")
+        self.assertEqual(len(result["identities"]), 2)
+
     def test_person_and_worker_must_be_consistent_across_vendors(self):
         persons = [list(p) for p in PERSONS]
         persons[2][4] = "WRONG"
