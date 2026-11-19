@@ -1,6 +1,19 @@
 # 반다라 사용 안내서 — 처음 사용하는 사람을 위한 설명
 
-> **현재 Worktime 안내:** 아래 `run.py bhandara worktime-calculator` 명령은 현재 실행 가능한 **기존 근무시간 계산기**용입니다. 새 `bhandara/worktime/` 세 Module(Schedule / Attendance Verification / Worktime Compliance)은 현재 독립 함수·업체별 표준 Excel 변환 경로까지 구현돼 있으나 **공개 통합 CLI는 아직 없습니다.** [신규 Worktime 실행·검증서](worktime/RUNBOOK.md)를 참고하세요. 별도 Attendance Detection Module은 사용하지 않습니다.
+> **최신 안내(2026-11-19):** 신규 `paid-time-off`와 `worktime` Tool 모두 JSON 설정 기반 CLI를 사용할 수 있습니다. 아래 `*-calculator` 예시는 구형 계산기용이며 여전히 지원합니다. 신규 Tool은 Gearbox/Slack 운영과 연결되지 않았고, 신규 Payroll은 아직 설계 전입니다. [개발 현황](DEVELOPMENT-STATUS-2026-11-19.md).
+
+### 신규 Tool — 매번 명령어 수정하지 않음
+
+사용자 전용 JSON은 공개 Git에서 제외한 `bhandara/data/config/`에 보관합니다. 예제 파일을 복사한 뒤 그 안에서 날짜·입출력 폴더·실행 단계를 바꾸세요. 새로운 명령에는 `--period`, `--input-dir`, `--output-dir`가 필요하지 않습니다.
+
+```bash
+python3 run.py bhandara paid-time-off
+python3 run.py bhandara worktime
+```
+
+- [PTO JSON 예제 및 사용법](paid-time-off/TOOL-CLI.md) — `as_of_date`, `steps` 등.
+- [Worktime JSON 예제 및 사용법](worktime/TOOL-CLI.md) — `period_from/period_to`, `steps` 등.
+- **실자료를 곧바로 붙이지 말고 합성자료로 입출력 계약을 검증하세요.** Slack/Hermes에서 파일을 업로드했다고 새 Tool 계산이 시작되지는 않습니다.
 
 
 Normalizer는 계산 전에 반드시 실행해야 하는 단계가 아닙니다.
