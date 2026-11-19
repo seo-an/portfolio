@@ -221,6 +221,10 @@ def build_contract_scoped_overtime_preview(
         overtime_rules=inputs.for_role("overtime_rules"),
         period_from=period_from, period_to=period_to,
     )
+    # Partition the independently reconciled evidence *before* the
+    # attendance bridge, so cross-contract intervals are never passed to
+    # a single-contract pay function or misread as one rate.
+    by_scope = _partition_evidence(coverage, source_work, source_approvals)
     path = Path(worktime_xlsx)
     if path.name != "worktime-result.xlsx" or not path.is_file():
         raise ContractOvertimeAdapterError("WORKTIME: worktime-result.xlsx required")
@@ -239,7 +243,6 @@ def build_contract_scoped_overtime_preview(
     if sha256_file(path) != fingerprint:
         raise ContractOvertimeAdapterError("WORKTIME: source changed during overtime review")
 
-    by_scope = _partition_evidence(coverage, source_work, source_approvals)
     aggregated: dict[tuple[str, str], dict[str, Any]] = {}
     scoped_reviews: list[dict[str, Any]] = []
     for (worker, contract_id), subset in by_scope.items():
