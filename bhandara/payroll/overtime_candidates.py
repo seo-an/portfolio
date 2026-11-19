@@ -244,6 +244,7 @@ def calculate_overtime_candidates(
 
     evidence = _work_evidence(verified_work, set(contracts), worktime)
     stacking_segments: list[dict[str, Any]] = []
+    segment_unit_rates: dict[str, tuple[str, str, Decimal]] = {}
     segment_ids: set[str] = set()
     amounts: dict[tuple[str, str], Decimal] = defaultdict(Decimal)
     durations: dict[tuple[str, str], int] = defaultdict(int)
@@ -295,6 +296,7 @@ def calculate_overtime_candidates(
         if factor < 0:
             raise OvertimeCandidateError("rule multiplier smaller than included base rate")
         label = _text(labels.get(rule_id), "rule_labels")
+        segment_unit_rates[segment_id] = (employee, rule_id, daily_rate / divisor)
         item = (employee, rule_id)
         amounts[item] += daily_rate * Decimal(minutes) * factor / divisor
         durations[item] += minutes
@@ -308,8 +310,28 @@ def calculate_overtime_candidates(
         )
     except OvertimeStackingError as exc:
         raise OvertimeCandidateError(str(exc)) from exc
+
+    # When the same minute's ordinary base is NOT in contracted base pay,
+    # the original P1-2 per-segment arithmetic includes that 1x once in
+    # *every* concurrent TOTAL_RATE. Keep it only in the policy-named owner.
+    # This adjusts raw Decimal components before employee/rule rounding.
+    for overlap in stacking_review["overlap_slices"]:
+        if overlap["base_prepaid"]:
+            continue
+        owner = overlap["ordinary_base_owner_segment_id"]
+        for segment_id in overlap["segment_ids"]:
+            if segment_id == owner:
+                continue
+            employee, rule_id, one_minute_base = segment_unit_rates[segment_id]
+            amounts[(employee, rule_id)] -= (
+                one_minute_base * Decimal(overlap["overlap_minutes"])
+            )
     rows = []
     for (employee, rule_id), amount in sorted(amounts.items()):
+        if amount < 0:
+            raise OvertimeCandidateError(
+                "approved stacking: negative premium after ordinary base allocation"
+            )
         rows.append({
             "employee_id": employee, "item_id": rule_id,
             "label": _text(labels[rule_id], "rule_labels"),
