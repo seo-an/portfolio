@@ -9,7 +9,29 @@
 3. **초과근무 기준 시트**: Worktime 사실 + 조기/지연/연장/야간/휴일의 승인·구간·배율·지급규칙을 결합해 변동수당을 만들 계획. **현재 미구현.** Worktime의 `actual_min`과 출퇴근 Δ를 더해서 지급 시간을 추정하면 안 된다. 날짜별 합계만으로 야간·휴일 구간은 확정할 수 없으므로 추가 검증된 구간 증빙이 필요하다.
 4. **성과급 두 시트**: `BONUS BUDGET`의 `bonus_id`별 팀 또는 프로젝트 하나와 예산, `BONUS ALLOCATION`의 개인별 배분율을 조인한다.
 
-## 제안 Excel 시트 스키마 (샘플은 별도 XLSX 다운로드로 제공)
+## 고정 파일명: 하나의 역할 = 하나의 Excel 파일
+
+**7개 파일을 `bhandara/data/input/payroll/`에 각각 둔다.** 하나의 다중 시트 통합 Excel은 신규 입력 계약이 아니다. 각 파일은 표의 시트 **하나만** 포함하며, 파일명/시트명/헤더 정본은 [`input-files.json`](input-files.json)으로 고정한다.
+
+| 파일명 | 시트명 | 역할 |
+|---|---|---|
+| `pay-contract.xlsx` | `CONTRACTS` | 직원·계약 ID, 급여계약·기간·지급일, 공제정책 ID |
+| `allowance-assignments.xlsx` | `ALLOWANCE ASSIGNMENTS` | 계약 ID별 수당 ID·Level 배정 |
+| `fixed-allowance-map.xlsx` | `FIXED ALLOWANCE MAP` | 수당 ID·Level별 금액·급여 지급 시 과세 후보 |
+| `deduction-map.xlsx` | `DEDUCTION MAP` | 공제정책 ID별 4대보험 근로자 부담 비율 |
+| `overtime-rules.xlsx` | `OVERTIME RULES` | 초과근무 지급 구간·기준·배율 |
+| `bonus-budget.xlsx` | `BONUS BUDGET` | 팀/프로젝트별 성과급 예산 |
+| `bonus-allocation.xlsx` | `BONUS ALLOCATION` | 성과급 ID별 개인 배분율 |
+
+파일 연결:
+- `allowance-assignments.contract_id → pay-contract.CONTRACTS.contract_id → employee_id`
+- `allowance-assignments.(allowance_id, level) → fixed-allowance-map.(allowance_id, level)`
+- `pay-contract.CONTRACTS.deduction_code → deduction-map.DEDUCTION MAP.deduction_code`
+- `bonus-allocation.bonus_id → bonus-budget.BONUS BUDGET.bonus_id`
+
+**입력 샘플 v0.4**는 채팅에서 개별 XLSX 7개와 `README.md`를 ZIP으로 제공했다. 공개 Git에는 Excel 바이너리를 자동 커밋하지 않았다. 신규 Tool CLI/Excel Reader는 **아직 미구현**이므로, `input-files.json`은 향후 Reader가 따라야 할 파일 계약이지 현재 자동 실행을 의미하지 않는다.
+
+## 각 Excel의 입력 헤더 계약
 
 | 시트 | 주요 필드 | 비고 |
 |---|---|---|
