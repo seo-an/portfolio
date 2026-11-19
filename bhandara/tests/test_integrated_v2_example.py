@@ -133,7 +133,10 @@ class IntegratedExampleTests(unittest.TestCase):
         self.assertEqual(len(employee_ids), 80)
         ids = load_workbook(source / "common/id-map.xlsx", read_only=True)
         try:
-            self.assertEqual(ids.sheetnames, ["ID_MAP", "EXTERNAL"])
+            self.assertEqual(
+                ids.sheetnames,
+                ["ID_MAP", "EXTERNAL", "PERSON MAP", "DEPARTMENT MAP", "AREA MAP"],
+            )
         finally:
             ids.close()
         handoff = json.loads(
