@@ -38,24 +38,27 @@ def _text(value: Any, name: str) -> str:
     return value
 
 
-def _policy(raw: Any) -> tuple[str | None, frozenset[frozenset[str]]]:
+def _policy(raw: Any) -> tuple[str | None, dict[frozenset[str], str]]:
     """No configuration = no overlapping approvals accepted, as in P1-2."""
     if raw is None:
-        return None, frozenset()
+        return None, {}
     if not isinstance(raw, Mapping) or set(raw) != _POLICY_FIELDS:
         raise OvertimeStackingError("overlap_policy: exact documented fields required")
     if raw["mode"] != "EXPLICIT_CATEGORY_SETS":
         raise OvertimeStackingError("overlap_policy: unsupported mode")
     if raw["same_category"] != "BLOCK":
         raise OvertimeStackingError("overlap_policy: same-category overlaps must be blocked")
-    if raw["base_component_policy"] != "AT_MOST_ONE_UNPAID_BASE":
-        raise OvertimeStackingError("overlap_policy: duplicate ordinary base pay not allowed")
+    if raw["base_component_policy"] != "CONSISTENT_INCLUSION_SINGLE_OWNER":
+        raise OvertimeStackingError("overlap_policy: consistent base inclusion and single owner required")
     ref = _text(raw["policy_ref"], "overlap_policy.policy_ref")
     values = raw["allowed_category_sets"]
     if not isinstance(values, (list, tuple)):
         raise OvertimeStackingError("overlap_policy: allowed_category_sets list required")
-    permitted = set()
-    for group in values:
+    permitted: dict[frozenset[str], str] = {}
+    for entry in values:
+        if not isinstance(entry, Mapping) or set(entry) != {"categories", "unpaid_base_owner"}:
+            raise OvertimeStackingError("overlap_policy: categories and unpaid_base_owner required")
+        group = entry["categories"]
         if not isinstance(group, (list, tuple)) or len(group) not in (2, 3):
             raise OvertimeStackingError("overlap_policy: each category set needs 2 or 3 items")
         if any(not isinstance(item, str) or item not in _STACKABLE for item in group):
@@ -65,8 +68,11 @@ def _policy(raw: Any) -> tuple[str | None, frozenset[frozenset[str]]]:
             raise OvertimeStackingError("overlap_policy: repeated category in a set")
         if key in permitted:
             raise OvertimeStackingError("overlap_policy: duplicated category set")
-        permitted.add(key)
-    return ref, frozenset(permitted)
+        owner = _text(entry["unpaid_base_owner"], "overlap_policy.unpaid_base_owner")
+        if owner not in key:
+            raise OvertimeStackingError("overlap_policy: base owner outside category set")
+        permitted[key] = owner
+    return ref, permitted
 
 
 def _segment(row: Mapping[str, Any]) -> dict[str, Any]:
@@ -140,8 +146,17 @@ def review_approved_stacking(
                 raise OvertimeStackingError(
                     "approved stacking: active category set not explicitly permitted"
                 )
-            if sum(not item["base_pay_includes_time"] for item in active.values()) > 1:
-                raise OvertimeStackingError("approved stacking: ordinary base component counted twice")
+            inclusion = {item["base_pay_includes_time"] for item in active.values()}
+            if len(inclusion) != 1:
+                raise OvertimeStackingError("approved stacking: inconsistent base-pay inclusion for same minutes")
+            base_prepaid = True in inclusion
+            owner = None
+            if not base_prepaid:
+                owner_category = allowed[category_set]
+                owner = next(
+                    item["segment_id"] for item in active.values()
+                    if item["category"] == owner_category
+                )
             minutes = int((next_time - current).total_seconds() / 60)
             slices.append({
                 "employee_id": employee,
@@ -150,6 +165,8 @@ def review_approved_stacking(
                 "categories": sorted(category_set),
                 "segment_ids": sorted(active),
                 "overlap_minutes": minutes,
+                "base_prepaid": base_prepaid,
+                "ordinary_base_owner_segment_id": owner,
             })
     return {
         "schema_version": "0.1",
