@@ -6,7 +6,8 @@ remain independent, while this Tool explicitly wires selected results.
 from __future__ import annotations
 
 import argparse
-from datetime import date
+from datetime import date, datetime
+from zoneinfo import ZoneInfo
 from importlib import import_module
 import json
 from pathlib import Path
@@ -56,8 +57,10 @@ def _read_config(config_path: Path) -> dict[str, Any]:
     run_id = doc.get("run_id")
     if type(policy) is not str or not policy.strip():
         raise ToolConfigError("policy_id required")
+    if run_id == "auto":
+        run_id = datetime.now(ZoneInfo("Asia/Seoul")).strftime("pto-%Y%m%d-%H%M%S-%f")
     if type(run_id) is not str or not re.fullmatch(r"[A-Za-z0-9_-]{1,64}", run_id):
-        raise ToolConfigError("run_id must be 1..64 letters/digits/-/_")
+        raise ToolConfigError("run_id must be auto or 1..64 letters/digits/-/_")
     try:
         day = date.fromisoformat(doc["as_of_date"])
     except (KeyError, TypeError, ValueError) as exc:
@@ -90,8 +93,8 @@ def _read_config(config_path: Path) -> dict[str, Any]:
     if "closing" in steps and "usage-ledger" in steps and not doc.get("closing_id"):
         raise ToolConfigError("usage-ledger requires closing_id for closing")
     return {
-        **doc, "steps": steps, "as_of_date": day, "input_root": input_root,
-        "output_root": output_root, "files": resolved,
+        **doc, "run_id": run_id, "steps": steps, "as_of_date": day,
+        "input_root": input_root, "output_root": output_root, "files": resolved,
     }
 
 
