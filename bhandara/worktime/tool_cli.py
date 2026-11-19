@@ -15,7 +15,7 @@ from typing import Any
 from zoneinfo import ZoneInfo
 
 from bhandara.common.io.input_layout import read_sheet, as_day, InputLayoutError
-from bhandara.worktime.access_source import read_access_events_xlsx
+from bhandara.worktime.access_source import verify_attendance_xlsx
 from bhandara.worktime.schedule.mapping import read_schedule_mapping, for_attendance_verification
 from bhandara.worktime.output import build_worktime_result
 from bhandara.worktime.output_excel import write_worktime_xlsx
@@ -176,13 +176,10 @@ def execute(config_path: str | Path) -> dict[str, str]:
                                                period_from=from_date, period_to=to_date)
             artifact = _safe_json_write(report, output / "schedule-result.json")
         elif step == "attendance-verification":
-            module = import_module("bhandara.worktime.attendance-verification")
-            evidence = read_access_events_xlsx(paths["access_events"])
-            report = module.verify_attendance(
-                ledger_rows, evidence["events"], period_from=from_date,
+            report = verify_attendance_xlsx(
+                ledger_rows, paths["access_events"], period_from=from_date,
                 period_to=to_date,
                 schedule_rows=for_attendance_verification(schedule_rows),
-                candidate_rows=evidence["attendance_candidates"],
             )
             verification = report
             artifact = _safe_json_write(report, output / "attendance-verification-result.json")
