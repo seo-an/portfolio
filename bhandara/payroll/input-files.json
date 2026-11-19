@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "tool": "payroll",
-  "status": "SCHEMA_ONLY_NOT_YET_CONNECTED_TO_CLI",
+  "status": "READER_IMPLEMENTED_NOT_YET_CONNECTED_TO_CLI",
   "input_directory": "payroll",
   "note": "Seven independent one-sheet workbooks. Runtime inputs are under input_root/payroll; public synthetic samples live separately in bhandara/examples/sample/input/payroll. Binary XLSX files are not committed in this PR.",
   "workbooks": {

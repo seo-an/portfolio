@@ -110,6 +110,10 @@
 - 계산 결과→출력 모델의 항목 ID/표시명/완료여부를 결합하는 adapter는 아직 미구현이다. 실제 공제액 및 Worktime 초과근무급여도 미산정.
 - 정식 규칙: [Payroll Output 계약](OUTPUT-CONTRACT.md). 테스트: `bhandara.tests.test_payroll_dynamic_output_v01`.
 
+## Excel Reader (P0-1)
+
+`input_excel.py`의 `read_payroll_inputs(input_root, roles=...)`로 `input-files.json`에 정의된 분리 XLSX를 선택적으로 읽고, 헤더·수식·ID·금액·날짜·참조 관계를 엄격히 검증한다. 계약 유효기간 선택/일할, 사람용 표시명 Adapter, 보험료·실지급액 산정과 Tool CLI는 미연결이다. [사용법·제약 및 검증](INPUT-READER.md) 참고.
+
 ## 실행 / 테스트
 
 ```bash
