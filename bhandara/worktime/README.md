@@ -28,4 +28,8 @@
 
 ## 입력 참조
 
+신규 보안업체 원본 정규화는 `common/id-map.xlsx`의 `PERSON MAP`, `DEPARTMENT MAP`, `AREA Map`에서 **선택 업체(`security_id`) 행**을 가져옵니다. 같은 직원이 복수 업체에 등록되어 있으면 행이 반복될 수 있습니다. 추가 업체 전용 열은 읽지 않습니다. 자세한 사항은 [Common 보안업체 매핑 계약](../common/SECURITY-PERSON-MAP.md)에 있습니다.
+
+구형 `ID_MAP`의 `read_id_map()` 계약은 유지하므로 구형 계산기 운영 경로를 변경하지 않습니다.
+
 현재 `bhandara/common/io/input_layout.py`에서 공통 입력은 `common/employee.xlsx`, `common/id-map.xlsx`입니다. 현재 Worktime 스케줄 입력은 `worktime/work-schedule.xlsx`이고, 공통 스케줄 단일 정본 전환은 근무제 배정·임시변경·분할근무 계약을 확인한 후 진행합니다.
