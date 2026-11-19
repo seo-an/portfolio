@@ -1,0 +1,23 @@
+{
+  "schema_version": "1.0",
+  "tool": "paid-time-off",
+  "run_id": "pto-2026-11-demo",
+  "as_of_date": "2026-11-30",
+  "policy_id": "YOUR_APPROVED_POLICY_ID",
+  "input_root": "/private/hr/input",
+  "output_root": "/private/hr/output",
+  "steps": [
+    "entitlement",
+    "deduction-quantity"
+  ],
+  "basis": "입사일 기준",
+  "rounding_digits": 1,
+  "fiscal_year_start": "01-01",
+  "proration_method": "소정근로일 기준",
+  "standard_daily_hours": 8,
+  "files": {
+    "employee": "common/employee.xlsx",
+    "attendance": "paid-time-off/attendance-result.xlsx",
+    "approved_leave": "paid-time-off/approved-leave.xlsx"
+  }
+}
