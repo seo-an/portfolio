@@ -197,7 +197,23 @@ class ContractScopedOvertimeTests(unittest.TestCase):
             rollup_policy=ROLLUP,
         )
         self.assertEqual(combined["payroll_register"], previous["payroll_register"])
-        self.assertEqual(combined["attendance_review"], previous["attendance_review"])
+        # None = no overtime evidence submitted; [] = submitted empty
+        # approved list. Preserve this existing, intentionally distinct
+        # source-review status while comparing all the remaining evidence.
+        self.assertEqual(
+            previous["attendance_review"]["overtime_overlap_review"],
+            "NOT_ASSESSED",
+        )
+        self.assertEqual(
+            combined["attendance_review"]["overtime_overlap_review"],
+            "LISTED_SEGMENTS_NO_OVERLAP",
+        )
+        self.assertEqual(
+            {k: v for k, v in combined["attendance_review"].items()
+             if k != "overtime_overlap_review"},
+            {k: v for k, v in previous["attendance_review"].items()
+             if k != "overtime_overlap_review"},
+        )
         self.assertEqual(combined["worktime_review"], previous["worktime_review"])
         self.assertEqual(
             combined["settlement_review"]["employees"],
