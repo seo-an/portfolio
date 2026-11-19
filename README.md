@@ -18,6 +18,12 @@
 
 아래 내용 중 `*-calculator` 명령은 **기존 구형 계산기 사용법**이며 새 Payroll Tool CLI를 의미하지 않습니다.
 
+## 현재 신규화·레거시 철수 원칙
+
+2026-11-19 기준 신규 `paid-time-off`, `worktime`의 JSON Tool CLI는 구현됐고, 신규 `payroll`의 7종 Excel Reader·계약/수당/성과급 Core·동적 Excel 및 승인구간 기반 가산수당 **검토 후보**(PR #65)까지 병합됐다. **실제 지급·공제·세액·Gearbox 운영 연결은 미완료**이며 신규 Payroll JSON Tool CLI는 아직 없다.
+
+구형 `pto-calculator`, `worktime-calculator`, `payroll-calculator`의 **최종 삭제가 목표**이지만, 신규 Tool·운영 호출·단독 실행과 전체 회귀가 확인된 이후에만 순차적으로 삭제한다. [레거시 철수 게이트](bhandara/LEGACY-RETIREMENT.md).
+
 ## 2단계: Common 라이브러리 / Normalizer 독립 모듈 분리
 
 Common의 `io/`·`validation/`·`runtime/` 등은 계산기 내부에서 재사용하는 **라이브러리**입니다.
