@@ -2,7 +2,7 @@
 
 **정식 공개 샘플은 이 폴더의 `input/` 한 세트뿐입니다.**
 
-**샘플 생성은 명시적 요청이 있을 때만 합니다.** 일반 `push`/`pull_request`는 정식 샘플을 자동 갱신하거나 커밋하지 않습니다. `generate.py --output-dir <새 경로>`는 Git 밖의 새 디렉터리에만 생성하고, `refresh.py`는 **`--apply`가 없는 한 아무 것도 생성/수정하지 않습니다**. GitHub Actions의 canonical sample refresh도 수동 `workflow_dispatch`로만 실행합니다. 개발용 일반 unittest에서 통합 샘플 생성 호출은 기본 건너뛰고, `BHANDARA_RUN_SAMPLE_GENERATOR_TESTS=1`을 명시한 경우에만 실행합니다.
+**샘플 생성은 명시적 요청이 있을 때만 합니다.** 일반 `push`/`pull_request`는 정식 샘플을 자동 갱신하거나 커밋하지 않습니다. `generate.py --output-dir <새 경로>`는 Git 밖의 새 디렉터리에만 생성하고, `refresh.py`는 **`--apply`가 없는 한 아무 것도 생성/수정하지 않습니다**. GitHub Actions의 canonical sample refresh도 수동 `workflow_dispatch`로만 실행합니다. 기본 `apply=false`에서는 합성 생성·검증 테스트만 실행하며, **정식 Excel을 교체하려면 기능 브랜치에서 `apply=true`를 명시해야** 합니다. 개발용 일반 unittest에서 통합 샘플 생성 호출은 기본 건너뛰고, `BHANDARA_RUN_SAMPLE_GENERATOR_TESTS=1`을 명시한 경우에만 실행합니다.
 
 생성 스키마: `common/id-map.xlsx`의 구형 `ID_MAP` / `EXTERNAL` 두 시트를 유지하면서 신규 `PERSON MAP`, `DEPARTMENT MAP`, `AREA MAP` 세 시트를 추가합니다. 신규 `PERSON MAP`은 **직원×보안업체 1행**이고 `security_id`는 업체 코드입니다. 합성 직원 80명을 CAPS에 등록하고 두 직원의 SECOM/TELECOP 등록을 추가 행으로 포함합니다.
 
