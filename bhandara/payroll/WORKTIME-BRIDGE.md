@@ -69,3 +69,7 @@ python3 -m unittest discover -s bhandara/tests -p 'test_*.py'
 ```
 
 Tool 계약이 변경되면 Gearbox 기능 및 인프라 호환성 검사 필수. `agent-config`는 PAUSE 중이며, 실제 Slack·실직원 데이터 연결이나 운영 설정을 변경하지 않는다.
+
+## P1-2의 추가 연결
+
+[OVERTIME-CANDIDATES.md](OVERTIME-CANDIDATES.md)의 승인구간·근로검증구간 및 분 환산 정책을 **외부에서 명시적으로** 전달한 경우만 P1-2 계산 후보를 만들 수 있다. P1-1 사실 검토와 별개이며, Worktime 10열의 시간 차이만으로 급여를 계산하지 않는다. 모든 금액은 `PARTIAL_REVIEW_ONLY` 상태로 표시된다.
