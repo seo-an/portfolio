@@ -131,13 +131,17 @@ def reconcile_overtime_evidence(
     for row in works:
         if not isinstance(row, Mapping) or set(row) != WORK_FIELDS:
             raise EvidenceReconciliationError("verified_work: exact fields required")
-        ref = row["verification_ref"]
+        try:
+            ref = _text(row["verification_ref"], "verification_ref")
+            evidence_id = _text(row["evidence_id"], "evidence_id")
+        except OvertimeCandidateError as exc:
+            raise EvidenceReconciliationError("verified_work: invalid text identifiers") from exc
         if ref not in work_registry or ref in used_work:
             raise EvidenceReconciliationError("verified_work: missing or reused verification reference")
         used_work.add(ref)
-        if row["evidence_id"] in seen_work_id:
+        if evidence_id in seen_work_id:
             raise EvidenceReconciliationError("verified_work: duplicate evidence ID")
-        seen_work_id.add(row["evidence_id"])
+        seen_work_id.add(evidence_id)
         record = work_registry[ref]
         _require_state(record, "status", "VERIFIED", "work_verifications")
         _same(row, record, tuple(WORK_FIELDS), "verified_work")
@@ -151,18 +155,26 @@ def reconcile_overtime_evidence(
     for row in segments:
         if not isinstance(row, Mapping) or set(row) != APPROVAL_FIELDS:
             raise EvidenceReconciliationError("approved_segments: exact fields required")
-        ref = row["approval_ref"]
+        try:
+            ref = _text(row["approval_ref"], "approval_ref")
+            segment_id = _text(row["segment_id"], "segment_id")
+            work_evidence_id = _text(row["work_evidence_id"], "work_evidence_id")
+            cls_ref = _text(row["classification_ref"], "classification_ref")
+            base_ref = _text(row["base_inclusion_ref"], "base_inclusion_ref")
+            rule_id = _text(row["rule_id"], "rule_id")
+        except OvertimeCandidateError as exc:
+            raise EvidenceReconciliationError("approved_segments: invalid reference identifiers") from exc
         if ref not in approval_registry or ref in used_segments:
             raise EvidenceReconciliationError("approved_segments: missing or reused approval reference")
         used_segments.add(ref)
-        if row["segment_id"] in seen_segment_id:
+        if segment_id in seen_segment_id:
             raise EvidenceReconciliationError("approved_segments: duplicate segment ID")
-        seen_segment_id.add(row["segment_id"])
+        seen_segment_id.add(segment_id)
         record = approval_registry[ref]
         _require_state(record, "status", "CURRENT", "approvals")
         _require_state(record, "approval_status", "APPROVED", "approvals")
         _same(row, record, tuple(APPROVAL_FIELDS), "approved_segments")
-        if row["work_evidence_id"] not in seen_work_id:
+        if work_evidence_id not in seen_work_id:
             raise EvidenceReconciliationError("approved_segments: missing verified work evidence")
         try:
             start, _, _ = _interval(row, "approved_segment")
@@ -170,10 +182,8 @@ def reconcile_overtime_evidence(
             raise EvidenceReconciliationError("approved_segments: invalid interval") from exc
         if not begin <= start.date() <= end:
             raise EvidenceReconciliationError("approved_segments: date outside payroll period")
-        rule_id = row["rule_id"]
         if rule_id not in rules:
             raise EvidenceReconciliationError("approved_segments: rule missing")
-        cls_ref, base_ref = row["classification_ref"], row["base_inclusion_ref"]
         if cls_ref not in class_registry or base_ref not in base_registry:
             raise EvidenceReconciliationError("approved_segments: classification or base source missing")
         classification, base = class_registry[cls_ref], base_registry[base_ref]
