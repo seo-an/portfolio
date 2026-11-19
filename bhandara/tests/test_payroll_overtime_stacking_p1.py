@@ -85,7 +85,8 @@ def candidate(*, approvals=None, config=None, work_segments=None, real_minutes=1
         approvals=approvals if approvals is not None else pair(),
         rate_policy=policy(
             rule_labels={"OT01": "연장근로수당", "N01": "야간근로 가산수당",
-                         "H01": "휴일근로수당"},
+                         "H01": "휴일근로수당", "OT02": "연장근로수당 2",
+                         "E01": "조기근로수당"},
             **({"overlap_policy": config} if config is not None else {}),
         ),
     )
@@ -161,7 +162,8 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
         result = candidate(
             approvals=rows,
             config=stacking_policy(),
-            work_segments=[verified(end="2026-11-02T23:30")],
+            work_segments=[verified(start="2026-11-02T21:00",
+                                    end="2026-11-02T23:30")],
             real_minutes=150,
         )
         slices = result["stacking_review"]["overlap_slices"]
@@ -175,6 +177,7 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
         rows = pair()
         rows.append(approved(
             segment_id="A003", rule_id="H01",
+            start="2026-11-02T22:00", end="2026-11-02T23:00",
             approval_ref="APPROVED-3", classification_ref="CLASS-3",
             base_pay_includes_time=False, base_inclusion_ref="BASE-3",
         ))
@@ -199,7 +202,7 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
             segment_id="A003", rule_id="H01",
             start="2026-11-02T22:30", end="2026-11-02T23:00",
             approval_ref="APPROVED-3", classification_ref="CLASS-3",
-            base_pay_includes_time=True, base_inclusion_ref="BASE-3",
+            base_pay_includes_time=False, base_inclusion_ref="BASE-3",
         ))
         with self.assertRaisesRegex(OvertimeCandidateError, "not explicitly permitted"):
             candidate(approvals=rows, other_rules=[holiday_rule()],
