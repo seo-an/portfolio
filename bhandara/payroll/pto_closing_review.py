@@ -8,7 +8,7 @@ fed into the older single-event-per-day payroll attendance adapter.
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from fractions import Fraction
 import importlib
 from pathlib import Path
@@ -66,8 +66,8 @@ def _time(value: Any, name: str) -> datetime:
         raise PTOClosingReviewError(f"{name}: invalid timestamp") from exc
 
 
-def _quantity(value: Any, name: str, *, allow_zero=True) -> Fraction:
-    if value is None or isinstance(value, bool) or isinstance(value, float):
+def _quantity(value: Any, name: str, *, allow_zero=True, displayed=False) -> Fraction:
+    if value is None or isinstance(value, bool) or (isinstance(value, float) and not displayed):
         raise PTOClosingReviewError(f"{name}: exact integer/decimal/fraction required")
     try:
         amount = Fraction(str(value))
@@ -118,7 +118,7 @@ def _claims(
 ) -> dict[tuple[str, str, str, str], Fraction]:
     """Allow multiple external PTO claims/day, one Worktime reference anchor."""
     result: dict[tuple[str, str, str, str], Fraction] = {}
-    intervals: dict[tuple[str, str], list[tuple[datetime, datetime, str]]] = defaultdict(list)
+    intervals: dict[tuple[str, str], list[tuple[datetime, datetime, str, str]]] = defaultdict(list)
     for raw in rows:
         if not isinstance(raw, Mapping) or set(raw) != CLAIM_FIELDS:
             raise PTOClosingReviewError("pto_claims: exact contract fields required")
@@ -145,7 +145,7 @@ def _claims(
         if key in result:
             raise PTOClosingReviewError("claim: duplicate employee/request/date/type")
         result[key] = Fraction(raw["approved_minutes"], per_day)
-        intervals[(worker, day.isoformat())].append((start, end, request))
+        intervals[(worker, day.isoformat())].append((start, end, request, code))
         if (worker, day.isoformat()) not in worktime:
             raise PTOClosingReviewError("claim: Worktime employee/day missing")
         fact = worktime[(worker, day.isoformat())]
@@ -158,16 +158,11 @@ def _claims(
             if current[0] < prev[1]:
                 raise PTOClosingReviewError("claim: overlapping same-day leave intervals")
         fact = worktime[key]
-        if sum(int((end-start).total_seconds()/60) for start,end,_ in ordered) > fact["scheduled_min"]:
+        if sum(int((end-start).total_seconds()/60) for start,end,_,_ in ordered) > fact["scheduled_min"]:
             raise PTOClosingReviewError("claim: total PTO minutes exceed scheduled minutes")
         if not any(fact.get("leave_request_id") == request
-                   and fact.get("leave_type") == _text(next(
-                       raw["worktime_code"] for raw in rows
-                       if raw["request_id"] == request
-                       and raw["employee_id"] == key[0]
-                       and raw["leave_date"] == key[1]
-                   ), "worktime_code")
-                   for _, _, request in ordered):
+                   and fact.get("leave_type") == code
+                   for _, _, request, code in ordered):
             raise PTOClosingReviewError("claim: Worktime leave ID/type anchor missing")
     return result
 
@@ -190,7 +185,7 @@ def reconcile_pto_closing(
     start, end = _date(period_from, "period_from"), _date(period_to, "period_to")
     if (start.day != 1 or start.year != end.year or start.month != end.month or
             end != (date(end.year + (end.month == 12), end.month % 12 + 1, 1)
-                    - __import__("datetime").timedelta(days=1))):
+                    - timedelta(days=1))):
         raise PTOClosingReviewError("payroll period: exact full calendar month required")
     usage, closing, deduction = map(Path, (usage_file, closing_file, deduction_file))
     usage_meta, usage_sha = _metadata(usage, "usage-ledger-result.xlsx")
@@ -287,7 +282,7 @@ def reconcile_pto_closing(
         if ident in grant_rows:
             raise PTOClosingReviewError("PTO usage: duplicated grant allocation")
         grant_rows.add(ident)
-        displayed[key] += _quantity(row["차감일수"], "usage displayed days", allow_zero=False)
+        displayed[key] += _quantity(row["차감일수"], "usage displayed days", allow_zero=False, displayed=True)
         allocation_lines[key] += 1
 
     if set(displayed) != set(expected):
