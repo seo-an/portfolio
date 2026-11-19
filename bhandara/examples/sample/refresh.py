@@ -72,18 +72,24 @@ def _swap_canonical_input(generated: Path) -> None:
 
 
 def refresh_sample(*, apply: bool) -> dict:
-    """Regenerate in an isolated directory; apply only on explicit request."""
+    """Generate and replace the tracked sample ONLY with explicit --apply."""
+    if not apply:
+        return {
+            "status": "NOT_RUN_EXPLICIT_APPLY_REQUIRED",
+            "employee_count": 80,
+            "input_dir": str(SAMPLE / "input"),
+            "synthetic_only": True,
+        }
     with tempfile.TemporaryDirectory(prefix="bhandara-sample-80-") as temp:
         output = Path(temp) / "sample"
         _load_generator().generate(output)
-        if apply:
-            _swap_canonical_input(output)
-            shutil.copy2(output / "test-cases.json", SAMPLE / "test-cases.json")
-            shutil.copy2(output / "manifest.json", SAMPLE / "sample-manifest.json")
+        _swap_canonical_input(output)
+        shutil.copy2(output / "test-cases.json", SAMPLE / "test-cases.json")
+        shutil.copy2(output / "manifest.json", SAMPLE / "sample-manifest.json")
         return {
-            "status": "UPDATED" if apply else "GENERATED_ONLY",
+            "status": "UPDATED",
             "employee_count": 80,
-            "input_dir": str(SAMPLE / "input" if apply else output / "input"),
+            "input_dir": str(SAMPLE / "input"),
             "synthetic_only": True,
         }
 
