@@ -88,7 +88,8 @@ def _segment(row: Mapping[str, Any]) -> dict[str, Any]:
         raise OvertimeStackingError("approved stacking segment: boolean inclusion required")
     begin, end = row["start_at"], row["end_at"]
     if (not isinstance(begin, datetime) or not isinstance(end, datetime)
-            or begin.tzinfo is not None or end.tzinfo is not None or begin >= end):
+            or begin.tzinfo is not None or end.tzinfo is not None or begin >= end
+            or begin.second or begin.microsecond or end.second or end.microsecond):
         raise OvertimeStackingError("approved stacking segment: valid naive interval required")
     return {
         "employee_id": employee, "segment_id": segment_id,
