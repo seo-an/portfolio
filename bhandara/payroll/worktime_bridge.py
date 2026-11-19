@@ -8,6 +8,7 @@ from __future__ import annotations
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
+from openpyxl import load_workbook
 from typing import Any, Iterable, Mapping
 
 from bhandara.common.utils.hashing import sha256_file
@@ -159,6 +160,29 @@ def review_worktime_facts(
     }
 
 
+def _verify_worktime_workbook(path: Path) -> None:
+    """Check exact one-sheet structure and text IDs before upstream coercion."""
+    try:
+        book = load_workbook(path, read_only=True, data_only=False, keep_links=False)
+        try:
+            if book.sheetnames != ["WORKTIME"]:
+                raise WorktimePayrollBridgeError(
+                    "WORKTIME: expected exactly one sheet named WORKTIME"
+                )
+            for row in book["WORKTIME"].iter_rows(min_row=2, min_col=1, max_col=1):
+                value = row[0].value
+                if value is not None and (not isinstance(value, str) or not value.strip()):
+                    raise WorktimePayrollBridgeError(
+                        "WORKTIME: employee_id must be Excel text (leading zeros preserved)"
+                    )
+        finally:
+            book.close()
+    except WorktimePayrollBridgeError:
+        raise
+    except (OSError, ValueError) as exc:
+        raise WorktimePayrollBridgeError("WORKTIME: cannot inspect source workbook") from exc
+
+
 def build_payroll_worktime_review(
     inputs: PayrollInputs,
     worktime_xlsx: str | Path,
@@ -183,6 +207,7 @@ def build_payroll_worktime_review(
     if not path.is_file():
         raise WorktimePayrollBridgeError("WORKTIME: source file missing")
     before = sha256_file(path)
+    _verify_worktime_workbook(path)
     rows = read_worktime_xlsx(path)
     if before != sha256_file(path):
         raise WorktimePayrollBridgeError("WORKTIME: source modified during read")
