@@ -37,7 +37,7 @@ python bhandara/examples/sample/generate.py \
 └── input/
     ├── common/
     │   ├── employee.xlsx          # 사내 직원 80명만
-    │   └── id-map.xlsx            # ID_MAP 직원 80명, EXTERNAL 외부 2명
+    │   └── id-map.xlsx            # ID_MAP(기존 80명)·EXTERNAL(외부 2명) + PERSON MAP·DEPARTMENT MAP·AREA MAP
     ├── worktime/
     │   ├── work-schedule.xlsx     # 예정근무: 직원 + 외부 서비스
     │   ├── attendance.xlsx        # 실제 근태: 직원 + 외부 서비스
