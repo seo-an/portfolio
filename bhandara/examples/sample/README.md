@@ -1,6 +1,12 @@
 # 반다라 통합 샘플 — 직원 80명 + 외부 인력 2명
 
 **정식 공개 샘플은 이 폴더의 `input/` 한 세트뿐입니다.**
+
+**샘플 생성은 명시적 요청이 있을 때만 합니다.** 일반 `push`/`pull_request`는 정식 샘플을 자동 갱신하거나 커밋하지 않습니다. `generate.py --output-dir <새 경로>`는 Git 밖의 새 디렉터리에만 생성하고, `refresh.py`는 **`--apply`가 없는 한 아무 것도 생성/수정하지 않습니다**. GitHub Actions의 canonical sample refresh도 수동 `workflow_dispatch`로만 실행합니다. 개발용 일반 unittest에서 통합 샘플 생성 호출은 기본 건너뛰고, `BHANDARA_RUN_SAMPLE_GENERATOR_TESTS=1`을 명시한 경우에만 실행합니다.
+
+생성 스키마: `common/id-map.xlsx`의 구형 `ID_MAP` / `EXTERNAL` 두 시트를 유지하면서 신규 `PERSON MAP`, `DEPARTMENT MAP`, `AREA MAP` 세 시트를 추가합니다. 신규 `PERSON MAP`은 **직원×보안업체 1행**이고 `security_id`는 업체 코드입니다. 합성 직원 80명을 CAPS에 등록하고 두 직원의 SECOM/TELECOP 등록을 추가 행으로 포함합니다.
+
+**이미 수동 수정된 기존 Excel은 자동으로 교체하지 않습니다.** 정식 공개 샘플의 변경은 필요한 때 별도 브랜치에서 `refresh.py --apply`를 명시적으로 실행한 뒤 검토·테스트·PR하는 방식으로만 진행합니다.
 같은 80명 자료의 데이터 구조를 고칠 때마다 기존 Excel을 최신 구조로
 교체합니다. 별도의 구형·신형 샘플이나 이전 Excel 복사본을 보관하지 않습니다.
 
