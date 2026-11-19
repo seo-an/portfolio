@@ -56,7 +56,7 @@ PTO의 `src/input_adapter.py`도 Common의 `open_xlsx_rows()`를 사용하여 �
 
 ### 보안업체 직원 ID 정본 (신규 Worktime)
 
-신규 Worktime의 출입기 정규화는 기존 Common 입력 경로 `common/id-map.xlsx`의 `PERSON MAP`·`DEPARTMENT MAP`·`AREA Map`을 사용합니다. `PERSON MAP`의 한 행은 **직원 × 보안업체** 단위이며, 업체 구분값은 `security_id`(`CAPS`/`SECOM`/`TELECOP`)입니다. 다중 업체 등록 시 같은 직원의 행을 늘릴 수 있으나, 프로그램은 업체 전용 추가 열을 읽지 않습니다.
+신규 Worktime의 출입기 정규화는 기존 Common 입력 경로 `common/id-map.xlsx`의 `PERSON MAP`·`DEPARTMENT MAP`·`AREA MAP`을 사용합니다. `PERSON MAP`의 한 행은 **직원 × 보안업체** 단위이며, 업체 구분값은 `security_id`(`CAPS`/`SECOM`/`TELECOP`)입니다. 다중 업체 등록 시 같은 직원의 행을 늘릴 수 있으나, 프로그램은 업체 전용 추가 열을 읽지 않습니다.
 
 사용법·검증·기존 `ID_MAP`(구형 계산기)과의 경계: [보안업체 직원 Mapping 계약](SECURITY-PERSON-MAP.md).
 

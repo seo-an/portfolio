@@ -41,7 +41,7 @@ def _write_map(
         ["R&D", "1001"], ["Sales", "1002"], ["HR", "2601"]
     ]:
         dep.append(row)
-    area = book.create_sheet("AREA Map")
+    area = book.create_sheet("AREA MAP")
     area.append(["area", "security_area_id"])
     area.append(["본관", "a0001"])
     try:

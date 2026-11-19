@@ -14,7 +14,7 @@ from .xlsx_stream import XlsxStreamError, open_xlsx_rows
 
 PERSON_SHEET = "PERSON MAP"
 DEPARTMENT_SHEET = "DEPARTMENT MAP"
-AREA_SHEET = "AREA Map"
+AREA_SHEET = "AREA MAP"
 PERSON_COLUMNS = (
     "employee_id", "name", "security_department_id", "security_id",
     "worker_id", "payroll_id", "security_person_id", "main_area",
