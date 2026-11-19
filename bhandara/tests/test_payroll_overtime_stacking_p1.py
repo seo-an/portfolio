@@ -29,9 +29,10 @@ def stacking_policy(*, sets=None, **overrides):
         "mode": "EXPLICIT_CATEGORY_SETS",
         "policy_ref": "SYNTHETIC-STACK-2026",
         "same_category": "BLOCK",
-        "base_component_policy": "AT_MOST_ONE_UNPAID_BASE",
+        "base_component_policy": "CONSISTENT_INCLUSION_SINGLE_OWNER",
         "allowed_category_sets": (
-            [["OVERTIME", "NIGHT"]] if sets is None else sets
+            [{"categories": ["OVERTIME", "NIGHT"],
+              "unpaid_base_owner": "OVERTIME"}] if sets is None else sets
         ),
     }
     spec.update(overrides)
@@ -56,8 +57,8 @@ def night_approval(*, start="2026-11-02T22:00",
         segment_id="A002", start=start, end=end, rule_id="N01",
         approval_ref="APPROVED-2",
         classification_ref="CLASS-2",
-        base_pay_includes_time=True,
-        base_inclusion_ref="BASE-INCLUDED-2",
+        base_pay_includes_time=False,
+        base_inclusion_ref="BASE-EXCLUDED-2",
         **overrides,
     )
 
@@ -108,17 +109,20 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
         self.assertFalse(result["earnings_complete"])
         self.assertFalse(result["payable_minutes_finalized"])
 
-    def test_both_baselines_not_paid_elsewhere_are_blocked_even_if_set_allowed(self):
+    def test_mixed_base_inclusion_for_the_same_minutes_is_blocked(self):
         rows = pair()
-        rows[1]["base_pay_includes_time"] = False
-        with self.assertRaisesRegex(OvertimeCandidateError, "base component counted twice"):
+        rows[1]["base_pay_includes_time"] = True
+        with self.assertRaisesRegex(OvertimeCandidateError, "inconsistent base-pay inclusion"):
             candidate(approvals=rows, config=stacking_policy())
 
     def test_both_premiums_only_allowed_when_explicit_policy_approved(self):
         rows = pair()
         rows[0]["base_pay_includes_time"] = True
+        rows[1]["base_pay_includes_time"] = True
         result = candidate(approvals=rows, config=stacking_policy())
         self.assertEqual([row["amount"] for row in result["rows"]], [6000, 6000])
+        self.assertTrue(result["stacking_review"]["overlap_slices"][0]["base_prepaid"])
+        self.assertIsNone(result["stacking_review"]["overlap_slices"][0]["ordinary_base_owner_segment_id"])
 
     def test_same_category_overlap_blocks_even_if_rules_differ(self):
         two_overtime = rate(rule_id="OT02", category="OVERTIME", minimum_minutes=0)
@@ -130,7 +134,8 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
         with self.assertRaisesRegex(OvertimeCandidateError, "same-category"):
             candidate(approvals=[approved(), a],
                       other_rules=[two_overtime],
-                      config=stacking_policy(sets=[["OVERTIME", "NIGHT"]]))
+                      config=stacking_policy(sets=[{"categories": ["OVERTIME", "NIGHT"],
+                                           "unpaid_base_owner": "OVERTIME"}]))
 
     def test_overlaps_of_early_and_late_not_auto_authorized(self):
         early = rate(rule_id="E01", category="EARLY", minimum_minutes=0)
@@ -168,7 +173,7 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
         rows.append(approved(
             segment_id="A003", rule_id="H01",
             approval_ref="APPROVED-3", classification_ref="CLASS-3",
-            base_pay_includes_time=True, base_inclusion_ref="BASE-3",
+            base_pay_includes_time=False, base_inclusion_ref="BASE-3",
         ))
         with self.assertRaisesRegex(OvertimeCandidateError, "not explicitly permitted"):
             candidate(approvals=rows, config=stacking_policy(),
@@ -176,7 +181,8 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
         result = candidate(
             approvals=rows, other_rules=[holiday_rule()],
             config=stacking_policy(sets=[
-                ["OVERTIME", "NIGHT", "HOLIDAY"],
+                {"categories": ["OVERTIME", "NIGHT", "HOLIDAY"],
+                 "unpaid_base_owner": "OVERTIME"},
             ]),
         )
         amounts = {item["item_id"]: item["amount"] for item in result["rows"]}
@@ -195,12 +201,15 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
         with self.assertRaisesRegex(OvertimeCandidateError, "not explicitly permitted"):
             candidate(approvals=rows, other_rules=[holiday_rule()],
                       config=stacking_policy(sets=[
-                          ["OVERTIME", "NIGHT", "HOLIDAY"],
+                          {"categories": ["OVERTIME", "NIGHT", "HOLIDAY"],
+                           "unpaid_base_owner": "OVERTIME"},
                       ]))
         result = candidate(approvals=rows, other_rules=[holiday_rule()],
                            config=stacking_policy(sets=[
-                               ["OVERTIME", "NIGHT"],
-                               ["OVERTIME", "NIGHT", "HOLIDAY"],
+                               {"categories": ["OVERTIME", "NIGHT"],
+                                "unpaid_base_owner": "OVERTIME"},
+                               {"categories": ["OVERTIME", "NIGHT", "HOLIDAY"],
+                                "unpaid_base_owner": "OVERTIME"},
                            ]))
         self.assertEqual([x["overlap_minutes"] for x in
                           result["stacking_review"]["overlap_slices"]], [30, 30])
@@ -236,10 +245,18 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
             {"same_category": "ALLOW"},
             {"base_component_policy": "COUNT_ALL_BASES"},
             {"policy_ref": ""},
-            {"allowed_category_sets": [["OVERTIME", "OVERTIME"]]},
-            {"allowed_category_sets": [["OVERTIME", "UNKNOWN"]]},
-            {"allowed_category_sets": [["OVERTIME", "NIGHT"], ["NIGHT", "OVERTIME"]]},
-            {"allowed_category_sets": [["OVERTIME", "NIGHT", "HOLIDAY", "EARLY"]]},
+            {"allowed_category_sets": [
+                {"categories": ["OVERTIME", "OVERTIME"], "unpaid_base_owner": "OVERTIME"}]},
+            {"allowed_category_sets": [
+                {"categories": ["OVERTIME", "UNKNOWN"], "unpaid_base_owner": "OVERTIME"}]},
+            {"allowed_category_sets": [
+                {"categories": ["OVERTIME", "NIGHT"], "unpaid_base_owner": "OVERTIME"},
+                {"categories": ["NIGHT", "OVERTIME"], "unpaid_base_owner": "OVERTIME"}]},
+            {"allowed_category_sets": [
+                {"categories": ["OVERTIME", "NIGHT", "HOLIDAY", "EARLY"],
+                 "unpaid_base_owner": "OVERTIME"}]},
+            {"allowed_category_sets": [
+                {"categories": ["OVERTIME", "NIGHT"], "unpaid_base_owner": "HOLIDAY"}]},
             {"allowed_category_sets": None},
         ):
             with self.subTest(overrides=overrides), self.assertRaises(OvertimeCandidateError):
@@ -295,8 +312,8 @@ class PayrollOvertimeStackingTests(unittest.TestCase):
                 "policy_ref": "EXAMPLE-ONLY", "status": "VERIFIED",
             })
             source["base_inclusions"].append({
-                "base_inclusion_ref": "BASE-INCLUDED-2", "segment_id": "A002",
-                "base_pay_includes_time": True, "status": "VERIFIED",
+                "base_inclusion_ref": "BASE-EXCLUDED-2", "segment_id": "A002",
+                "base_pay_includes_time": False, "status": "VERIFIED",
             })
             result = build_reconciled_overtime_preview(
                 inputs, worktime_xlsx, period_from="2026-11-01",
