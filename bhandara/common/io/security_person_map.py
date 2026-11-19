@@ -8,7 +8,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from .input_layout import InputLayoutError, read_sheet, role
+from .input_layout import InputLayoutError, role
+from .xlsx_stream import XlsxStreamError, open_xlsx_rows
 
 
 PERSON_SHEET = "PERSON MAP"
@@ -51,10 +52,54 @@ def _issue(sheet: str, row: int, code: str) -> dict[str, Any]:
     return {"sheet": sheet, "row_number": row, "code": code}
 
 
+def _read_columns(path: Path, required: tuple[str, ...], *, sheet_name: str) -> list[dict[str, Any]]:
+    """Read exactly the agreed columns; ignore every unrecognized column.
+
+    Optional user-created columns (including empty headers and formulas)
+    cannot change the supported mapping contract.
+    """
+    try:
+        with open_xlsx_rows(path, sheet_name=sheet_name, data_only=False) as opened:
+            headers = [
+                str(c.value).strip() if c.value is not None else ""
+                for c in opened.header_cells
+            ]
+            positions: dict[str, int] = {}
+            for field in required:
+                matches = [index for index, name in enumerate(headers) if name == field]
+                if len(matches) != 1:
+                    raise InputLayoutError(
+                        f"{sheet_name}: missing or duplicated required column {field}"
+                    )
+                positions[field] = matches[0]
+            records = []
+            for number, cells in enumerate(opened.rows, start=2):
+                if all(
+                    idx >= len(cells) or cells[idx].value is None
+                    for idx in positions.values()
+                ):
+                    continue
+                record = {"_row_number": number}
+                for key, idx in positions.items():
+                    if idx >= len(cells):
+                        record[key] = None
+                        continue
+                    cell = cells[idx]
+                    if cell.data_type == "f":
+                        raise InputLayoutError(
+                            f"{sheet_name} row {number}: formula in supported column {key}"
+                        )
+                    record[key] = cell.value
+                records.append(record)
+            return records
+    except XlsxStreamError as exc:
+        raise InputLayoutError(str(exc)) from exc
+
+
 def _reference_map(
     path: Path, *, sheet_name: str, key_field: str, value_field: str,
 ) -> tuple[dict[str, str], list[dict[str, Any]]]:
-    rows = read_sheet(path, (value_field, key_field), sheet_name=sheet_name)
+    rows = _read_columns(path, (value_field, key_field), sheet_name=sheet_name)
     mapping: dict[str, str] = {}
     issues: list[dict[str, Any]] = []
     for row in rows:
@@ -88,7 +133,7 @@ def read_security_person_map(path: str | Path, *, vendor: str) -> dict[str, Any]
     if not vendor_key:
         raise InputLayoutError("unsupported security vendor")
     path = Path(path)
-    rows = read_sheet(path, PERSON_COLUMNS, sheet_name=PERSON_SHEET)
+    rows = _read_columns(path, PERSON_COLUMNS, sheet_name=PERSON_SHEET)
     departments, _ = _reference_map(
         path, sheet_name=DEPARTMENT_SHEET,
         key_field="security_department_id", value_field="department",
