@@ -79,6 +79,7 @@ def build_segmented_settlement_preview(
     settlement_plan: Mapping[str, Any],
     period_from: str,
     period_to: str,
+    base_reductions: Mapping[str, int] | None = None,
 ) -> dict[str, Any]:
     """Render the *same* one-sheet review-only register using explicit splits.
 
@@ -101,6 +102,11 @@ def build_segmented_settlement_preview(
         inputs.for_role("bonus_budget"), id_field="bonus_id", label_field="bonus_name",
     )
     workers = coverage["segments_by_employee"]
+    if base_reductions is not None:
+        if not isinstance(base_reductions, Mapping) or set(base_reductions) - set(workers):
+            raise SettlementPreviewError("base_reductions: unknown worker or invalid mapping")
+        if any(type(amount) is not int or amount < 0 for amount in base_reductions.values()):
+            raise SettlementPreviewError("base_reductions: nonnegative integer KRW required")
     # This existing Bonus Core uses only the worker keys, not a contract rate.
     # Bonuses remain once per employee and are NOT prorated by calendar days.
     bonuses = allocate_performance_bonus(
@@ -116,7 +122,11 @@ def build_segmented_settlement_preview(
             allowances=allowance_rows,
             assignments=allowance_assignments,
         )
-        employee_base = _rounded(base, coverage["rounding_mode"])
+        base_before_adjustment = _rounded(base, coverage["rounding_mode"])
+        reduction = (base_reductions or {}).get(worker, 0)
+        if reduction > base_before_adjustment:
+            raise SettlementPreviewError("base_reductions: reduction exceeds candidate base")
+        employee_base = base_before_adjustment - reduction
         employee_fixed = [
             {"item_id": code, "label": names[code],
              "amount": _rounded(amount, coverage["rounding_mode"])}
@@ -140,6 +150,8 @@ def build_segmented_settlement_preview(
             "hired_on": coverage["employment"][worker]["hired_on"],
             "terminated_on": coverage["employment"][worker]["terminated_on"],
             "base_pay_candidate": employee_base,
+            "base_before_attendance_adjustment": base_before_adjustment,
+            "base_reduction_candidate": reduction if base_reductions is not None else None,
             "fixed_allowance_candidates": employee_fixed,
             "segments": contract_audit,
             "leave_settlement": "NOT_ASSESSED",
@@ -160,7 +172,10 @@ def build_segmented_settlement_preview(
             "employees": audits,
             "employment_coverage": "DECLARED_COVERAGE_MATCHED",
             "paid_leave_verification": "NOT_ASSESSED",
-            "unpaid_leave_adjustments": "NOT_ASSESSED",
+            "unpaid_leave_adjustments": (
+                "LISTED_BASE_REDUCTIONS_AS_CANDIDATES"
+                if base_reductions is not None else "NOT_ASSESSED"
+            ),
             "earnings_complete": False,
             "deductions_complete": False,
             "approval_state": "NOT_APPROVED",
