@@ -6,15 +6,15 @@
 
 생성 스키마: `common/id-map.xlsx`의 구형 `ID_MAP` / `EXTERNAL` 두 시트를 유지하면서 신규 `PERSON MAP`, `DEPARTMENT MAP`, `AREA MAP` 세 시트를 추가합니다. 신규 `PERSON MAP`은 **직원×보안업체 1행**이고 `security_id`는 업체 코드입니다. 합성 직원 80명을 CAPS에 등록하고 두 직원의 SECOM/TELECOP 등록을 추가 행으로 포함합니다.
 
-**이미 수동 수정된 기존 Excel은 자동으로 교체하지 않습니다.** 정식 공개 샘플의 변경은 필요한 때 별도 브랜치에서 `refresh.py --apply`를 명시적으로 실행한 뒤 검토·테스트·PR하는 방식으로만 진행합니다.
-같은 80명 자료의 데이터 구조를 고칠 때마다 기존 Excel을 최신 구조로
-교체합니다. 별도의 구형·신형 샘플이나 이전 Excel 복사본을 보관하지 않습니다.
+**기존 Excel은 자동으로 교체하지 않습니다.** 이 저장소가 공개하는 80명
+샘플은 `input/` 한 세트이며, 새 형식을 별도 공개 샘플로 중복 보관하지
+않습니다. 단, 이 파일들은 **마지막으로 명시적 갱신을 수행한 시점의 스냅샷**이므로
+생성기 코드의 새 시트가 아직 반영되지 않았을 수 있습니다.
 
-`input/`에 있는 파일은 그대로 열어 보고 복사해 실행할 수 있습니다.
-필요할 때 [생성기](generate.py)로 다른 경로에 동일한 가상 자료를 만들거나,
-프로젝트 유지관리자가 `refresh.py --apply`로 이 폴더의 정식 Excel을
-갱신할 수 있습니다. 기존 `input/` 전체를 교체하므로
-오래된 형식의 용역계약 파일도 함께 정리됩니다.
+- **현재 보관된 Excel을 사용:** `input/`을 열거나 복사합니다. 기존 계산기 호환성 유지.
+- **최신 구조 새로 생성:** [`generate.py`](generate.py)에 `--output-dir`을 명시하여 Git 밖의 비어 있는 경로에 생성합니다.
+- **공개 스냅샷 교체:** 별도 브랜치에서 검토 후 `refresh.py --apply`를 명시적으로 실행합니다. `input/` 전체를 교체하므로 기존 사용자 수정 내용을 사전에 확인해야 합니다.
+- **자동화:** 일반 push/PR에는 생성·덮어쓰기 없음. 수동 Actions는 기본 `apply=false`로 테스트만 수행하고, `apply=true`가 명시된 비-main 브랜치에서만 갱신·커밋을 시도합니다.
 
 샘플 생성기는 실제 `.xlsx` 파일과 `worktime-result.json`을 생성합니다.
 **데이터는 전부 합성 자료이며 실제 직원·계약·승인·세금 자료가 아닙니다.**
@@ -57,7 +57,21 @@ python bhandara/examples/sample/generate.py \
 `pay-contract-components.xlsx`, `service-contracts.xlsx`,
 `service-work-records.xlsx`.
 
-## 2. 파일 열어보기
+## 2. Mapping 시트 확인
+
+명시적으로 `generate.py`를 실행하면 생성된 `common/id-map.xlsx`에는 다음 5개 시트가 함께 있습니다.
+
+| 시트 | 역할 |
+|---|---|
+| `ID_MAP` | 구형 Worktime/Payroll의 개인별 고유 ID 계약(80명) |
+| `EXTERNAL` | 외부 인력 Worktime 식별자(2명) |
+| `PERSON MAP` | 신규 Worktime 직원×업체 등록 정보(CAPS 80행 + SECOM 1행 + TELECOP 1행) |
+| `DEPARTMENT MAP` | 보안시스템 부서 코드와 원본 부서명 연결 |
+| `AREA MAP` | 출입 장소명과 장소 코드 연결 |
+
+`PERSON MAP.security_id`는 **업체 코드**이고 `ID_MAP.security_id`는 구형 코드에서 쓰는 **개인별 고유 ID**이므로 상호 혼용하지 않습니다. 업체가 추가되면 `PERSON MAP`의 **행**을 추가하며, 업체별 추가 열은 프로그램이 읽지 않습니다. 규칙은 [Common ID Mapping](../../common/SECURITY-PERSON-MAP.md)에 있습니다.
+
+## 3. 파일 열어보기
 
 - `pay-contract.xlsx`의 **Contracts**: 직원 계약 80개와 외부 용역
   계약 3개. `relationship_type`으로 법적 계약 분기를 분명하게 입력
