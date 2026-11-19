@@ -172,13 +172,14 @@ def build_payroll_register(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
         net = gross - deduction if gross is not None and deduction is not None else None
         row = {
             "employee_id": source["employee_id"],
-            "employee_name": source["employee_name"],
             "base_pay": source["base_pay"],
             "gross_pay": gross,
             "deduction_total": deduction,
             "net_pay": net,
             "review_status": "REVIEW_REQUIRED" if net is not None else "PARTIAL_REVIEW_ONLY",
         }
+        if has_names:
+            row["employee_name"] = source["employee_name"]
         for column in columns:
             category = column.get("source")
             if category:
