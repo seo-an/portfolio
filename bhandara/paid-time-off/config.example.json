@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "tool": "paid-time-off",
-  "run_id": "pto-2026-11-demo",
+  "run_id": "auto",
   "as_of_date": "2026-11-30",
   "policy_id": "YOUR_APPROVED_POLICY_ID",
   "input_root": "/private/hr/input",
