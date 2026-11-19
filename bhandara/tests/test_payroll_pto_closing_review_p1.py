@@ -232,9 +232,7 @@ class PTOClosingBridgeTests(unittest.TestCase):
 
     def test_not_same_quarter_or_not_full_month_rejected(self):
         with self.assertRaisesRegex(PTOClosingReviewError, "current quarter"):
-            self.review(start="2026-10-01", end="2026-10-31") if False else self.review(
-                start="2026-09-01", end="2026-09-30",
-            )
+            self.review(start="2026-09-01", end="2026-09-30")
         with self.assertRaisesRegex(PTOClosingReviewError, "full calendar month"):
             self.review(start="2026-11-01", end="2026-11-29")
 
