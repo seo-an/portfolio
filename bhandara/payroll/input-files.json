@@ -3,7 +3,7 @@
   "tool": "payroll",
   "status": "SCHEMA_ONLY_NOT_YET_CONNECTED_TO_CLI",
   "input_directory": "payroll",
-  "note": "All seven workbooks have exactly one named sheet; paths are fixed under input_root/payroll. No implicit discovery or automatic source merging.",
+  "note": "Seven independent one-sheet workbooks. Runtime inputs are under input_root/payroll; public synthetic samples live separately in bhandara/examples/sample/input/payroll. Binary XLSX files are not committed in this PR.",
   "workbooks": {
     "contracts": {
       "filename": "pay-contract.xlsx",
@@ -89,5 +89,6 @@
         "allocation_ratio"
       ]
     }
-  }
+  },
+  "sample_directory": "bhandara/examples/sample/input/payroll"
 }
