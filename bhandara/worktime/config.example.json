@@ -1,0 +1,32 @@
+{
+  "schema_version": "1.0",
+  "tool": "worktime",
+  "run_id": "auto",
+  "period_from": "2026-11-01",
+  "period_to": "2026-11-30",
+  "input_root": "/private/hr/input",
+  "output_root": "/private/hr/output",
+  "steps": [
+    "schedule",
+    "attendance-verification",
+    "worktime-compliance",
+    "output"
+  ],
+  "files": {
+    "schedule": "worktime/work-schedule.xlsx",
+    "attendance": "worktime/attendance.xlsx",
+    "access_events": "worktime/access-events.xlsx",
+    "verified_work": "worktime/verified-work.xlsx",
+    "attendance_facts": "worktime/attendance-facts.xlsx"
+  },
+  "policy": {
+    "schema_version": "0.1",
+    "policy_ref": "REVIEWED_COMPANY_POLICY",
+    "daily_standard_min": 480,
+    "weekly_standard_min": 2400,
+    "weekly_limit_min": 3120,
+    "rest_every_work_min": 240,
+    "rest_per_block_min": 30,
+    "break_overrun_tolerance_min": 0
+  }
+}
