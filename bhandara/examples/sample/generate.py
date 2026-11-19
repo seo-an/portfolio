@@ -67,6 +67,84 @@ def _install_external_mapping(input_dir: Path) -> None:
         book.close()
 
 
+
+def _install_security_person_mapping(input_dir: Path) -> None:
+    """Extend the SINGLE Common workbook with current Worktime identity sheets.
+
+    Keep ID_MAP and EXTERNAL intact for legacy PTO/Worktime/Payroll. The new
+    PERSON MAP has one row per employee and security vendor (not one per
+    employee across all vendors). No company data or outside source is read.
+    """
+    path = input_dir / "common/id-map.xlsx"
+    book = load_workbook(path)
+    try:
+        for sheet_name in ("PERSON MAP", "DEPARTMENT MAP", "AREA MAP"):
+            if sheet_name in book.sheetnames:
+                raise ValueError(f"unexpected existing {sheet_name} sheet")
+        legacy = book["ID_MAP"]
+        headers = [cell.value for cell in legacy[1]]
+        required = {"employee_id", "worker_id", "payroll_id"}
+        if not required.issubset(set(headers)):
+            raise ValueError("existing ID_MAP lacks canonical employee IDs")
+        employees = []
+        for values in list(legacy.values)[1:]:
+            record = dict(zip(headers, values))
+            if not record.get("employee_id"):
+                continue
+            employees.append({
+                "employee_id": str(record["employee_id"]),
+                "worker_id": str(record["worker_id"]),
+                "payroll_id": str(record["payroll_id"]),
+            })
+        employees.sort(key=lambda item: item["employee_id"])
+        if len(employees) != len({row["employee_id"] for row in employees}):
+            raise ValueError("duplicate employee in existing ID_MAP")
+
+        persons = book.create_sheet("PERSON MAP")
+        persons.append((
+            "employee_id", "name", "security_department_id", "security_id",
+            "worker_id", "payroll_id", "security_person_id", "main_area",
+        ))
+        for idx, record in enumerate(employees, 1):
+            department = f"D{((idx - 1) % 8) + 1:03d}"
+            name = f"가상직원{idx:03d}"
+            area = f"a{((idx - 1) % 3) + 1:04d}"
+            persons.append((
+                record["employee_id"], name, department, "CAPS",
+                record["worker_id"], record["payroll_id"],
+                f"{idx:04d}", area,
+            ))
+            # Rare multiple-vendor registrations use ADDITIONAL ROWS,
+            # never vendor-specific extra columns.
+            if idx in (1, 2):
+                vendor = "SECOM" if idx == 1 else "TELECOP"
+                persons.append((
+                    record["employee_id"], name, department, vendor,
+                    record["worker_id"], record["payroll_id"],
+                    f"{idx + 9000:04d}", area,
+                ))
+
+        departments = book.create_sheet("DEPARTMENT MAP")
+        departments.append(("department", "security_department_id"))
+        for idx in range(1, 9):
+            departments.append((f"가상부서{idx:02d}", f"D{idx:03d}"))
+
+        areas = book.create_sheet("AREA MAP")
+        areas.append(("area", "security_area_id"))
+        for idx in range(1, 4):
+            areas.append((f"{idx}동", f"a{idx:04d}"))
+
+        for sheet in (persons, departments, areas):
+            sheet.freeze_panes = "A2"
+            sheet.auto_filter.ref = sheet.dimensions
+        # Explicitly keep security_person_id textual, retaining leading zeros.
+        for row in persons.iter_rows(min_row=2):
+            row[6].number_format = "@"
+        book.save(path)
+    finally:
+        book.close()
+
+
 def _extend_worktime(input_dir: Path) -> None:
     for filename in ("work-schedule.xlsx", "attendance.xlsx"):
         path = input_dir / "worktime" / filename
@@ -327,6 +405,7 @@ def generate(destination: Path) -> Path:
         shutil.copytree(seed_root / "input", input_dir)
         shutil.copy2(seed_root / "test-cases.json", payload / "test-cases.json")
         _install_external_mapping(input_dir)
+        _install_security_person_mapping(input_dir)
         _extend_worktime(input_dir)
         _create_v2_contracts(input_dir)
         _add_synthetic_taxability_policy(input_dir)
@@ -341,6 +420,9 @@ def generate(destination: Path) -> Path:
             "pto_scope": "known_usage_provisional_balance_no_expiry_or_approval",
             "period_payroll": "2026-07",
             "employee_count": 80,
+            "identity_map_sheets": ["ID_MAP", "EXTERNAL", "PERSON MAP", "DEPARTMENT MAP", "AREA MAP"],
+            "security_mapping_vendors": ["CAPS", "SECOM", "TELECOP"],
+            "security_mapping_row_unit": "employee_x_vendor",
             "external_time_workers": 2,
             "service_contracts": 3,
             "contract_layout": "payroll/pay-contract.xlsx: Contracts+Components",
