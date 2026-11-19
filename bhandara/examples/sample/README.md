@@ -19,6 +19,12 @@
 샘플 생성기는 실제 `.xlsx` 파일과 `worktime-result.json`을 생성합니다.
 **데이터는 전부 합성 자료이며 실제 직원·계약·승인·세금 자료가 아닙니다.**
 
+## 신규 Payroll 분리형 입력 샘플 — 추가 미완료
+
+신규 `bhandara/payroll/`의 입력 계약은 [`input-files.json`](../../payroll/input-files.json)에 명시된 **7개 개별 1시트 Excel**이다. 2026-11-19 현재 `input/payroll/pay-contract.xlsx`는 저장소에서 조회됐지만, 새 이름의 다른 6개 파일은 GitHub main에서 확인되지 않았다. 또한 기존 `pay-contract.xlsx`는 **구형 Payroll용일 수 있으므로** 신규 단일 `CONTRACTS` 시트와 일치한다고 가정하면 안 된다. 대화에서 제공된 별도 다운로드 ZIP을 공개 샘플 Git 커밋으로 혼동하지 않는다.
+
+새 샘플을 반영하려면 별도 브랜치에서 기존 파일과 충돌/스키마를 먼저 비교하고 사용자 승인 후 추가한다. `refresh.py --apply`로 기존 통합 샘플 전체를 임의로 교체하지 않는다. 자세한 후속 작업은 [Payroll NEXT-STEPS](../../payroll/NEXT-STEPS.md).
+
 ## 1. 한 번만 실행해서 샘플 만들기
 
 프로젝트 루트에서 실행합니다. 생성 경로는 **Git 저장소 바깥**의
