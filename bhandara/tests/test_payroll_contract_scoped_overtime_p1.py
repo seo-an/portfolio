@@ -135,7 +135,7 @@ class ContractScopedOvertimeTests(unittest.TestCase):
         segments = [segment(OLD_DAY, "OLD"), segment(NEW_DAY, "NEW")] if approvals is None else approvals
         active_rules = [rate(minimum_minutes=0)] if rules is None else rules
         if sha is None:
-            sha = self.source_work()
+            sha = sha256_file(self.workfile) if self.workfile.is_file() else self.source_work()
         return build_contract_scoped_overtime_preview(
             inp, self.workfile,
             settlement_plan=split_plan() if settlement is None else settlement,
