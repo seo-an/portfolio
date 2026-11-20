@@ -11,6 +11,8 @@
 
 > **직원 보험상태·회사 비용:** 공통 `employee.xlsx`의 4대보험별 **취득일 / 공란(적용 제외) / `미가입`**을 근거로 국민연금·건강보험·고용보험 근로자 부담 공제를 판단합니다. 산재보험료도 별도 계산하지만 **근로자 급여에서는 공제하지 않고**, 관리자용 급여대장에 회사 부담 내역·확인된 지출로만 표시합니다. [보험·사업주 비용 규약](payroll/EMPLOYER-INSURANCE.md).
 
+> **신규 Payroll Tool CLI (P3-1 검증 중):** PTO/Worktime과 같이 `bhandara/data/config/payroll.json`에 기간·입력·증빙·출력 경로를 한 번 정의하면 `python3 run.py bhandara payroll`로 기존 계산 Flow를 실행합니다. 결과는 **기존 PAYROLL 한 시트 + 검토 JSON**이며 별도 회사 인건비 계산 모듈은 만들지 않습니다. [설정 예제와 입력 역할](payroll/TOOL-CLI.md).
+
 ### 신규 Tool — 매번 명령어 수정하지 않음
 
 사용자 전용 JSON은 공개 Git에서 제외한 `bhandara/data/config/`에 보관합니다. 예제 파일을 복사한 뒤 그 안에서 날짜·입출력 폴더·실행 단계를 바꾸세요. 새로운 명령에는 `--period`, `--input-dir`, `--output-dir`가 필요하지 않습니다.
