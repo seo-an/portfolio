@@ -243,6 +243,8 @@ Payroll의 `payroll-config.json`은 지급·공제 입력, 근태 결과, 급여
 
 > **Payroll 직원보험·회사 부담 분리:** 공통 `employee.xlsx`의 보험별 취득일/적용 제외/미가입을 확인합니다. 근로자 소득세와 보험 공제만 미확인 검증요청에 포함하고, 산재보험료는 사업주가 부담하는 별도 비용으로 계산해 **직원 지급합계·공제합계·실지급액에서 제외**합니다. [자세한 계약](bhandara/payroll/EMPLOYER-INSURANCE.md).
 
+> **Payroll P3-1 독립 CLI 작업:** #77 잠정 합계·주제별 unittest·공통 보험상태·산재 사업주 비용까지 사용자 서버 테스트 및 병합 완료. **회사 비용은 추후 모듈에서 소비하도록 관리자 급여대장에만 산출하며 Payroll 안에서 더 확장하지 않습니다.** 기존 7개 XLSX·Worktime/PTO 계약을 유지한 채 `python3 run.py bhandara payroll` JSON 설정 실행을 검증 중입니다. [Payroll Tool CLI](bhandara/payroll/TOOL-CLI.md).
+
 ## 6. 검증·개인정보·운영 경계
 
 ```sh
