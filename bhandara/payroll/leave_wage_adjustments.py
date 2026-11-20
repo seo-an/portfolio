@@ -11,8 +11,6 @@ from __future__ import annotations
 from collections import defaultdict
 from typing import Any, Mapping
 
-from bhandara.payroll.pto_closing_review import PTOClosingReviewError
-
 
 class LeaveWageAdjustmentError(ValueError):
     """Incomplete or contradictory monetary decisions for verified PTO use."""
@@ -78,26 +76,15 @@ def reconcile_leave_wage_decisions(
         raise LeaveWageAdjustmentError("PTO: confirmed source review required")
     expected: dict[tuple[str, str, str, str], Mapping[str, Any]] = {}
     for request in source_requests:
-        key = _request_key(request)
+        key = (
+            _text(request.get("employee_id"), "PTO.employee_id"),
+            _text(request.get("request_id"), "PTO.request_id"),
+            _text(request.get("leave_date"), "PTO.leave_date"),
+            _text(request.get("leave_type"), "PTO.leave_type"),
+        )
         if key in expected:
             raise LeaveWageAdjustmentError("PTO: duplicate source request")
         expected[key] = request
-
-    # P1-5b-1 may also have non-PTO absence events; only the approved
-    # Worktime leave IDs are candidates for matching these PTO requests.
-    existing: dict[tuple[str, str, str], Mapping[str, Any]] = {}
-    for event in attendance_review.get("events", []):
-        if event["event_kind"] != "LEAVE":
-            continue
-        key = (event["employee_id"], event["work_date"],
-               event.get("leave_request_id"))
-        # P1-5b-1 review exposes event IDs and dates but not the raw request
-        # ID. That identifier is supplied explicitly from the verified
-        # attendance_plan in the outer flow.
-        if key[2] is not None:
-            if key in existing:
-                raise LeaveWageAdjustmentError("attendance: repeated leave request")
-            existing[key] = event
 
     by_request = {}
     base_total: dict[str, int] = defaultdict(int)
@@ -190,7 +177,6 @@ def apply_leave_wage_decisions(
         for item in attendance_review["events"]
         if item["event_kind"] == "LEAVE"
     }
-    accounted_anchors = set()
     addition: dict[str, int] = defaultdict(int)
     for item in wage_review["requests"]:
         worker, day, request = item["employee_id"], item["leave_date"], item["request_id"]
@@ -206,7 +192,6 @@ def apply_leave_wage_decisions(
                     or old["base_reduction_won"] != item["base_reduction_won"]
                     or audit["base_reduction_won"] != item["base_reduction_won"]):
                 raise LeaveWageAdjustmentError("attendance: base reduction/treatment conflicts with PTO decision")
-            accounted_anchors.add(key)
         else:
             addition[worker] += item["base_reduction_won"]
     # A Worktime-anchored leave event must not be left outside monetary
