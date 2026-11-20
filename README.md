@@ -239,13 +239,17 @@ Payroll의 `payroll-config.json`은 지급·공제 입력, 근태 결과, 급여
 
 이 계약은 각 모듈을 다른 임시 설치 루트에 두고 JSON만 주고받는 **실제 상호배타 테스트에서 PASS**했습니다. 자세한 구조는 [검증 결과](bhandara/MODULE-ISOLATION.md) 및 [운영 실행서](bhandara/RUNBOOK.md)에 있습니다.
 
+> **PR #77 진행:** 기존 한 시트 급여대장의 지급합계·공제합계·실지급액에 **산출된 항목의 잠정 합계**를 보여주며, 미완료 여부는 검토 플래그로 분리합니다. Bhandara 전체 테스트는 `bhandara/_tests/run.py`를 사용하면 주제별 PASS/FAIL/ERROR/SKIP을 볼 수 있습니다. 기존 `unittest discover`도 계속 사용할 수 있습니다. 별도 승인/신고 기능을 추가한 것은 아닙니다.
+
+> **Payroll 직원보험·회사 부담 분리:** 공통 `employee.xlsx`의 보험별 취득일/적용 제외/미가입을 확인합니다. 근로자 소득세와 보험 공제만 미확인 검증요청에 포함하고, 산재보험료는 사업주가 부담하는 별도 비용으로 계산해 **직원 지급합계·공제합계·실지급액에서 제외**합니다. [자세한 계약](bhandara/payroll/EMPLOYER-INSURANCE.md).
+
 ## 6. 검증·개인정보·운영 경계
 
 ```sh
 # 저장소 전체를 받은 경우: 공개 모듈 전체 회귀 테스트
 .venv/bin/python -m unittest discover -s bhandara/tests -p 'test_documentation_examples.py' -v
 
-.venv/bin/python -m unittest discover -s bhandara/tests -p 'test_*.py' -v
+.venv/bin/python -B bhandara/_tests/run.py # 전체 테스트·주제별 요약
 
 # 모듈 하나만 받은 경우: 설치·의존성 확인 및 위 합성/샘플 CLI 실행
 .venv/bin/python install.py --check

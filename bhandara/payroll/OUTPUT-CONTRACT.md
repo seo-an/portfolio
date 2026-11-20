@@ -11,6 +11,10 @@
 - 통상적인 고정 열: `employee_id`, `기본급`, `지급합계`, `공제합계`, `실지급액`, `검토상태`. 직원명이 하나라도 있으면 직원명 열도 생성.
 - 열 그룹 순서: **직원정보 → 기본급 → 고정수당 → 초과근무수당 → 성과급 → 지급합계 → 공제 → 공제합계 → 실지급액 → 검토**.
 
+> **사업주 비용 분리:** [사업주 산재보험 계약](EMPLOYER-INSURANCE.md). 관리자용 `PAYROLL`의 기본 `gross_pay`, `deduction_total`, `net_pay`는 **근로자 금액**이다. 명시적 `employer_industrial_by_employee`를 전달한 경우에만 별도 `사업주 부담·회사 전용`의 동적 산재보험료 열과 `회사 비용(확인분)` 열을 만든다. 여기서 회사 비용은 **세전 지급합계+산재보험료만 확인된 금액**이므로 전체 인건비가 아니다. 직원별 `build_employee_payroll_view()`는 사업주 비용 열을 제외한다. 관리자 파일 자체를 직원에게 전달하지 않는다.
+
+**검토 플래그 기준:** 통합 Payroll Flow는 `review_reasons_by_employee`에 **근로자 부담 4대보험 관련 확인사항·소득세/지방소득세 확인사항만** 전달한다. 미해당 수당·기타 공제 공란 자체는 경고가 아니다. 독립 Preview 기본 호출은 호환성 유지 목적의 이전 플래그를 보존한다.
+
 ## 변동 열 생성 규칙
 
 1. 전체 직원의 각 지급·공제 항목을 `(group, item_id)`로 식별한다.
@@ -52,16 +56,16 @@
 - 금액은 원 단위 정수 또는 정수 Decimal 문자열만 허용한다. `None`은 금액 항목에 허용하지 않는다. 입력된 돈은 출력기가 추정하지 않는다.
 - 같은 직원/그룹 내 중복 `item_id`는 차단한다. **원장 항목의 합산은 upstream 계산 모듈 책임**이다.
 - 한 그룹 내 같은 `item_id`의 표시명 불일치도 차단한다.
-- `gross_pay`: 지급항목 전체가 완료됐다고 명시된 직원만 계산한다.
-- `deduction_total`: 공제 전체가 완료됐다고 명시된 직원만 계산한다.
-- `net_pay`: 두 완료 플래그가 모두 참일 때만 계산한다. 그 외는 **공란**이다.
-- 계산 결과가 모두 있어도 상태는 `REVIEW_REQUIRED`이다. 일부 미확정은 `PARTIAL_REVIEW_ONLY`. 결과 문서의 `approval_state`는 `NOT_APPROVED`로 고정된다.
+- **통합 Payroll Flow**는 `show_partial_totals=True`로 이미 계산된 지급·공제 항목의 합계(`gross_pay`, `deduction_total`, `net_pay`)를 **잠정 금액**으로 표시한다. 금액이 없는 개별 항목은 종전처럼 공란이다.
+- 계산되지 않은 항목과 *확인된 0원*은 구분해야 한다. 기존 `earnings_complete`/`deductions_complete` 상태가 거짓이면 `review_flags[employee_id]`에 `EARNINGS_UNVERIFIED`/`DEDUCTIONS_UNVERIFIED`를 남기고 `검토상태=검증요청 · 잠정합계`로 표시한다. 이때 순지급액은 **현재까지의 후보 항목으로 계산한 차액**이지 지급확정액이 아니다.
+- **구형 독립 Preview 호환:** `build_payroll_register(rows)`의 기본값은 `show_partial_totals=False`로 유지된다. 이 모드에서는 미완료 합계를 공란으로 두어 기존 외부 호출과 테스트를 보존한다.
+- 완결 자료라고 표시된 금액도 `REVIEW_REQUIRED`이며 결과의 `approval_state=NOT_APPROVED`는 변하지 않는다. **실제 송금/신고 승인 기능은 없다.**
 
 ```python
 from bhandara.payroll.output import build_payroll_register
 from bhandara.payroll.output_excel import write_payroll_result_xlsx
 
-view = build_payroll_register(rows)
+view = build_payroll_register(rows, show_partial_totals=True)  # 통합 Flow의 잠정 합계
 write_payroll_result_xlsx(view, "/path/to/empty-existing-directory/payroll-result.xlsx")
 ```
 
@@ -69,7 +73,7 @@ Writer는 파일 덮어쓰기를 거절하며 `PAYROLL` 시트만 생성한다. 
 
 ## 다음 구현 우선순위
 
-출력기 설계·병합은 완료됐다(PR #60). P0-1 Excel Reader와 P0-2/3 [정확 산정기간·Core→Output 검토용 Adapter](PERIOD-PREVIEW.md)를 통해 지급항목 ID·이름·금액을 전달할 수 있다. 단, **P0 Adapter는 완료 플래그 둘 다 False로 고정**한다. 초과근무·입퇴사/휴가 정산 및 실제 공제액을 검증하기 전에는 실지급액이 생기지 않는다.
+PR #77에서 통합 Flow의 잠정 합계 표시·검증요청 플래그를 추가했다. 출력기 설계·병합은 완료됐다(PR #60). P0-1 Excel Reader와 P0-2/3 [정확 산정기간·Core→Output 검토용 Adapter](PERIOD-PREVIEW.md)를 통해 지급항목 ID·이름·금액을 전달할 수 있다. 단, **P0 Adapter는 완료 플래그 둘 다 False로 고정**한다. 초과근무·입퇴사/휴가 정산 및 실제 공제액을 검증하기 전에는 실지급액이 생기지 않는다.
 
 ## 후속 입력 연결 시 반드시 필요한 정보
 
@@ -83,4 +87,4 @@ Writer는 파일 덮어쓰기를 거절하며 `PAYROLL` 시트만 생성한다. 
 python3 -m unittest bhandara.tests.test_payroll_dynamic_output_v01 -v
 ```
 
-그다음 전체 Bhandara unittest 및 Gearbox 호환성 검증을 수행한다.
+주제별 전체 Bhandara unittest는 `python3 -B bhandara/_tests/run.py`로 1회 실행하여 PASS/FAIL/ERROR/SKIP 개수를 확인한다. 기존 `unittest discover` 명령 자체의 기본 출력은 변경되지 않는다. Gearbox 기능·인프라 호환성 검증도 별도로 수행한다.

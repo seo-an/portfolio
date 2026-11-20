@@ -289,9 +289,10 @@ class TaxWithholdingExcelE2E(unittest.TestCase):
         self.assertEqual(row["deductions:INS_NATIONAL_PENSION"], 142500)
         self.assertEqual(result["tax_withholding_review"]["employees"][0]["taxable_earnings_won"], 3080000)
         self.assertEqual(result["tax_withholding_review"]["employees"][0]["non_taxable_earnings_won"], 20000)
-        self.assertIsNone(row["gross_pay"])
-        self.assertIsNone(row["deduction_total"])
-        self.assertIsNone(row["net_pay"])
+        self.assertEqual(row["gross_pay"], 3100000)
+        self.assertEqual(row["deduction_total"], 346521)
+        self.assertEqual(row["net_pay"], 2753479)
+        self.assertEqual(row["review_status"], "검증요청 · 잠정합계")
         self.assertEqual(result["approval_state"], "NOT_APPROVED")
         path = self.root / "payroll-result.xlsx"
         write_payroll_result_xlsx(result["payroll_register"], path)
@@ -313,7 +314,11 @@ class TaxWithholdingExcelE2E(unittest.TestCase):
         result = self.run_flow(withholding=self.tax_plan_for_allowance(income=0, local=0))
         self.assertFalse(any("TAX_INCOME" in col["key"] or "TAX_LOCAL_INCOME" in col["key"]
                              for col in result["payroll_register"]["columns"]))
-        self.assertIsNone(result["payroll_register"]["rows"][0]["net_pay"])
+        self.assertEqual(result["payroll_register"]["rows"][0]["net_pay"], 3100000)
+        self.assertEqual(
+            result["payroll_register"]["rows"][0]["review_status"],
+            "검증요청 · 잠정합계",
+        )
 
     def test_fixed_taxable_map_rejects_external_exempt_decision(self):
         with self.assertRaisesRegex(PayrollWithholdingError, "TAXABLE map"):

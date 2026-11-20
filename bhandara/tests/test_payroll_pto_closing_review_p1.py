@@ -328,8 +328,10 @@ class PTOClosingBridgeTests(unittest.TestCase):
         )
         self.assertTrue(result["pto_closing_review"]["multiple_requests_per_workday"])
         self.assertEqual(result["payroll_register"]["rows"][0]["base_pay"], 3000000)
-        self.assertIsNone(result["payroll_register"]["rows"][0]["gross_pay"])
-        self.assertIsNone(result["payroll_register"]["rows"][0]["net_pay"])
+        self.assertEqual(result["payroll_register"]["rows"][0]["gross_pay"], 3000000)
+        self.assertEqual(result["payroll_register"]["rows"][0]["deduction_total"], 0)
+        self.assertEqual(result["payroll_register"]["rows"][0]["net_pay"], 3000000)
+        self.assertEqual(result["payroll_register"]["rows"][0]["review_status"], "검증요청 · 잠정합계")
         self.assertEqual(result["status"], "PARTIAL_REVIEW_ONLY")
         result_file = self.root / "payroll-result.xlsx"
         write_payroll_result_xlsx(result["payroll_register"], result_file)

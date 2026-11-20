@@ -169,7 +169,12 @@ class ContractScopedOvertimeTests(unittest.TestCase):
         read.assert_called_once_with(self.workfile)
         self.assertEqual(coverage.call_count, 1)
         self.assertEqual(register.call_count, 1)
-        self.assertIsNone(result["payroll_register"]["rows"][0]["net_pay"])
+        self.assertEqual(result["payroll_register"]["rows"][0]["net_pay"], 3337500)
+        self.assertEqual(
+            result["payroll_register"]["rows"][0]["review_status"],
+            "검증요청 · 잠정합계",
+        )
+        self.assertEqual(len(result["review_requests"]), 1)
         self.assertEqual(result["status"], "PARTIAL_REVIEW_ONLY")
 
     def test_no_overtime_equals_existing_attendance_preview_register_exactly(self):
@@ -196,7 +201,18 @@ class ContractScopedOvertimeTests(unittest.TestCase):
             ),
             rollup_policy=ROLLUP,
         )
-        self.assertEqual(combined["payroll_register"], previous["payroll_register"])
+        # Standalone P1-5b-1 still shows blank totals; integrated Flow now
+        # displays known sums while retaining *identical item candidates*.
+        current = combined["payroll_register"]
+        historic = previous["payroll_register"]
+        self.assertEqual(current["columns"], historic["columns"])
+        for new_row, old_row in zip(current["rows"], historic["rows"]):
+            for key, value in old_row.items():
+                if key not in {"gross_pay", "deduction_total", "net_pay", "review_status"}:
+                    self.assertEqual(new_row[key], value)
+            self.assertEqual(new_row["gross_pay"], new_row["net_pay"])
+            self.assertEqual(new_row["deduction_total"], 0)
+            self.assertEqual(new_row["review_status"], "검증요청 · 잠정합계")
         # None = no overtime evidence submitted; [] = submitted empty
         # approved list. Preserve this existing, intentionally distinct
         # source-review status while comparing all the remaining evidence.
@@ -219,7 +235,7 @@ class ContractScopedOvertimeTests(unittest.TestCase):
             combined["settlement_review"]["employees"],
             previous["settlement_review"]["employees"],
         )
-        self.assertIsNone(combined["payroll_register"]["rows"][0]["gross_pay"])
+        self.assertEqual(combined["payroll_register"]["rows"][0]["gross_pay"], 3240000)
 
     def test_two_contract_rates_rollup_one_overtime_column_without_touching_core(self):
         rows = split()
@@ -241,10 +257,11 @@ class ContractScopedOvertimeTests(unittest.TestCase):
         view = result["payroll_register"]
         self.assertEqual(view["rows"][0]["base_pay"], 3300000)
         self.assertEqual(view["rows"][0]["overtime_allowances:OT01"], 54000)
-        self.assertIsNone(view["rows"][0]["gross_pay"])
-        self.assertIsNone(view["rows"][0]["deduction_total"])
-        self.assertIsNone(view["rows"][0]["net_pay"])
-        self.assertEqual(view["rows"][0]["review_status"], "PARTIAL_REVIEW_ONLY")
+        self.assertEqual(view["rows"][0]["gross_pay"], 3354000)
+        self.assertEqual(view["rows"][0]["deduction_total"], 0)
+        self.assertEqual(view["rows"][0]["net_pay"], 3354000)
+        self.assertEqual(view["rows"][0]["review_status"], "검증요청 · 잠정합계")
+        self.assertTrue(view["totals_are_provisional"])
         self.assertEqual(result["overtime_candidate_review"]["rollup_mode"],
                          "ROUND_PER_CONTRACT_RULE_THEN_SUM")
         self.assertEqual(result["evidence_review"]["source_authenticity"],
@@ -277,7 +294,8 @@ class ContractScopedOvertimeTests(unittest.TestCase):
         self.assertEqual(view["rows"][0]["base_pay"], 3240000)
         self.assertIn("overtime_allowances:OT01", [col["key"] for col in view["columns"]])
         self.assertEqual(result["attendance_review"]["base_reductions_by_employee"]["0001"], 60000)
-        self.assertIsNone(view["rows"][0]["gross_pay"])
+        self.assertEqual(view["rows"][0]["gross_pay"], 3277500)
+        self.assertEqual(view["rows"][0]["net_pay"], 3277500)
         self.assertEqual(result["attendance_review"]["overtime_overlap_review"],
                          "LISTED_SEGMENTS_NO_OVERLAP")
 
@@ -459,7 +477,11 @@ class ContractScopedOvertimeTests(unittest.TestCase):
         )
         self.assertIsNone(view["rows"][0].get("overtime_allowances:OT01"))
         self.assertIsNotNone(view["rows"][16]["overtime_allowances:OT01"])
-        self.assertTrue(all(row["net_pay"] is None for row in view["rows"]))
+        self.assertTrue(all(
+            row["net_pay"] == row["gross_pay"] and row["deduction_total"] == 0
+            for row in view["rows"]
+        ))
+        self.assertEqual(len(result["review_requests"]), 50)
 
 
 if __name__ == "__main__":

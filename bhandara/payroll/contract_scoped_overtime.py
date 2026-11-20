@@ -24,8 +24,13 @@ from bhandara.payroll.overtime_candidates import (
     OvertimeCandidateError, _interval, calculate_overtime_candidates,
 )
 from bhandara.payroll.output import build_payroll_register
-from bhandara.payroll.insurance_candidates import calculate_insurance_candidates
+from bhandara.payroll.insurance_candidates import (
+    calculate_insurance_candidates, read_employee_insurance_status,
+    check_insurance_assessment_against_employee_status,
+    review_employee_insurance_status, apply_common_insurance_applicability,
+)
 from bhandara.payroll.tax_withholding import review_taxability_and_withholding
+from bhandara.payroll.employer_insurance import calculate_employer_industrial_insurance
 from bhandara.payroll.leave_wage_adjustments import (
     reconcile_leave_wage_decisions, apply_leave_wage_decisions,
     check_pto_overtime_intervals,
@@ -184,6 +189,8 @@ def build_contract_scoped_overtime_preview(
     pto_wage_plan: Mapping[str, Any] | None = None,
     insurance_assessment_plan: Mapping[str, Any] | None = None,
     withholding_plan: Mapping[str, Any] | None = None,
+    employee_xlsx: str | Path | None = None,
+    industrial_assessment_plan: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Contract-scoped approved overtime is a *candidate*, never final wages.
 
@@ -196,6 +203,16 @@ def build_contract_scoped_overtime_preview(
     coverage = validate_settlement_coverage(
         inputs.for_role("contracts"), plan=settlement_plan,
         period_from=period_from, period_to=period_to,
+    )
+    # Common employee insurance acquisition dates/exclusions are the single
+    # source of enrolment state. No birthdate/age inference or payroll-only
+    # duplicate enrolment entry is needed.
+    employee_insurance_status = (
+        read_employee_insurance_status(
+            employee_xlsx,
+            employee_ids=coverage["segments_by_employee"],
+            period_to=period_to,
+        ) if employee_xlsx is not None else None
     )
     source_work = tuple(verified_work)
     source_approvals = tuple(approved_segments)
@@ -322,11 +339,21 @@ def build_contract_scoped_overtime_preview(
             raise ContractOvertimeAdapterError(
                 "insurance: selected DEDUCTION MAP workbook role required"
             )
+        verified_insurance_plan = (
+            apply_common_insurance_applicability(
+                insurance_assessment_plan, employee_insurance_status,
+            ) if employee_insurance_status is not None
+            else insurance_assessment_plan
+        )
         insurance_review = calculate_insurance_candidates(
             coverage, inputs.for_role("deduction_map"),
-            assessment_plan=insurance_assessment_plan,
+            assessment_plan=verified_insurance_plan,
             period_from=period_from, period_to=period_to,
         )
+        if employee_insurance_status is not None:
+            check_insurance_assessment_against_employee_status(
+                employee_insurance_status, insurance_review=insurance_review,
+            )
         for employee in components["payroll_rows"]:
             worker = employee["employee_id"]
             # Never silently append duplicate or previously applied insurance.
@@ -360,14 +387,54 @@ def build_contract_scoped_overtime_preview(
         settlement_review["tax_withholding_candidate_review"] = (
             "EXPLICIT_PAY_ITEM_SPLITS_AND_EXTERNAL_TAX_AMOUNTS_REVIEW_ONLY"
         )
+    insurance_review_reasons = review_employee_insurance_status(
+        employee_insurance_status,
+        employee_ids=coverage["segments_by_employee"],
+        insurance_review=insurance_review,
+    )
+    review_reasons = {
+        employee: [
+            *insurance_review_reasons[employee],
+            *([] if tax_review is not None else [
+                "INCOME_TAX_UNVERIFIED", "LOCAL_INCOME_TAX_UNVERIFIED",
+            ]),
+        ]
+        for employee in coverage["segments_by_employee"]
+    }
+    employer_cost_review = None
+    if industrial_assessment_plan is not None:
+        if employee_insurance_status is None:
+            raise ContractOvertimeAdapterError(
+                "employer industrial: common employee.xlsx status required"
+            )
+        employer_cost_review = calculate_employer_industrial_insurance(
+            employee_insurance_status,
+            plan=industrial_assessment_plan,
+            period_from=period_from, period_to=period_to,
+        )
     out = {
-        "payroll_register": build_payroll_register(components["payroll_rows"]),
+        "payroll_register": build_payroll_register(
+            components["payroll_rows"], show_partial_totals=True,
+            review_reasons_by_employee=review_reasons,
+            employer_industrial_by_employee=(
+                employer_cost_review["amounts_by_employee"]
+                if employer_cost_review is not None else None
+            ),
+        ),
         "settlement_review": settlement_review,
         "status": "PARTIAL_REVIEW_ONLY",
         "approval_state": "NOT_APPROVED",
         "attendance_review": attendance,
         "worktime_review": worktime_review,
     }
+    # The same Output pass computes known totals and generates review flags.
+    # These flags identify missing approval/completion; unknown pay items
+    # remain blank, not silently treated as confirmed zero.
+    out["review_requests"] = [
+        {"employee_id": worker, "reasons": list(reasons)}
+        for worker, reasons in out["payroll_register"]["review_flags"].items()
+        if reasons
+    ]
     if pto_review is not None:
         out["pto_closing_review"] = pto_review
         settlement_review["pto_closing_status"] = pto_review["closing_status"]
@@ -383,6 +450,8 @@ def build_contract_scoped_overtime_preview(
         out["insurance_review"] = insurance_review
     if tax_review is not None:
         out["tax_withholding_review"] = tax_review
+    if employer_cost_review is not None:
+        out["employer_cost_review"] = employer_cost_review
     out["overtime_candidate_review"] = {
         "schema_version": "0.1",
         "rows": rows,
