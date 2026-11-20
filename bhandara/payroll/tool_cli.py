@@ -13,6 +13,8 @@ from pathlib import Path
 import re
 import sys
 from typing import Any, Mapping
+
+from bhandara.common.runtime.workspace import ensure_tool_workspace
 from zoneinfo import ZoneInfo
 
 from bhandara.common.io.input_layout import period_bounds
@@ -90,7 +92,8 @@ def _config(file: str | Path) -> dict[str, Any]:
         raise PayrollToolError("run_id: auto or 1-64 safe characters required")
     input_root = _path(data["input_root"], "input_root", root=path.parent)
     output_root = _path(data["output_root"], "output_root", root=path.parent)
-    if input_root == output_root or output_root.is_relative_to(input_root):
+    if (input_root == output_root or output_root.is_relative_to(input_root)
+            or input_root.is_relative_to(output_root)):
         raise PayrollToolError("input/output: output must be outside input")
     if not input_root.is_dir():
         raise PayrollToolError("input_root: missing directory")
@@ -206,6 +209,7 @@ def _review_summary(result: Mapping[str, Any], config: Mapping[str, Any],
 
 def execute(config_path: str | Path) -> dict[str, str]:
     """Calculate exactly once; use named JSON sources and output only selected artifacts."""
+    ensure_tool_workspace("payroll")
     cfg = _config(config_path)
     snapshot = _source_digest_snapshot(cfg)
     sources = _load_sources(cfg["source_files"])
