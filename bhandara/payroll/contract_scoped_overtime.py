@@ -27,7 +27,7 @@ from bhandara.payroll.output import build_payroll_register
 from bhandara.payroll.insurance_candidates import (
     calculate_insurance_candidates, read_employee_insurance_status,
     check_insurance_assessment_against_employee_status,
-    review_employee_insurance_status,
+    review_employee_insurance_status, apply_common_insurance_applicability,
 )
 from bhandara.payroll.tax_withholding import review_taxability_and_withholding
 from bhandara.payroll.leave_wage_adjustments import (
@@ -337,9 +337,15 @@ def build_contract_scoped_overtime_preview(
             raise ContractOvertimeAdapterError(
                 "insurance: selected DEDUCTION MAP workbook role required"
             )
+        verified_insurance_plan = (
+            apply_common_insurance_applicability(
+                insurance_assessment_plan, employee_insurance_status,
+            ) if employee_insurance_status is not None
+            else insurance_assessment_plan
+        )
         insurance_review = calculate_insurance_candidates(
             coverage, inputs.for_role("deduction_map"),
-            assessment_plan=insurance_assessment_plan,
+            assessment_plan=verified_insurance_plan,
             period_from=period_from, period_to=period_to,
         )
         if employee_insurance_status is not None:
