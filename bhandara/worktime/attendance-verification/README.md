@@ -93,7 +93,7 @@ report = verification.verify_attendance(
 1. **구현:** CAPS·세콤·KT텔레캅의 제공 예제에서 관찰된 헤더를 사용하는 독립 어댑터와 업체 공통 Excel v0.2 Writer/Reader가 있습니다. 새 제조사 버전·미정의 코드 해석은 별도 검증 대상입니다. 자동 열 이름 추정은 하지 않습니다.
 2. **구현:** `verify_attendance_xlsx()`를 통해 표준 Excel의 `Attendance Candidates`와 선택적 스케줄을 전달해 시각 차이를 계산할 수 있습니다. 이것은 공개 CLI나 Gearbox 자동 Workflow 연결을 의미하지 않습니다.
 3. **보류:** 휴게·법정 근로시간 판단은 Worktime Compliance에 맡깁니다. 지각·조퇴·연장·야간·휴일근무의 확정·승인·급여 산정은 하지 않습니다.
-4. **보류:** Worktime Closing, Gearbox, Slack, Tool 공개 CLI, Payroll 연동 및 구형 `worktime-calculator` 제거.
+4. **운영 단계:** Portfolio Workflow는 구현됐지만, Gearbox/Hermes·Slack 실제 호출과 권한·보관 검증은 별도입니다.
 
 정규화 원본에서 인증 방식이나 인증 성공 여부를 확정할 수 없으면 **실근무 또는 승인된 출퇴근으로 승격하지 않아야 합니다**.
 
