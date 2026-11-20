@@ -104,8 +104,15 @@ def calculate_employer_industrial_insurance(
 
     amounts = {}
     audits = []
+    employer_review_flags = {}
     for employee in sorted(employee_status):
         state = employee_status[employee]["industrial_accident"]
+        # A recorded 미가입 is an HR/employer compliance question, not a
+        # worker insurance deduction or payroll payment review.
+        employer_review_flags[employee] = (
+            ["EMPLOYER_INDUSTRIAL_NOT_ENROLLED"]
+            if state["state"] == "NOT_ENROLLED" else []
+        )
         amount = 0
         if employee in active:
             row = submitted[employee]
@@ -134,6 +141,7 @@ def calculate_employer_industrial_insurance(
         "premium_kind": "INDUSTRIAL_ACCIDENT_EMPLOYER_ONLY",
         "amounts_by_employee": amounts,
         "employees": audits,
+        "employer_review_flags": employer_review_flags,
         "total_candidate_won": sum(amounts.values()),
         "source_authenticity": "EXTERNAL_REFERENCE_NOT_AUTHENTICATED",
         "employer_cost_complete": False,
