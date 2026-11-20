@@ -2,7 +2,7 @@
 
 Bhandara는 **Paid Time Off(유급휴가), Worktime(근태), Payroll(급여)** 세 Tool과 이들을 명시적으로 연결하는 **Workflow**를 제공한다. 각 Tool은 독립 JSON 설정으로 실행할 수 있으며, 공통 Excel 읽기·직원 ID·출입업체 매핑·파일 SHA-256 검증 기능을 공유한다.
 
-> **2026-11-20 현황:** 세 Tool과 Workflow 연결은 구현·병합됐다(Portfolio #80). 구형 계산 경로·전용 샘플과 테스트를 철수하는 [PR #81](https://github.com/seo-an/portfolio/pull/81)이 진행 중이다. **Hermes·Gearbox·Slack에서 신규 Tool을 실제 호출하는 운영 연결은 아직 완료되지 않았다.** 이 저장소의 PR 병합만으로 에이전트가 자동 전환되지 않는다. `agent-config` 편집·배포와 서버 브랜치 정리는 별도 단계다.
+> **2026-11-20 현황:** 세 Tool과 Workflow 연결은 구현·병합됐다(Portfolio #80). 구형 계산 경로 철수(#81), Excel 원본 보호·실행용 폴더·Git 제외(#82)도 병합됐다. Hermes 자연어 Index·Ananda 출입원장 파일 Module 코드는 agent-config #211에서 병합되고 합성 테스트됐다. **실제 Slack 도구 발견·파일 전송·후속 무응답 재발 여부는 운영 배포 후 확인해야 한다.** 독립 Tool 내부 모든 Module을 Slack에서 개별 실행하는 기능은 아직 연결되지 않았다.
 
 ## 구성
 
@@ -45,7 +45,7 @@ cp bhandara/workflow.example.json bhandara/data/config/workflow.json
 .venv/bin/python run.py bhandara workflow
 ```
 
-필요한 명령만 실행한다. 서로 다른 실행을 모두 연속 실행하라는 뜻은 아니다. **각 JSON에 기간·원본 경로·필수 승인/정책 JSON을 사용자가 명시적으로 지정해야 한다.** 각 Tool의 출력은 서로 다른 출력 루트를 사용한다. 원본이 없으면 안전하게 실패하며, 결과 파일을 임의 검색·덮어쓰기 하지 않는다.
+필요한 명령만 실행한다. 서로 다른 실행을 모두 연속 실행하라는 뜻은 아니다. **각 JSON에 기간·원본 경로·필수 승인/정책 JSON을 사용자가 명시적으로 지정해야 한다.** 각 Tool의 출력은 서로 다른 형제 출력 루트를 사용한다(예: `bhandara/data/output/worktime`). 원본이 없으면 안전하게 실패하며, 결과 파일을 임의 검색·덮어쓰기 하지 않는다.
 
 실행 자세한 설명: [처음 사용하는 사람용 RUNBOOK](bhandara/RUNBOOK.md) · [Workflow 인계](bhandara/WORKFLOW.md) · [Common 계약](bhandara/BASE-CONTRACT.md).
 
@@ -64,10 +64,13 @@ portfolio/
         │   ├── worktime/       # 스케줄·출입원장
         │   └── payroll/        # 급여 Excel 7종 및 승인 JSON
         └── output/
-            └── <run_id>/      # 성공한 Tool의 결과. 기존 폴더 재사용 불가
+            ├── paid-time-off/ # PTO 결과 <run_id>/
+            ├── worktime/      # Worktime 결과 <run_id>/
+            ├── payroll/       # Payroll 결과 <run_id>/
+            └── workflow/      # 안내용 폴더 (계산 결과는 각 Tool별 출력)
 ```
 
-실제로는 실행을 시도한 Tool의 `input/<tool>` 폴더와 `input/common`만 먼저 생성됩니다. 각 Tool의 `config.example.json`을 `bhandara/data/config/<tool>.json`에 **복사한 경우에만** 예시의 `input_root: "../input"`, `output_root: "../output"`이 위 경로를 가리킵니다. 별도 JSON에서 설정한 외부 비공개 경로는 그대로 우선하며, 안내 폴더에 임의로 원본을 복사하거나 원본의 내용을 바꾸지 않습니다.
+실제로는 실행을 시도한 Tool의 `input/<tool>` 폴더와 `input/common`만 먼저 생성됩니다. 각 Tool의 `config.example.json`을 `bhandara/data/config/<tool>.json`에 **복사한 경우에만** 예시의 `input_root: "../input"`, `output_root: "../output/<tool>"`이 위 경로를 가리킵니다. 별도 JSON에서 설정한 외부 비공개 경로는 그대로 우선하며, 안내 폴더에 임의로 원본을 복사하거나 원본의 내용을 바꾸지 않습니다.
 
 **출력 보존:** 동일한 `run_id`가 이미 있으면 작업을 중단합니다. Worktime·Payroll XLSX 저장도 생성 전용 모드(`xb`)라 파일 존재 확인과 실제 저장 사이에 다른 파일이 생겨도 덮어쓰지 않습니다. Git은 `bhandara/data/**` 및 Tool별 실행 폴더를 무시하지만, `bhandara/tests/`의 공개 합성 샘플은 등록할 수 있습니다. 실직원 자료는 Git 작업 폴더보다 Git 밖의 승인된 비공개 디렉터리 사용을 권장합니다.
 
