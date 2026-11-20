@@ -125,6 +125,6 @@ pto_review = result["pto_closing_review"]
 - PTO 사용량/Closing은 **현금 급여의 과세·공제/정산 정본이 아니다**. 회사 규칙 및 외부 지급 결정·상세원장 진위·실제 서명 권한은 독립 검증 대상이다.
 - 신규 Flow는 \`PARTIAL_REVIEW_ONLY\`, \`NOT_APPROVED\`, \`earnings_complete=False\`, \`deductions_complete=False\` 및 **지급합계·공제합계·실지급액 공란**을 유지한다.
 
-**다음 P1-5b-2b-2:** 복수 PTO 승인별 **급여지급 처리(유급/무급)**, 기본급과 고정수당의 중복감액 금지, 사규별 고정수당 감액 정책을 결합한다. 이후 P2 보험·세금, P3 JSON CLI/전체 E2E, Gearbox 운영 전환, 마지막 레거시 3종 철수. `agent-config` 변경 PAUSE.
+**현행:** 관련 계산·검토 기능과 Payroll JSON CLI, Portfolio Workflow가 구현되었습니다. 실제 지급 승인은 없으며 Gearbox/Hermes·Slack 연결은 별도 단계입니다.
 
 테스트: `python3 -m unittest bhandara.tests.test_payroll_pto_closing_review_p1 -v`. 기존 결합 Flow와 Bhandara 전체 `unittest`, Gearbox 기능/인프라 회귀 필수.
