@@ -6,6 +6,7 @@ exclusively in temporary directories and is never committed.
 from __future__ import annotations
 
 from contextlib import contextmanager
+import errno
 import importlib
 import json
 from pathlib import Path
@@ -94,6 +95,62 @@ class WorkspaceTest(unittest.TestCase):
                 self.assertEqual(old_output.read_bytes(), b"SYNTHETIC_PREVIOUS_RESULT")
                 self.assertEqual(sorted(x.name for x in first["tool_output"].iterdir()),
                                  ["past-run"])
+
+    def test_readonly_checkout_skips_only_optional_workspace_hints(self):
+        # Hermes mounts the source tree (:ro); unlike host mode, it cannot
+        # mkdir under bhandara/data. Configured private runs must continue.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "data"
+            before = sorted(Path(tmp).iterdir())
+            with (
+                patch.object(workspace, "DATA_ROOT", root),
+                patch.object(Path, "mkdir",
+                             side_effect=OSError(errno.EROFS, "read-only checkout")),
+            ):
+                self.assertEqual(workspace.ensure_tool_workspace("worktime"), {})
+                self.assertEqual(workspace.ensure_tool_workspace("payroll"), {})
+            self.assertEqual(sorted(Path(tmp).iterdir()), before)
+            self.assertFalse(root.exists())
+
+    def test_readonly_checkout_does_not_mask_missing_tool_config(self):
+        # Verify that each real entrypoint proceeds to config validation, not
+        # an EROFS error from an unrelated guide-folder creation.
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "readonly-src-data"
+            missing = Path(tmp) / "missing-private-config.json"
+            modules = (
+                ("paid-time-off", "bhandara.paid-time-off.tool_cli"),
+                ("worktime", "bhandara.worktime.tool_cli"),
+                ("payroll", "bhandara.payroll.tool_cli"),
+                ("workflow", "bhandara.workflow"),
+            )
+            with (
+                patch.object(workspace, "DATA_ROOT", root),
+                patch.object(Path, "mkdir",
+                             side_effect=OSError(errno.EROFS, "read-only checkout")),
+            ):
+                for tool, name in modules:
+                    with self.subTest(tool=tool):
+                        module = importlib.import_module(name)
+                        with self.assertRaises(Exception) as caught:
+                            module.execute(missing)
+                        exc = caught.exception
+                        self.assertFalse(
+                            isinstance(exc, OSError) and exc.errno == errno.EROFS,
+                            f"Scaffold unexpectedly blocked {tool}: {exc}",
+                        )
+            self.assertFalse(root.exists())
+
+    def test_permission_denied_is_not_silently_treated_as_readonly(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "data"
+            with (
+                patch.object(workspace, "DATA_ROOT", root),
+                patch.object(Path, "mkdir",
+                             side_effect=PermissionError(errno.EACCES, "denied")),
+            ):
+                with self.assertRaises(PermissionError):
+                    workspace.ensure_tool_workspace("paid-time-off")
 
     def test_symlink_and_non_directory_never_redirect_workspace_to_other_files(self):
         with tempfile.TemporaryDirectory() as tmp:
