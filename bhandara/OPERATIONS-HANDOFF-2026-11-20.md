@@ -38,6 +38,8 @@ server_cleanup: "DEFERRED_BY_USER"
 - 삭제된 공개 샘플을 새 Tool 지원 샘플인 것처럼 안내하지 않기
 - Stage 4 **Git 병합 전후가 에이전트 운영 배포를 의미하지 않음**을 명시
 
+> **전환 경고:** 현재 `agent-config`의 Gearbox 일부 어댑터·테스트는 삭제된 공개 Calculator `module.json`과 구형 CLI를 참조합니다. **Portfolio CI가 모두 PASS여도 Gearbox 전체 회귀는 Stage 2에서 호출 계약을 전환하기 전까지 실패할 수 있습니다.** 활성 `.external/portfolio`를 이 PR 브랜치로 전환하면 구형 Hermes 요청이 실패할 수 있으므로, 실제 운영 프로세스 영향 확인 없이 서버 브랜치를 전환·배포하지 마세요. `agent-config`는 이번 PR에서 수정하지 않습니다.
+
 ### 사용자 서버 테스트
 
 ```bash
