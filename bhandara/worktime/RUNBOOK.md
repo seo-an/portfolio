@@ -1,6 +1,6 @@
 # Worktime 사용·검증 실행서 (신규 세 Module, 2026-11-19 / PR #57 병합)
 
-> **개발·검증용 실행서**입니다. 신규 `bhandara/worktime/`은 독립 계산·입력 정규화에 더해 **스케줄 ID 매핑 Reader, 단일 일자별 결과 Excel Writer/Reader**까지 구현했습니다. JSON 기반 선택적 Tool CLI는 **구현·사용자 서버 테스트·병합 완료**했고 Gearbox/Slack 운영 연동은 아직 하지 않았습니다. 기존 `bhandara/worktime-calculator/`는 별도 실행 가능한 구형 계산기이며 **현재도 유지**합니다.
+**현재:** Worktime의 검증·10열 Excel·JSON Tool CLI·Portfolio Workflow는 구현되었습니다. Gearbox/Hermes·Slack 운영 호출·실자료 사용은 별도 승인 후 검증합니다.
 
 ## 1. 어떤 기능이 어디에 있나요?
 
@@ -58,7 +58,7 @@ CAPS / SECOM / KT_TELECOP 원본
 - **원본 초 단위 시각**은 `event_timestamp` 및 후보 시각에 남깁니다.
 - **추가 업체·다른 헤더 버전**은 새 프로필·합성 테스트를 구현해야 합니다. 새 원본을 자동으로 추측해 매핑하지 않습니다.
 - **Common 매핑 직접 연결(신규 API):** `vendor_adapters.normalize_vendor_excel(..., id_map_path="/private/input/common/id-map.xlsx")`에서 신규 `PERSON MAP`의 `security_id` 업체 선택 및 `DEPARTMENT MAP` 조회를 지원합니다. 보조 장소 시트의 정확한 이름은 **`AREA MAP`**입니다. 기존 `identities` 직접 전달 방식도 유지합니다. 다만 Worktime 통합 CLI가 자동으로 해당 경로를 선택하는 전체 입력 Flow는 아직 구현하지 않았습니다. 다중 업체에 같은 직원이 등록되면 `PERSON MAP`에서 행을 늘리고 업체별로 필터링하며, 임의 추가 열은 읽지 않습니다.
-- **샘플 생성은 명시적으로만 수행:** 통합 생성기 `examples/sample/generate.py`는 호출한 시점에만 새 디렉터리로 출력하며, 공개 샘플을 코드 변경마다 자동 갱신하지 않습니다. 신규 Mapping 테스트에는 [샘플 정책](../examples/sample/README.md)을 참고하세요. `access-events.xlsx`는 Attendance Verification에 입력할 **출입기 record**이며 최종 Worktime 결과 Excel이 아닙니다.
+**현재:** Worktime의 검증·10열 Excel·JSON Tool CLI·Portfolio Workflow는 구현되었습니다. Gearbox/Hermes·Slack 운영 호출·실자료 사용은 별도 승인 후 검증합니다.
 
 세부 스키마: [ACCESS-EXCEL-CONTRACT.md](ACCESS-EXCEL-CONTRACT.md), [업체별 어댑터](vendor_adapters/README.md).
 
@@ -107,7 +107,7 @@ sudo docker exec -w /opt/agent-config \
 3. **모듈 조합 Flow와 공개 Tool CLI:** JSON 기반 선택적 실행과 Module JSON 결과, 단일 Worktime Excel 인계는 구현했습니다. 실제 현장 데이터 계약·운영 연결은 별도 검증합니다.
 4. **현실 데이터 예외 검증:** 분할근무·자정/익일 퇴근·시차출퇴근·휴일 예정 근무·복수 출입/미인증 등 **합성자료 기반** 회귀를 확장합니다.
 5. **Gearbox 연결:** Bhandara 변경마다 `gearbox/_tests/run.py`와 `core_run.py` 등 기존 호환성을 검증합니다. 운영 파일 수집·보관 정책은 명시적 작업별로 다릅니다. 일반 업로드는 기존 Hermes 임시 캐시(2026-11-16 문서 기준 24시간), 인증된 검토를 선택하면 최초 캐시 시각부터 3시간입니다. 자동 영구 저장 및 S3 백업은 금지합니다. 세부 정본은 agent-config의 command-scoped-file-lifecycle.md를 확인합니다.
-6. **구형 계산기 전환 및 정리:** 새 계산 결과의 계약·샘플·Gearbox 사용 경로가 검증되기 전에는 `worktime-calculator/`를 제거하거나 기존 Payroll 인계 경로를 바꾸지 않습니다.
+**현재:** Worktime의 검증·10열 Excel·JSON Tool CLI·Portfolio Workflow는 구현되었습니다. Gearbox/Hermes·Slack 운영 호출·실자료 사용은 별도 승인 후 검증합니다.
 
 **아직 확정하지 않은 것:** 지각/조퇴·연장·야간근무의 승인 판단(Payroll/외부 정책 담당), 임금 계산, 근로시간제별 예외 정책, 실제 휴게 증빙의 입수 방식, 다중 배정/분할근무, Closing 및 외부 시스템 자동 연결.
 
@@ -136,10 +136,10 @@ python -m unittest bhandara.tests.test_worktime_schedule_mapping bhandara.tests.
 - [Worktime Compliance](worktime-compliance/README.md)
 - [출입 Excel 출력 규격](ACCESS-EXCEL-CONTRACT.md)
 - [업체별 원본 해석기](vendor_adapters/README.md)
-- [구형 Worktime 계산기 실행서](../worktime-calculator/RUNBOOK.md)
+**현재:** Worktime의 검증·10열 Excel·JSON Tool CLI·Portfolio Workflow는 구현되었습니다. Gearbox/Hermes·Slack 운영 호출·실자료 사용은 별도 승인 후 검증합니다.
 
 ## 신규 JSON Tool CLI
 
 개인 설정 `bhandara/data/config/worktime.json`을 작성한 뒤 `python3 run.py bhandara worktime`로 실행합니다. `period_from`, `period_to`, 입력/출력 디렉터리, `steps`, 외부 확인된 근로시간·정책을 모두 JSON에 지정합니다. `run_id=auto`면 재실행 시 신규 결과 디렉터리를 만듭니다.
 
-**입력 Excel은 기존 구형 파일과 호환된다고 가정하지 않습니다.** 새 시트 이름·열과 독립 산출물은 [TOOL-CLI.md](TOOL-CLI.md)에 명시되어 있습니다. 기존 `worktime-calculator` 및 Gearbox 운영 경로는 변경하지 않습니다.
+**현재:** Worktime의 검증·10열 Excel·JSON Tool CLI·Portfolio Workflow는 구현되었습니다. Gearbox/Hermes·Slack 운영 호출·실자료 사용은 별도 승인 후 검증합니다.
