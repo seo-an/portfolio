@@ -1,46 +1,29 @@
 # 반다라 사용 안내서 — 처음 사용하는 사람을 위한 설명
 
-> **현재 기준:** 신규 Payroll의 7개 분리 Excel Reader와 Core→Output Adapter, Worktime 검토·초과근무 수당 **후보 금액**·명시적 중복가산(P1-4)까지 구현됐습니다. 입퇴사·재계약 달력일수 정산(P1-5a)은 검토용 함수로 병합됐습니다. P1-5b-1 휴가·결근 승인근거/근태 일치·명시적 차감액 반영(PR #69)도 병합됐습니다. P1-5b-2a 계약별 초과근무수당 후보 통합(PR #70)은 병합됐습니다. 신규 Payroll Flow의 중복 중간 급여대장 생성과 파일 중복 파싱을 제거하는 내부 경량화는 별도 PR로 검증 중입니다. 아직 신규 Payroll의 JSON Tool CLI나 실제 공제액·최종 급여 산정은 제공하지 않습니다. 아래에 남아 있는 구형 `*-calculator` 예제는 **레거시 사용법**입니다. [신규 Payroll 상태](payroll/NEXT-STEPS.md) · [레거시 철수 기준](LEGACY-RETIREMENT.md).
+> **현재 상태(2026-11-20):** 신규 `paid-time-off`, `worktime`, `payroll` 모두 **독립 JSON Tool CLI가 구현·검증·병합**됐습니다(Portfolio #78까지). 이제 남은 일은 **서로 다른 Tool의 Workflow 인수인계, Gearbox/Hermes·Slack 운영 연결, 후속 새 메시지 무응답 원인 진단, 레거시 철수**입니다. 아직 Slack에서 새 Tool을 바로 실행할 수 있는 상태가 아니며 `agent-config` 작업은 사용자 승인 전까지 PAUSE입니다.
 
+> **최신 인수인계 문서:** [운영 연결 1~4단계](OPERATIONS-HANDOFF-2026-11-20.md). **서버 브랜치 정리·배포는 사용자 요청에 따라 추후 일괄 처리**합니다. 별도 50명 Golden E2E를 필수 단계로 요구하지 않습니다.
 
-> **과거 안내(PR #60 병합 당시):** 신규 `paid-time-off`와 `worktime` Tool은 JSON 설정 기반 CLI를 사용할 수 있습니다. 신규 `payroll`은 **계약·수당·성과급 코어와 동적 Excel Output만 구현**했으며, 별도 Excel Reader/JSON Tool CLI/실제 공제·초과근무 산정 및 둘 사이 연결은 아직 없습니다. 아래 `*-calculator` 예시는 **구형** 계산기용이며 여전히 지원합니다. 신규 Tool은 Gearbox/Slack 운영과 연결되지 않았고 `agent-config` 작업은 PAUSE입니다. [개발 현황](DEVELOPMENT-STATUS-2026-11-19.md) · [Payroll 남은 작업](payroll/NEXT-STEPS.md).
+## 신규 Tool — JSON 설정 한 번, 명령 한 줄
 
-> **Payroll P1-5b-2b-1 진행 중:** PTO Closing/사용상세와 Payroll 휴가 승인 기록을 **읽기 전용**으로 대조하는 검토 단계입니다. Closing 자체는 마감 후 외부 `확정` 상태가 아니면 급여 근거로 사용할 수 없고, 복수 PTO 신청 대조 성공도 금전 지급 확정이 아닙니다. [PTO Closing 대조 계약](payroll/PTO-CLOSING-REVIEW.md).
-
-> **급여 합계 출력:** PR #77 이후 통합 Payroll Flow는 **이미 계산한 항목으로 지급합계·공제합계·실지급 차액을 잠정 표시**합니다. 미확정이면 `검토상태`에 `검증요청 · 잠정합계`가 나타나며 재검토해야 합니다. 급여 송금이 승인된 것은 아닙니다. **주제별 Bhandara 전체 테스트:** `python3 -B bhandara/_tests/run.py`. [Output 규약](payroll/OUTPUT-CONTRACT.md).
-
-> **직원 보험상태·회사 비용:** 공통 `employee.xlsx`의 4대보험별 **취득일 / 공란(적용 제외) / `미가입`**을 근거로 국민연금·건강보험·고용보험 근로자 부담 공제를 판단합니다. 산재보험료도 별도 계산하지만 **근로자 급여에서는 공제하지 않고**, 관리자용 급여대장에 회사 부담 내역·확인된 지출로만 표시합니다. [보험·사업주 비용 규약](payroll/EMPLOYER-INSURANCE.md).
-
-> **신규 Payroll Tool CLI (P3-1 검증 중):** PTO/Worktime과 같이 `bhandara/data/config/payroll.json`에 기간·입력·증빙·출력 경로를 한 번 정의하면 `python3 run.py bhandara payroll`로 기존 계산 Flow를 실행합니다. 결과는 **기존 PAYROLL 한 시트 + 검토 JSON**이며 별도 회사 인건비 계산 모듈은 만들지 않습니다. [설정 예제와 입력 역할](payroll/TOOL-CLI.md).
-
-### 신규 Tool — 매번 명령어 수정하지 않음
-
-사용자 전용 JSON은 공개 Git에서 제외한 `bhandara/data/config/`에 보관합니다. 예제 파일을 복사한 뒤 그 안에서 날짜·입출력 폴더·실행 단계를 바꾸세요. 새로운 명령에는 `--period`, `--input-dir`, `--output-dir`가 필요하지 않습니다.
+사용자 전용 JSON은 공개 Git에서 제외한 `bhandara/data/config/`에 두고 기간·원본 파일·출력 위치·선택 단계만 명시합니다. 명령어의 `--period`, `--input-dir` 등을 매번 수정하지 않습니다.
 
 ```bash
 python3 run.py bhandara paid-time-off
 python3 run.py bhandara worktime
+python3 run.py bhandara payroll
 ```
 
-- [PTO JSON 예제 및 사용법](paid-time-off/TOOL-CLI.md) — `as_of_date`, `steps` 등.
-- [Worktime JSON 예제 및 사용법](worktime/TOOL-CLI.md) — `period_from/period_to`, `steps` 등.
-- **실자료를 곧바로 붙이지 말고 합성자료로 입출력 계약을 검증하세요.** Slack/Hermes에서 파일을 업로드했다고 새 Tool 계산이 시작되지는 않습니다.
+- **PTO:** [설정·Flow](paid-time-off/TOOL-CLI.md) — 발생/차감/사용원장, 마감은 확정된 경우만 선택.
+- **Worktime:** [설정·Flow](worktime/TOOL-CLI.md) — 검증된 근로·근태 사실, 결과 `worktime-result.xlsx`/`WORKTIME` 10열.
+- **Payroll:** [설정·Flow](payroll/TOOL-CLI.md) — 7개의 별도 단일 시트 XLSX + Worktime 및 승인·정책 JSON, 결과 `payroll-result.xlsx`/`PAYROLL` 한 시트 + `payroll-review.json`.
+- **세 Tool은 독립 실행**하며, 자동으로 서로 호출하거나 Slack 업로드만으로 실행하지 않습니다. 순서·파일 경로 인계는 [운영 Stage 1](OPERATIONS-HANDOFF-2026-11-20.md#1-단계--portfolio-tool-간-workflow-연결)에서 정합니다.
+- **급여의 잠정 합계는 지급 승인액이 아닙니다.** 미확인 보험·세금 사유만 검토 플래그로 표시하며 미해당 수당/기타 공제 공란은 정상입니다. 산재보험·회사 비용 확인분은 관리자 전용 정보로 근로자 급여 총액에서 제외합니다.
+- 실제 직원/급여 자료와 개인 설정 JSON은 공개 저장소나 허용되지 않은 Slack 채널에 올리지 않습니다.
 
+## 구형 계산기 안내와 신규 Tool을 혼동하지 마세요
 
-### 신규 Payroll은 아직 직접 실행하는 CLI가 아닙니다
-
-새 `bhandara/payroll/`에는 계약·수당·성과급 코어, **7개 XLSX Reader, 계산기간 선택·검토용 Adapter, 초과근무/중복가산 검토 후보**가 있습니다. 다만 **정식 JSON Tool CLI와 최종 급여 계산은 구현되지 않았으므로** 새 `python3 run.py bhandara payroll` 명령은 아직 지원되지 않습니다. 계약·기간 분할 일할도 출처가 확인된 별도 입력을 함수에 전달해야 하며, Excel만 올렸다고 자동 실행되지 않습니다.
-
-- 입력 계약: [분리형 Excel 7개](payroll/input-files.json). `input_root/payroll/`의 각 파일 한 시트를 읽는 엄격한 Reader는 구현됐으나, 정식 독립 JSON Tool CLI는 미구현입니다.
-- 출력 계약: [`payroll-result.xlsx`/`PAYROLL`](payroll/OUTPUT-CONTRACT.md). 50명 중 1명만 특정 수당을 받더라도 그 수당 열이 생성되고, 미해당 직원 셀은 공란입니다.
-- 기존 `payroll-calculator`의 아래 명령은 구형 계산기 호출이며, **새 Payroll Tool의 지급액이 계산된다는 뜻이 아닙니다**.
-- 설치된 공개 샘플 폴더의 `pay-contract.xlsx`를 새 `CONTRACTS` 단일 시트 계약으로 간주하지 마세요. 신규 나머지 6개 파일의 실제 Git 반영 및 시트/헤더 검증도 아직 확인해야 합니다.
-
-Normalizer는 계산 전에 반드시 실행해야 하는 단계가 아닙니다.
-해당 계산기가 이미 읽을 수 있는 파일이라면 바로 PTO·Worktime·Payroll을 실행하세요.
-Normalizer를 따로 실행할 경우 결과를 `common/module/normalizer/output/<run-id>/`에 기록하고,
-다른 계산기에 쓰려면 **입력 규격을 확인한 뒤 결과 파일 경로를 명시적으로 전달**합니다.
-[Normalizer 안내](common/module/normalizer/RUNBOOK.md)를 참고하세요.
+아래 본문 중 `pto-calculator`·`worktime-calculator`·`payroll-calculator` 명령, 예전 활성 시트 방식, `compensation.xlsx`·`payroll-input.xlsx` 예시는 **기존 레거시 계산기의 사용법**으로 남아 있습니다. 신규 Tool에는 위 각 `TOOL-CLI.md`와 실제 스키마를 사용하세요. 레거시는 **운영 전환 확인 후 별도 PR**로 제거합니다. Normalizer는 입력 형식이 이미 유효하면 필수 선행 단계가 아닙니다.
 
 ## 가장 쉬운 첫 실행
 
@@ -84,7 +67,7 @@ python run.py bhandara payroll-calculator --period 2026-07
 
 > **Payroll P2-2 진행:** #75 보험료 후보가 병합되었습니다. 이제 **PTO·초과근무 반영 후 실제 지급 후보 전체**의 과세/비과세 분류를 대조하고, 외부에서 확인된 근로·지방소득세 공제 후보를 같은 한 시트 급여대장에 표시합니다. 법정 세액표 계산·지급 승인·실지급액 확정은 아직 수행하지 않습니다. [세금·과세 분류 계약](payroll/TAX-WITHHOLDING.md).
 
-## 1. 먼저 어떤 계산기를 사용할지 고르세요
+## 1. 먼저 어떤 계산기를 사용할지 고르세요 (아래 표의 구형 항목은 레거시)
 
 | 하고 싶은 일 | 선택할 계산기 | 내가 준비할 파일 | 자세한 사용 안내 |
 |---|---|---|---|
@@ -122,7 +105,7 @@ python run.py bhandara payroll-calculator --period 2026-07
 
 실제 직원의 이름·사번·근무시간·급여가 들어간 파일은 **공개 GitHub 저장소나 Slack에 올리지 마세요.** 접근 권한이 제한된 컴퓨터의 폴더에 보관하세요.
 
-## 3. 엑셀은 어떻게 준비하나요?
+## 3. 엑셀은 어떻게 준비하나요? (레거시 예시는 신규 Tool과 규격이 다릅니다)
 
 | 질문 | 답 |
 |---|---|
