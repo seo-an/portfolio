@@ -361,13 +361,23 @@ def build_contract_scoped_overtime_preview(
             "EXPLICIT_PAY_ITEM_SPLITS_AND_EXTERNAL_TAX_AMOUNTS_REVIEW_ONLY"
         )
     out = {
-        "payroll_register": build_payroll_register(components["payroll_rows"]),
+        "payroll_register": build_payroll_register(
+            components["payroll_rows"], show_partial_totals=True,
+        ),
         "settlement_review": settlement_review,
         "status": "PARTIAL_REVIEW_ONLY",
         "approval_state": "NOT_APPROVED",
         "attendance_review": attendance,
         "worktime_review": worktime_review,
     }
+    # The same Output pass computes known totals and generates review flags.
+    # These flags identify missing approval/completion; unknown pay items
+    # remain blank, not silently treated as confirmed zero.
+    out["review_requests"] = [
+        {"employee_id": worker, "reasons": list(reasons)}
+        for worker, reasons in out["payroll_register"]["review_flags"].items()
+        if reasons
+    ]
     if pto_review is not None:
         out["pto_closing_review"] = pto_review
         settlement_review["pto_closing_status"] = pto_review["closing_status"]
