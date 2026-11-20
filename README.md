@@ -72,6 +72,8 @@ portfolio/
 
 실제로는 실행을 시도한 Tool의 `input/<tool>` 폴더와 `input/common`만 먼저 생성됩니다. 각 Tool의 `config.example.json`을 `bhandara/data/config/<tool>.json`에 **복사한 경우에만** 예시의 `input_root: "../input"`, `output_root: "../output/<tool>"`이 위 경로를 가리킵니다. 별도 JSON에서 설정한 외부 비공개 경로는 그대로 우선하며, 안내 폴더에 임의로 원본을 복사하거나 원본의 내용을 바꾸지 않습니다.
 
+**Hermes Docker 예외:** Hermes는 `.external/portfolio` 코드를 **읽기 전용(`:ro`)**으로 마운트합니다. 따라서 컨테이너 안에서는 코드 저장소 아래 빈 안내 폴더를 새로 만들 수 없습니다. 이때 선택적 안내 폴더 생성만 건너뛰고, **사전 검증된 개인 JSON과 읽기·쓰기 가능한 별도 비공개 데이터 경로**로 실제 Tool을 실행합니다. `PermissionError`나 잘못된 폴더/심볼릭 링크는 건너뛰지 않고 거부합니다. 안내용 기본 `bhandara/data` 경로는 **호스트/로컬의 쓰기 가능한 체크아웃에서 Tool을 실행할 때** 자동 생성됩니다. 읽기 전용 코드 위치를 결과 폴더로 우회하거나 강제 쓰기하지 않습니다.
+
 **출력 보존:** 동일한 `run_id`가 이미 있으면 작업을 중단합니다. Worktime·Payroll XLSX 저장도 생성 전용 모드(`xb`)라 파일 존재 확인과 실제 저장 사이에 다른 파일이 생겨도 덮어쓰지 않습니다. Git은 `bhandara/data/**` 및 Tool별 실행 폴더를 무시하지만, `bhandara/tests/`의 공개 합성 샘플은 등록할 수 있습니다. 실직원 자료는 Git 작업 폴더보다 Git 밖의 승인된 비공개 디렉터리 사용을 권장합니다.
 
 ## 지급·보안 경계

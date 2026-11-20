@@ -6,6 +6,7 @@ authoritative for a real Tool run.
 """
 from __future__ import annotations
 
+import errno
 from pathlib import Path
 
 DATA_ROOT = Path(__file__).resolve().parents[2] / "data"
@@ -33,21 +34,34 @@ def _ensure_directory(path: Path) -> Path:
 
 
 def ensure_tool_workspace(tool: str) -> dict[str, Path]:
-    """Show stable placement by creating empty config/input/output folders.
+    """Create empty directory hints only when the source checkout is writable.
 
-    Private run data belongs in data/input/{common,TOOL} and data/output/TOOL/run_id.
-    No run_id output directory is created here: individual Tool executors must
-    reserve it only when genuinely producing results, without overwrite.
+    Hermes mounts .external/portfolio read-only: an EROFS while making
+    optional hints is intentionally skipped. The configured input/output
+    locations are NEVER replaced with this hint location. Any other
+    filesystem error remains fatal; existing files/symlinks fail closed.
+
+    No run_id output directory is created here: Tool executors must reserve
+    actual results exclusively, without overwrite.
     """
     if tool not in TOOLS:
         raise WorkspaceError("unknown Bhandara Tool")
-    root = _ensure_directory(DATA_ROOT)
-    config = _ensure_directory(root / "config")
-    input_root = _ensure_directory(root / "input")
-    output_root = _ensure_directory(root / "output")
-    _ensure_directory(input_root / "common")
-    specific = _ensure_directory(input_root / tool)
-    tool_output = _ensure_directory(output_root / tool)
+    try:
+        root = _ensure_directory(DATA_ROOT)
+        config = _ensure_directory(root / "config")
+        input_root = _ensure_directory(root / "input")
+        output_root = _ensure_directory(root / "output")
+        _ensure_directory(input_root / "common")
+        specific = _ensure_directory(input_root / tool)
+        tool_output = _ensure_directory(output_root / tool)
+    except OSError as exc:
+        if exc.errno != errno.EROFS:
+            raise
+        # Hermes mounts agent-config (including .external/portfolio) as :ro.
+        # Directory hints are OPTIONAL: do not make private, explicitly
+        # configured input/output processing depend on writing into code.
+        # Never redirect output to an invented location or modify originals.
+        return {}
     return {
         "config": config,
         "input": input_root,

@@ -39,6 +39,8 @@ bhandara/data/
 
 예시 JSON은 반드시 `bhandara/data/config`에 복사하여 사용하세요. 복사된 설정의 `input_root: "../input"`, `output_root: "../output/<tool>"`은 위 안내 폴더를 가리킵니다. 다른 위치의 개인 JSON으로 실행하면 경로는 **그 설정 파일 위치 기준**이므로 따로 조정해야 합니다. 회사 실제 원본·승인 JSON은 가능하면 Git 체크아웃 밖 비공개 경로로 지정하세요. **자동 생성은 빈 폴더만** 수행하며 원본 파일을 만들거나 수정하지 않습니다.
 
+Hermes Docker에서는 `/opt/agent-config` 전체가 **읽기 전용 마운트**이므로 실행 때 그 안의 `bhandara/data` 안내 폴더 생성은 자동으로 **생략**됩니다. 실 운영 Tool 설정 JSON은 `/opt/data/bhandara/tool-config`에 있으며, 실제 입력과 출력도 `/opt/data/bhandara` 같은 **접근 허용된 쓰기 가능 비공개 경로**로 명시해야 합니다. 호스트의 쓰기 가능한 Git 체크아웃에서 실행할 때만 설명용 빈 폴더를 자동 생성합니다. 이는 권한을 변경하거나 원본 Excel을 이동하라는 뜻이 아닙니다. `EROFS` 외의 실제 파일 권한 오류는 무시하지 않습니다.
+
 `bhandara/data/**`는 Git에서 제외합니다. Tool별 예전 `input/output` 경로도 무시 규칙을 유지해, 실제 Excel이 실수로 커밋되지 않도록 합니다. `git clean -fdx`는 Git 무시 파일도 삭제하므로 실행 데이터가 있는 서버에서 사용하면 안 됩니다.
 
 ## 2. 세 Tool 실행
