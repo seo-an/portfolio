@@ -242,7 +242,8 @@ def build_payroll_register(
         }
         if employer_industrial_by_employee is not None:
             employer_premium = employer_industrial_by_employee[source["employee_id"]]
-            row["employer_industrial"] = employer_premium if employer_premium else None
+            if any(column["key"] == "employer_industrial" for column in columns):
+                row["employer_industrial"] = employer_premium if employer_premium else None
             # Gross wages, not employee net pay, are the base company expense.
             # This is a *known subset*; other employer charges aren't inferred.
             row["known_company_outlay"] = earnings_total + employer_premium
