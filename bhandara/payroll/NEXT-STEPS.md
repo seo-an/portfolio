@@ -137,6 +137,10 @@ P2-2 근로·지방소득세 후보 PR #76은 사용자 서버 테스트·병합
 
 같은 PR에서 `python3 -B bhandara/_tests/run.py`로 **Bhandara 전체 unittest 주제별 PASS/FAIL/ERROR/SKIP**을 집계한다. Gearbox의 `gearbox/_tests/run.py`와 `core_run.py`은 별도 실행으로 유지. CI 및 사용자 서버 검증·병합 전에는 완료 아님.
 
+### PR #77 후속 보강 — 직원보험 취득상태·산재 회사 부담
+
+[공통 직원상태와 산재 사업주 비용](EMPLOYER-INSURANCE.md). 공통 `employee.xlsx`에 보험별 **취득일 / 공란(적용 제외) / `미가입`** 표기를 사용한다. 국민연금의 고령 만기 등 미가입 여부를 급여에서 나이로 자동 판단하지 않는다. **근로자 급여 검토 플래그는 소득세·지방소득세·근로자 부담 보험(국민연금/건강보험·장기요양/고용보험)으로 제한**하고, 정상 미해당 수당·기타 공제에 대한 경고는 발생시키지 않는다. 산재보험료는 별도 사업주 비용으로 계산해 직원 급여 3종 합계와 완전히 분리한다. 관리자 단일시트 Output에는 산재보험료/회사 비용(현재 확인된 항목) 열을 추가하고, 직원별 조회에서는 숨긴다. 산재 외 사업주 보험 3종, 실제 납부 검증 등은 추후 확장한다.
+
 ## P3: JSON Tool CLI + 합성 통합 E2E
 
 1. PTO·Worktime과 동일하게 개인 JSON 설정에서 `payroll_period`, `input_root`, `output_root`, `run_id=auto`, `steps`, 파일 역할 참조를 읽고 고정 명령 한 줄로 실행. `--period/--input-dir/--output-dir`를 매번 수정시키지 않는다.
