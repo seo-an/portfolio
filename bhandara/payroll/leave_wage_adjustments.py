@@ -9,6 +9,7 @@ No tax, pension, gross, or payable wage amount is finalized here.
 from __future__ import annotations
 
 from collections import defaultdict
+from datetime import datetime
 from typing import Any, Mapping
 
 
@@ -47,6 +48,35 @@ def _request_key(row: Mapping[str, Any]) -> tuple[str, str, str, str]:
         _text(row.get(field), field)
         for field in ("employee_id", "request_id", "leave_date", "pto_leave_type")
     )
+
+
+def check_pto_overtime_intervals(
+    pto_claims: list[Mapping[str, Any]] | tuple[Mapping[str, Any], ...],
+    approved_segments: list[Mapping[str, Any]] | tuple[Mapping[str, Any], ...],
+) -> None:
+    """Audit ALL externally verified PTO spans against approved overtime.
+
+    P1-5b-1 checks only the Worktime-anchored first leave; the extra same-day
+    PTO requests must not silently overlap independently approved work.
+    The caller must have validated the PTO claims and overtime evidence first.
+    """
+    from bhandara.payroll.overtime_candidates import _interval
+
+    paid_spans = []
+    for row in pto_claims:
+        paid_spans.append((
+            _text(row["employee_id"], "PTO.employee_id"),
+            datetime.fromisoformat(row["start_at"]),
+            datetime.fromisoformat(row["end_at"]),
+        ))
+    for row in approved_segments:
+        worker = _text(row["employee_id"], "overtime.employee_id")
+        start, end, _ = _interval(row, "approved_overtime")
+        for leave_worker, leave_start, leave_end in paid_spans:
+            if worker == leave_worker and start < leave_end and leave_start < end:
+                raise LeaveWageAdjustmentError(
+                    "PTO: independently approved overtime overlaps a listed leave interval"
+                )
 
 
 def reconcile_leave_wage_decisions(
