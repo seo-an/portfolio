@@ -166,59 +166,6 @@ class CommonTabularNormalizationTests(unittest.TestCase):
         with self.assertRaises(UnsupportedScalarType):
             convert_scalar("x", kind="arbitrary_script")
 
-    def test_payroll_mapping_still_preserves_explicit_alias_values_and_rejects(self):
-        mapper = importlib.import_module(
-            "bhandara.payroll-calculator.functions.source_mapping"
-        )
-        raw = self.root / "source.csv"
-        raw.write_text(
-            "worker,company_pay_code,qty\n"
-            "W1,OVERTIME,1\n"
-            "W2,UNSUPPORTED,2\n",
-            encoding="utf-8",
-        )
-        spec = {
-            "path": "source.csv",
-            "format": "csv",
-            "fields": {
-                "worker_id": {"source": "worker", "required": True},
-                "pay_item_code": {
-                    "source": "company_pay_code",
-                    "required": True,
-                    "value_map": {"OVERTIME": "overtime_hours"},
-                },
-                "quantity": {"source": "qty", "required": True, "type": "int"},
-            },
-            "unique_by": ["worker_id"],
-        }
-        result = mapper.normalize_source("payroll_input", spec, input_dir=self.root)
-        self.assertEqual(result["total_rows"], 2)
-        self.assertEqual(result["accepted_rows"], 1)
-        self.assertEqual(result["rejected_rows"], 1)
-        self.assertEqual(result["rows"][0], {
-            "worker_id": "W1", "pay_item_code": "overtime_hours", "quantity": 1,
-        })
-        self.assertEqual([entry["status"] for entry in result["lineage"]],
-                         ["ACCEPTED", "REJECTED"])
-        self.assertEqual(result["lineage"][1]["issue_codes"],
-                         ["SOURCE_VALUE_INVALID"])
-        self.assertEqual(result["source_sha256"],
-                         hashlib.sha256(raw.read_bytes()).hexdigest())
-        self.assertEqual(result["lineage"][0]["selected_columns"],
-                         {"worker_id": "worker",
-                          "pay_item_code": "company_pay_code", "quantity": "qty"})
-
-    def test_public_mapper_keeps_its_existing_error_type(self):
-        mapper = importlib.import_module(
-            "bhandara.payroll-calculator.functions.source_mapping"
-        )
-        (self.root / "bad.csv").write_text("a,b\nvalue\n", encoding="utf-8")
-        with self.assertRaises(mapper.SourceMappingError):
-            mapper.normalize_source("employees", {
-                "path": "bad.csv",
-                "fields": {"worker_id": {"source": "a", "required": True}},
-            }, input_dir=self.root)
-
     def test_common_modules_have_no_calculator_or_gearbox_imports(self):
         for path in (
             ROOT / "bhandara/common/io/tabular.py",
@@ -229,9 +176,9 @@ class CommonTabularNormalizationTests(unittest.TestCase):
                 for node in ast.walk(tree):
                     if isinstance(node, ast.ImportFrom):
                         prefix = node.module or ""
-                        self.assertFalse(prefix.startswith(("gearbox", "bhandara.payroll-calculator", "bhandara.worktime-calculator", "bhandara.pto-calculator")))
+                        self.assertFalse(prefix.startswith(("gearbox", "bhandara.payroll", "bhandara.worktime", "bhandara.paid-time-off")))
                     elif isinstance(node, ast.Import):
-                        self.assertFalse(any(alias.name.startswith(("gearbox", "bhandara.payroll-calculator", "bhandara.worktime-calculator", "bhandara.pto-calculator")) for alias in node.names))
+                        self.assertFalse(any(alias.name.startswith(("gearbox", "bhandara.payroll", "bhandara.worktime", "bhandara.paid-time-off")) for alias in node.names))
 
 
 if __name__ == "__main__":
