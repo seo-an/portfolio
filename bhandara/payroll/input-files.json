@@ -1,9 +1,9 @@
 {
   "schema_version": "1.1",
   "tool": "payroll",
-  "status": "READER_AND_REVIEW_ADAPTER_NOT_YET_CONNECTED_TO_CLI",
+  "status": "ACTIVE_TOOL_CLI",
   "input_directory": "payroll",
-  "note": "Seven separate one-sheet XLSX inputs. Names are explicit in FIXED ALLOWANCE MAP and BONUS BUDGET. Calculation-period fields are not contract legal effective dates. Runtime input_root/payroll, synthetic samples separate. Reader implemented; Tool CLI not yet connected.",
+  "note": "Seven independent one-sheet Payroll XLSX inputs. Named source and approval JSON remain externally verified; Tool CLI uses the existing reader.",
   "workbooks": {
     "contracts": {
       "filename": "pay-contract.xlsx",
@@ -91,6 +91,5 @@
         "allocation_ratio"
       ]
     }
-  },
-  "sample_directory": "bhandara/examples/sample/input/payroll"
+  }
 }
