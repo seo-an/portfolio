@@ -30,6 +30,7 @@ from bhandara.payroll.insurance_candidates import (
     review_employee_insurance_status, apply_common_insurance_applicability,
 )
 from bhandara.payroll.tax_withholding import review_taxability_and_withholding
+from bhandara.payroll.employer_insurance import calculate_employer_industrial_insurance
 from bhandara.payroll.leave_wage_adjustments import (
     reconcile_leave_wage_decisions, apply_leave_wage_decisions,
     check_pto_overtime_intervals,
@@ -189,6 +190,7 @@ def build_contract_scoped_overtime_preview(
     insurance_assessment_plan: Mapping[str, Any] | None = None,
     withholding_plan: Mapping[str, Any] | None = None,
     employee_xlsx: str | Path | None = None,
+    industrial_assessment_plan: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Contract-scoped approved overtime is a *candidate*, never final wages.
 
@@ -399,10 +401,25 @@ def build_contract_scoped_overtime_preview(
         ]
         for employee in coverage["segments_by_employee"]
     }
+    employer_cost_review = None
+    if industrial_assessment_plan is not None:
+        if employee_insurance_status is None:
+            raise ContractOvertimeAdapterError(
+                "employer industrial: common employee.xlsx status required"
+            )
+        employer_cost_review = calculate_employer_industrial_insurance(
+            employee_insurance_status,
+            plan=industrial_assessment_plan,
+            period_from=period_from, period_to=period_to,
+        )
     out = {
         "payroll_register": build_payroll_register(
             components["payroll_rows"], show_partial_totals=True,
             review_reasons_by_employee=review_reasons,
+            employer_industrial_by_employee=(
+                employer_cost_review["amounts_by_employee"]
+                if employer_cost_review is not None else None
+            ),
         ),
         "settlement_review": settlement_review,
         "status": "PARTIAL_REVIEW_ONLY",
@@ -433,6 +450,8 @@ def build_contract_scoped_overtime_preview(
         out["insurance_review"] = insurance_review
     if tax_review is not None:
         out["tax_withholding_review"] = tax_review
+    if employer_cost_review is not None:
+        out["employer_cost_review"] = employer_cost_review
     out["overtime_candidate_review"] = {
         "schema_version": "0.1",
         "rows": rows,
