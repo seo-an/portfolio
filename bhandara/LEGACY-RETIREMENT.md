@@ -1,48 +1,42 @@
-# Bhandara 레거시 철수 계획 (마이그레이션 완료 후)
+# Bhandara 레거시 철수 게이트 (운영 연결 완료 후)
 
-> **목표:** 구형 `pto-calculator`, `worktime-calculator`, `payroll-calculator` 및 이들의 더 이상 쓰지 않는 설정/예제/호환 코드를 제거하고, 신규 `paid-time-off` / `worktime` / `payroll` + Common + 논리 Flow/Tool/Workflow 구조로 단일화한다. **2026-11-19 현재 철수 완료가 아님.**
+> **현재 상태(2026-11-20): 구형 계산기 미삭제.** 신규 `paid-time-off`·`worktime`·`payroll`은 PR #78까지 독립 JSON Tool CLI를 구현·검증·병합했다. 그러나 실제 Gearbox/Hermes·Slack 신규 Tool 호출은 아직 `NOT_CONNECTED`이고 `agent-config`는 사용자 요청으로 `PAUSE`다. **서버 정리는 나중에 한 번에** 진행한다.
 
-## 현재 확인한 의존 관계
+**최신 4단계 운영 인수인계:** [`OPERATIONS-HANDOFF-2026-11-20.md`](OPERATIONS-HANDOFF-2026-11-20.md)
 
-- `run.py`의 `_LOCAL_ROLE_FIELDS`에 구형 계산기 3종이 등록되어 있고, 구형 `module_id` 라우팅·파일 역할·설정 및 `payroll-calculator.taxability_adapter` 호출 경로가 남아 있다.
-- 루트 `README.md`, `bhandara/RUNBOOK.md`, `bhandara/DEVELOPMENT-STATUS-2026-11-19.md`와 Golden 비교/단독 설치 안내가 구형 계산기의 입출력을 설명한다.
-- 공개 샘플 `bhandara/examples/sample/input/payroll/pay-contract.xlsx`는 기존 활성 시트 방식일 수 있으며, 새 `payroll/input-files.json`의 **7개 별도 XLSX**와 자동 호환한다고 인정하지 않는다.
-- `agent-config` / Gearbox의 실제 기존 Calculator 호출, 버전·권한·Slack 입력/출력 연결은 아직 운영 전환/회귀 검증이 필요하다. `agent-config`는 사용자 재개 지시까지 PAUSE.
+## 철수 대상과 남아 있는 의존
 
-> **Payroll 진행 업데이트:** PR #71 Flow 경량화(계약 검증·Worktime 파싱·Output 생성 각 1회) 병합 완료. 다음 P1-5b-2b-1 PTO Closing/복수 휴가 **읽기 전용 대조**를 검증 중이며, 실제 유급·무급·고정수당 처리 및 P2/P3·운영 전환 전 레거시 삭제는 하지 않는다.
+- 기존 `pto-calculator`, `worktime-calculator`, `payroll-calculator`, 구형 `run.py` 라우팅·설정·샘플·전용 테스트/문서 중 신규 Tool에서 사용하지 않는 부분.
+- Gearbox와 Hermes의 **현재 운영 호출 경로**. `portfolio`의 신규 CLI 병합이 이 호출 경로를 자동으로 바꾸지는 않는다.
+- 구형 Worktime JSON과 신규 Worktime 10열 Excel은 동일 계약이 아니므로 **경로만 바꿔 끼우지 않는다**.
+- 신규 Tool과 Common이 계속 사용하는 라이브러리·Reader·ID/보안업체 매핑은 구형 폴더에서 사용한 적이 있어도 **실제 의존을 확인하기 전 삭제 금지**.
+- 현재 공개 합성 샘플 중 구형 규격에 속한 파일은 신규 7개 Payroll 입력으로 오인하지 않는다. 파일 형식 이관 여부를 별도로 확인한다.
 
-> **Payroll 단계 현황:** #71 단일 렌더링 Flow 및 #72 PTO Closing/복수 신청 수량대조 병합 완료. 현재 별도 신청별 임금처리·고정수당 감액 P1-5b-2b-2를 구현 중. 신규 Tool CLI·전액 정산·실운영 검증이 완료되기 전에는 구형 계산기를 삭제하지 않습니다.
+## 철수 순서 (필수 게이트)
 
-> **2026-11-20 업데이트:** P1-5b-2b-2(#73) 복수 PTO 임금결정·이중차감 방지 병합 완료. 다음 동일 PTO 검토 함수에 **`마감 전`/확정 상태만 구분**하는 간소화 PR 진행 중. PTO/Worktime 코어·Reader·Excel 출력은 변경하지 않는다. 레거시 철수는 P2/P3·Gearbox 검증 뒤.
-
-> **2026-11-20 진행 갱신:** PR #74 병합 완료. P2-1 기존 DEDUCTION MAP 요율과 외부 확정 보험별 산정기준액으로 후보를 계산하는 Flow 연결 중. 세금/실지급액과 Payroll 신규 CLI/운영 전환이 완료되지 않았으므로 레거시 삭제 금지.
-
-> **2026-11-20 단계:** PR #75 보험료 후보 사용자 서버 검증·병합 완료. P2-2 과세/비과세·근로/지방소득세 공제 후보 진행 중. 신규 Tool CLI, 전체 공제/지급합계 승인 게이트, Gearbox 연계 E2E가 완성되기 전에 구형 계산기 3종은 제거하지 않습니다.
-
-## 순서대로 철수
-
-| 단계 | 통과 기준 | 삭제 가능 여부 |
+| 단계 | 요구되는 사실 | 현재 상태 |
 |---|---|---|
-| 1. 새 Tool 기능 완성 | PTO의 Use Promotion, Worktime의 Closing/복수 구간, Payroll의 법정 지급검토·공제·중도변경 등 정의된 범위를 구현 | 구형 삭제 금지 |
-| 2. JSON CLI·Flow·계약 E2E | 신규 3종 각각 한 줄 실행, 월/주기·입출력·상태·원본 불변 및 50명 합성자료 검증 | 삭제 금지 |
-| 3. 구형 비교 | 동일 합성 입력의 **정규화된 계약·결과** 비교. 설계 변경에 따른 차이는 명시적 승인받은 테스트로 기록 | 삭제 금지 |
-| 4. Gearbox/Hermes 전환 | 신규 Tool 호출·권한·파일 TTL·Slack 회신과 핵심 Gearbox 기능/인프라 테스트 통과 | 운영 의존 관계 제거 후 검토 |
-| 5. 신규 단독 설치 | Common+신규 Tool만 설치해 실행; `run.py`, 설치 검사, 샘플·문서가 더 이상 구형 파일을 참조하지 않음 | 단계별 철수 가능 |
-| 6. 레거시 삭제 PR | 기존 `*-calculator` 폴더, 구형 라우팅/설정/테스트, 구형 문서·예제·의존 모듈 제거. 신규 합성 테스트와 운영 회귀 전체 통과 | 사용자 검증·병합 후 완료 |
+| 1. 신규 Tool 독립 CLI 준비 | 세 Tool의 JSON 설정과 계산·출력·단독 테스트 | **완료** (#78까지 사용자 서버 테스트/병합) |
+| 2. Workflow 인계 | 정확한 호출 순서, 결과 파일·승인 JSON·기간/해시 인계 및 오류 차단 | **미구현** |
+| 3. Gearbox/Hermes 운영 전환 | 사용자 재개 승인, 신규 Tool 선택·권한·Slack 응답·호환성 검증 | **PAUSE / NOT_CONNECTED** |
+| 4. 운영 안정성 | 업로드 ACK와 후속 새 메시지 응답 분리, 삭제·만료/재시도/오류 회신을 합성자료로 확인 | **미검증** |
+| 5. 구형 참조 인벤토리 | 실행 코드·설치·문서·샘플·Gearbox·프로필의 마지막 구형 참조 검색 | **시행 전** |
+| 6. 단계별 제거 PR | 구형 Tool별 호출 이전 → 사용자 서버 회귀 확인 → 일반 PR 병합 후 제거 | **차단** |
+| 7. 서버 정리/배포 | 사용자 요청 시 일괄 적용·롤백 확인 | **후순위** |
 
-**삭제를 먼저 하고 테스트를 고치는 방식은 금지**한다. 신규 기능이 아직 지원하지 않는 외부 계약이 남아 있으면 삭제 조건을 충족하지 못한다. 구형 계산기별 **독립 PR**로 이관·제거하고 각 PR에서 GitHub CI와 실제 서버 브랜치 테스트를 통과한다.
+**50명 Golden E2E를 신규 필수 게이트로 두지 않는다.** 기존 단독/통합 `unittest`와 실제 변경된 계약의 표적 합성 회귀, Bhandara 전체 테스트와 Gearbox 기능·인프라 호환성 검증으로 판단한다. Golden 비교는 특정 차이가 있을 때 **선택적인 진단 방법**일 뿐, 자동 착수할 별도 개발 트랙이 아니다.
 
-## 삭제하지 않을 것
+## PR 방식과 보호 범위
 
-- Common의 현재 신규 Tool에서 사용 중인 Base·ID Mapping·보안업체 Mapping 등 **공통 기능**
-- 신규 계산과 비교에 계속 필요한 검증용 **Golden의 형식/기준**. 다만 구형 구현에만 의존하는 테스트는 신규 정본으로 전환
-- 실제 사용자 직원/급여 원본·개인정보 및 운영 백업은 코드 철수 작업의 삭제 대상이 아니다. 개인정보 보관·삭제 정책은 운영 계약에서 별도로 처리한다.
+1. 구형 Tool별 **독립 브랜치 → 일반 PR**. Draft PR·worktree·서버 Git push 요구 금지.
+2. 코드 변경은 그 Tool에 실제 호출/의존이 남지 않았다는 근거를 확인한 뒤 수행. **삭제를 먼저 하고 테스트를 고치는 방식 금지**.
+3. Bhandara `bhandara/_tests/run.py`, Gearbox `gearbox/_tests/run.py`, 인프라 `gearbox/_tests/core_run.py` 및 모듈 버전 호환성 테스트 필수.
+4. 사용자 서버의 PR 브랜치를 직접 당겨 검증하고 사용자가 병합. 이 문서 PR에서는 서버·런타임·레거시 파일을 변경하지 않는다.
+5. 실직원/급여 원본, 운영 백업/캐시, 승인 JSON은 코드 철수 PR에서 직접 조작하거나 공개하지 않는다.
 
-## 실무상 현재 다음 단계
+## 다음 액션
 
-1. Payroll P1-3 출처 원장 내용 대조(PR #66)와 P1-4 중복가산 후보(PR #67)는 병합됐다. P1-5a 재직·계약분할 검토 PR #68도 병합됐다. P1-5b-1 휴가·결근 근태 대조 및 승인 차감 후보(PR #69)도 병합됐다. P1-5b-2a 계약별 초과근무 후보 통합 PR #70이 병합됐다. 현재 후속 내부 Payroll Flow의 중복 읽기·중간 대장 생성을 제거 중이며, 다음 P1-5b-2b 복수 휴가·PTO Closing·고정수당 감액 검증과 P2/P3를 진행한다.
-2. Payroll P2 공제·과세, P3 JSON CLI와 전체 합성 E2E.
-3. 아직 남은 PTO/Worktime 기능을 완료하고 Gearbox/Slack 신 Tool로 운영 경로를 전환한다.
-4. **마지막에** 레거시 제거 PR을 단계적으로 진행한다.
-
-이 문서는 *철수 목표와 선행조건*이지, 실제 삭제가 수행됐다는 기록이 아니다.
+- **먼저 [운영 연결 Stage 1](OPERATIONS-HANDOFF-2026-11-20.md#1-단계--portfolio-tool-간-workflow-연결)**을 완료한다.
+- Stage 2 `agent-config` 변경은 사용자에게 명시적 재개 지시를 받은 뒤에만 진행한다.
+- Stage 3 후속 검토 요청·Slack 회신 문제의 합성자료 E2E 통과 뒤 Stage 4 구형 제거를 시작한다.
+- **서버 branch cleanup/이미지 배포/파일 정리는 사용자가 지정한 후속 일괄 작업**으로 남긴다.
