@@ -16,6 +16,30 @@ cp bhandara/workflow.example.json bhandara/data/config/workflow.json
 
 이 네 개인 JSON은 예시 경로로는 실행되지 않는다. 각 파일에서 기간, 정확한 입력 원본·결과 폴더, 단계, 지급정책·증빙 참조를 설정한다. `bhandara/data/`는 공개 Git의 추적 대상이 아니다. 원본·확정 자료와 출력은 되도록 Git 밖의 비공개 경로에 분리한다.
 
+### 첫 실행 시 자동으로 보이는 폴더
+
+`python3 run.py bhandara worktime` 등 Tool을 한 번 실행하면 **파일이 없어 오류가 발생해도** 프로그램이 다음 입력·출력 안내 폴더를 만듭니다.
+
+```text
+bhandara/data/
+├── config/                  # paid-time-off.json / worktime.json / payroll.json
+├── input/
+│   ├── common/             # 공통 employee.xlsx
+│   ├── paid-time-off/      # PTO 입력 Excel
+│   ├── worktime/           # Worktime 스케줄·출입 Excel
+│   └── payroll/            # Payroll 원본 Excel 7종과 별도 JSON
+└── output/
+    ├── pto-<run_id>/       # PTO 결과 XLSX
+    ├── worktime-<run_id>/  # Worktime 결과
+    └── payroll-<run_id>/   # Payroll 결과
+```
+
+`input/common`과 실행한 Tool의 `input/<tool>`만 자동 생성되며, 다른 Tool의 입력 폴더는 해당 Tool을 처음 시도할 때 만들어집니다. Output은 비어 있다가 **정상 실행으로 새 실행 ID를 확보한 뒤** 결과가 들어옵니다. JSON의 `run_id: "auto"`는 고유 실행 ID를 만들고, 기존 실행 ID 또는 기존 Excel을 덮어쓰지 않습니다.
+
+예시 JSON은 반드시 `bhandara/data/config`에 복사하여 사용하세요. 복사된 설정의 `input_root: "../input"`, `output_root: "../output"`은 위 안내 폴더를 가리킵니다. 다른 위치의 개인 JSON으로 실행하면 경로는 **그 설정 파일 위치 기준**이므로 따로 조정해야 합니다. 회사 실제 원본·승인 JSON은 가능하면 Git 체크아웃 밖 비공개 경로로 지정하세요. **자동 생성은 빈 폴더만** 수행하며 원본 파일을 만들거나 수정하지 않습니다.
+
+`bhandara/data/**`는 Git에서 제외합니다. Tool별 예전 `input/output` 경로도 무시 규칙을 유지해, 실제 Excel이 실수로 커밋되지 않도록 합니다. `git clean -fdx`는 Git 무시 파일도 삭제하므로 실행 데이터가 있는 서버에서 사용하면 안 됩니다.
+
 ## 2. 세 Tool 실행
 
 | 명령 | 전제 | 주요 결과 |
