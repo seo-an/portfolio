@@ -1,53 +1,26 @@
-# Payroll — 최신 상태 및 운영 연결 우선순위 (2026-11-20)
+# Payroll 이후 운영 연결 — 남은 작업
 
-> **독립 Payroll Tool CLI 구현·검증 완료(PR #78까지 사용자 서버 테스트·병합).** 더 이상 P0~P3를 미구현으로 표시하거나, 새로운 50명 Golden E2E를 운영 연결의 필수 전제로 요구하지 않는다. 다음 작업의 정본은 [Bhandara 운영 연결 1~4단계 인수인계](../OPERATIONS-HANDOFF-2026-11-20.md)다.
+2026-11-20 현황: Payroll 독립 Tool의 7종 Excel Reader·계산 검토·동적 PAYROLL·단독 JSON CLI와 **Portfolio Workflow**까지 구현돼 있다. **별도의 급여 계산 코어, 50인 Golden E2E, 회사 총인건비 계산기를 여기서 확장하지 않는다.**
 
-## 구현·병합 완료
+## 진행 상태
 
-| 영역 | 현재 제공하는 기능 | 정본 |
-|---|---|---|
-| Payroll 입력 | 독립 7개 XLSX, 직원 계약/수당·성과급·공제율 매핑, 기간·ID/중복 검증 | [`input-files.json`](input-files.json) |
-| Worktime 연계 | `worktime-result.xlsx` 10열 사실 검토, 외부 검증 구간/승인과 계약별 초과근무 후보 | [`CONTRACT-SCOPED-OVERTIME.md`](CONTRACT-SCOPED-OVERTIME.md) |
-| PTO 연계 | 확정 Closing 또는 현재 기준일 자료로 복수 휴가 대조, 별도 승인 원 단위 감액·중복차감 방지 | [`PTO-CLOSING-REVIEW.md`](PTO-CLOSING-REVIEW.md) |
-| 보험/원천징수 | Common 취득일·공란(적용 제외)·미가입, 근로자 부담 보험, 항목별 과세·비과세/외부 원천세 후보 | [`INSURANCE-CANDIDATES.md`](INSURANCE-CANDIDATES.md) · [`TAX-WITHHOLDING.md`](TAX-WITHHOLDING.md) |
-| 사업주 산재보험 | 관리자용 산재보험료·회사 비용(확인분) 표시만 수행. 전체 인건비/회계 계산은 다른 Tool의 미래 책임 | [`EMPLOYER-INSURANCE.md`](EMPLOYER-INSURANCE.md) |
-| Payroll Output | `PAYROLL` 한 시트/2단 헤더, 동적 항목/미해당 공란, **계산된 항목의 잠정 합계**, 미확인 보험·소득세 검토요청 | [`OUTPUT-CONTRACT.md`](OUTPUT-CONTRACT.md) |
-| 독립 Tool 실행 | JSON 설정 → 기존 Payroll 검토 Flow 1회 → `payroll-result.xlsx` + 선택 `payroll-review.json`, 원본 SHA·덮어쓰기 방지 | [`TOOL-CLI.md`](TOOL-CLI.md) |
+| 내용 | 상태 |
+|---|---|
+| 신규 세 Tool 구현·통합 Workflow | **완료** (#80 병합) |
+| Portfolio의 과거 실행 코드·샘플·문서 정리 | **PR #81 검증 대기** |
+| Gearbox/Hermes·Slack 신규 Tool 연결 | **미진행 — agent-config 편집 PAUSE** |
+| 업로드 ACK 이후 새 요청 무응답 재현·수정 | **미진행** |
+| 운영 캐시 TTL·다중 첨부·권한·합성 E2E | **미진행** |
+| 서버 브랜치·캐시 정리와 배포 | **별도 사용자 지시 후 일괄 처리** |
 
-정식 지급·송금·세무 신고·원본 승인권한 인증은 구현됐다고 주장하지 않는다. `NOT_APPROVED` 상태는 유지하며 외부에서 확정한 정책·원천징수액을 코드가 임의로 재산정하지 않는다.
+## 다음 우선순위: Stage 2·3을 함께 진행
 
-## 남은 작업 — 계산기 확장이 아니라 운영 연결
+1. 사용자의 `agent-config` 편집 **재개 승인**을 받은 후 별도 브랜치·PR에서 신규 Tool 3개와 Workflow 호출 경로 연결.
+2. Slack 인증 업로드 후 ACK만 보내고, **새로운 명시적 `&` 검토 댓글**에서만 입력 권한·파일 역할·TTL을 검증하고 Tool 실행.
+3. 실직원 자료가 아닌 **합성 파일**로 다중 첨부, 구분된 승인, 원장 검토, 사용자의 스레드 회신, 오류·만료·삭제/수정 차단 및 무응답 방지 테스트.
+4. Gearbox 기능 테스트 `python3 gearbox/_tests/run.py`, 인프라 `python3 gearbox/_tests/core_run.py`를 분리해 검증.
+5. 서버 적용·배포는 사용자 별도 승인 뒤 진행. 브랜치·캐시·이미지 정리는 나중에 일괄 수행.
 
-1. **Stage 1 / Portfolio Workflow:** `paid-time-off`와 `worktime` 실행결과를 `payroll` 설정의 정확 경로·기간·해시로 인계하고, 부족한 승인 JSON은 명시적으로 요구한다. 내부 모듈의 별도 재구현·중복 계산기·`flow/` 물리 폴더를 만들지 않는다.
-2. **Stage 2 / Gearbox·Hermes·Slack:** **사용자의 명시적 `agent-config` 작업 재개 승인 후** 인증된 새 명령을 신규 Tool CLI에 연결한다. 업로드만 하면 정형 ACK를 반환하는 기존 보안 동작은 유지하고, 다중 첨부를 임의 선택하지 않는다.
-3. **Stage 3 / 운영 안정화:** 새 검토 요청에 후속 답변이 없는 현상은 업로드 ACK 정상 동작과 별개로 합성파일 재현. 권한 영수증·TTL·삭제/수정 이벤트·실패 응답·회신 경로를 확인한다. 기존 파일 보관 24시간/인증 근태 검토 최초 캐시부터 3시간의 **선택적 정책**을 무단 변경하지 않는다.
-4. **Stage 4 / 레거시 철수:** 새 Tool의 운영 호출·Gearbox 호환·문서/샘플 경로가 확인되면 `pto-calculator`, `worktime-calculator`, `payroll-calculator`를 **각각 별도 PR**로 이전/제거한다. [철수 게이트](../LEGACY-RETIREMENT.md)를 확인한다.
+Payroll의 잠정 급여합계는 **지급 확정이 아니고**, 사업주 산재보험료는 근로자 지급·공제 총계에 합치지 않는다. 실제 신고·송금·완전한 비용회계는 범위 밖이다.
 
-**사용자가 확정한 제외 범위:** 별도 50명 Golden E2E 전용 체계, Payroll 내부 추가 회사 총인건비 분석, 새로운 DB/상시 서버, 임의의 법적 급여 승인, 현재 서버 정리.
-
-## 운영 차단 조건
-
-- **`agent-config` 수정·배포 PAUSE**: 사용자 재개 지시 없이는 코드를 변경하지 않는다.
-- **NOT_CONNECTED**: Payroll 독립 CLI 병합은 Slack 실자료 계산 연결 완료를 의미하지 않는다.
-- **개인정보**: 실제 인사/급여 원본·계산결과를 공개 Git에 넣거나 일반 로그에 기록하지 않는다.
-- **불명확한 승인**: Worktime 사실을 승인 초과근무로 추정하거나 PTO 마감 전을 확정으로 승격하지 않는다.
-- **자료 누락**: 인증된 원본·필수 JSON·실행 기간/경로가 누락되면 성공으로 보고하지 않는다.
-- **서버 cleanup 및 운영 배포**: 사용자 요청대로 **나중에 한 번에** 처리. 현재 문서 PR에서는 수행하지 않는다.
-
-## 변경 검증 기준
-
-```bash
-# Bhandara 전체 unittest: 주제별 PASS/FAIL/ERROR/SKIP 요약
-sudo docker exec -w /opt/agent-config/.external/portfolio \
-  hermes /opt/hermes/.venv/bin/python -B bhandara/_tests/run.py
-
-# Gearbox 기능/인프라 회귀 — 버전 변경 시 반드시 함께 확인
-sudo docker exec -w /opt/agent-config \
-  hermes /opt/hermes/.venv/bin/python -B gearbox/_tests/run.py
-sudo docker exec -w /opt/agent-config \
-  hermes /opt/hermes/.venv/bin/python -B gearbox/_tests/core_run.py
-```
-
-위 명령은 **향후 코드/운영 연결 PR의 검증 안내**이며 현재 자동 실행한 기록이 아니다. Git 작업은 `branch → unittest → 일반 PR → 사용자 서버에서 해당 브랜치 직접 테스트 → 사용자 merge`. Draft/worktree/서버 push 지시 금지.
-
-**바로 다음 대화에서 Stage 1부터.** 상세 입력·인수인계·중단 조건은 [운영 연결 인수인계](../OPERATIONS-HANDOFF-2026-11-20.md)를 우선한다.
+[전체 운영 인수인계](../OPERATIONS-HANDOFF-2026-11-20.md) · [Stage 1 Workflow](../WORKFLOW.md)
