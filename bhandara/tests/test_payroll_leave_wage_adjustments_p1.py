@@ -176,7 +176,7 @@ class LeaveWageExcelFlowTests(unittest.TestCase):
 
     def run_flow(self, decisions=None, *, anchor_amount=0,
                  anchor_treatment="PAID_LEAVE", include_fixed=True,
-                 wage_present=True):
+                 wage_present=True, pto_present=True):
         inputs = self.prepare(include_fixed=include_fixed)
         worktime = self.root / "worktime-result.xlsx"
         write_worktime_xlsx(
@@ -200,12 +200,12 @@ class LeaveWageExcelFlowTests(unittest.TestCase):
                 reference_day_minutes_by_contract={"C-OLD": 480},
             ),
             rollup_policy=ROLLUP,
-            pto_sources={
+            pto_sources=({
                 "usage_file": self.fixture.usage_path,
                 "closing_file": self.fixture.closing_path,
                 "deduction_file": self.fixture.deduction_path,
                 "pto_claims": self.fixture.claims,
-            },
+            } if pto_present else None),
             pto_wage_plan=(
                 policy_plan(decisions=decisions)
                 if wage_present else None
@@ -279,9 +279,12 @@ class LeaveWageExcelFlowTests(unittest.TestCase):
 
     def test_no_silent_without_verified_pto_sources(self):
         from bhandara.payroll.contract_scoped_overtime import ContractOvertimeAdapterError
-        # The integrated test runner always supplies sources; the guard
-        # itself is checked by directly verifying its error in a separate
-        # isolated invocation below.
+        with self.assertRaisesRegex(ContractOvertimeAdapterError, "verified PTO sources"):
+            self.run_flow(
+                decisions=[decision("R1"),
+                           decision("R2", treatment="UNPAID_LEAVE", amount=60000)],
+                pto_present=False,
+            )
 
 
 if __name__ == "__main__":
