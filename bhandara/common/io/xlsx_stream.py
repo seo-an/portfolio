@@ -5,7 +5,7 @@ Bhandara callers. Values come from python-calamine. Strict XLSX/XLSM inputs
 continue to reject formula cells using openpyxl for *metadata only*.
 
 python-calamine 0.9.1 exposes values, not formula expressions, so formulas in
-binary XLS/XLSB/ODS cannot be verified by this strict public calculator path.
+binary XLS/XLSB/ODS cannot be verified by this strict public Tool input path.
 Such formats may be read in explicitly data-only contexts (e.g. a private
 source-normalizer), but must not silently bypass a formula-rejecting contract.
 """
