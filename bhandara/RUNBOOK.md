@@ -74,6 +74,8 @@ python run.py bhandara payroll-calculator --period 2026-07
 
 > **PTO 마감 전 Payroll 검토:** 당월 Closing이 없더라도 현재 `Usage Ledger` 실행 기준일까지의 신청·정확 수량을 `Deduction Quantity`와 대조하고 기존 급여대장의 **검토상태 열에 `마감 전 · 변동 가능`**을 표시할 수 있습니다. 이는 최종 급여 승인이 아니며 원본 자료 변경 시 재계산해야 합니다. [PTO 단일 검토 경로](payroll/PTO-CLOSING-REVIEW.md).
 
+> **Payroll P2-1 진행:** PR #74 PTO 마감 전·확정 동일 경로 병합 완료. 이제 기존 `DEDUCTION MAP` 요율과 외부 확정 **보험별 산정기준액**으로 근로자 부담 4대보험 후보를 계산합니다. 실제 신고/세금/실지급액은 아직 아니며 기존 7개 입력 Excel과 단일 급여대장 형식을 유지합니다. [보험료 후보 계약](payroll/INSURANCE-CANDIDATES.md).
+
 ## 1. 먼저 어떤 계산기를 사용할지 고르세요
 
 | 하고 싶은 일 | 선택할 계산기 | 내가 준비할 파일 | 자세한 사용 안내 |
