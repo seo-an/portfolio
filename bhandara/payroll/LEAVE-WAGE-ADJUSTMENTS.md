@@ -102,6 +102,6 @@ result = build_contract_scoped_overtime_preview(
 
 법적 통상임금/수당별 휴가 감액 가능성 및 정책의 실제 승인권한 확인, 복수 PTO 신청 이외의 휴가·결근·출퇴근 오류 처리, 당월 **PTO Closing 이전**의 잠정 자료 검증, 미사용 연차수당의 청구권 판단, 휴일 판정, 보험·세금/공제 및 실지급액은 다음 단계. 운영 권한/서명·S3 보관 및 Gearbox 연결도 아직 안 했다.
 
-**다음:** P1 근거 신뢰성·당월 미마감 경로 정리 → P2 보험·원천세·공제 → P3 독립 Tool CLI·합성 E2E 및 레거시 전환/삭제. 이번 PR은 \`agent-config\` 및 PTO/Worktime 계산 코드를 건드리지 않는다.
+**현행:** 관련 계산·검토 기능과 Payroll JSON CLI, Portfolio Workflow가 구현되었습니다. 실제 지급 승인은 없으며 Gearbox/Hermes·Slack 연결은 별도 단계입니다.
 
 테스트: `python3 -m unittest bhandara.tests.test_payroll_leave_wage_adjustments_p1 -v`, 전체 Bhandara 및 Gearbox 기능/인프라 회귀.
