@@ -7,9 +7,12 @@ insurance caps, eligibility, wage-taxability, or final payroll approval.
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal, ROUND_DOWN, ROUND_HALF_UP
+from pathlib import Path
 from typing import Any, Mapping, Iterable
+
+from bhandara.common.io.input_layout import InputLayoutError, read_sheet
 
 from bhandara.payroll.core import resolve_deduction_mapping
 
@@ -43,6 +46,169 @@ BASIS = {
     "health_insurance": "health_insurance_basis_won",
     "employment_insurance": "employment_insurance_basis_won",
 }
+
+
+# Four statutory social insurance registration fields in common/employee.xlsx.
+# Long-term care is a health-insurance-linked employee deduction and must
+# NOT be misrepresented as the fourth statutory social insurance.
+COMMON_INSURANCE_COLUMNS = {
+    "national_pension": "national_pension_acquired_on",
+    "health_insurance": "health_insurance_acquired_on",
+    "employment_insurance": "employment_insurance_acquired_on",
+    "industrial_accident": "industrial_accident_acquired_on",
+}
+CONTRIBUTION_KINDS = ("national_pension", "health_insurance", "employment_insurance")
+
+
+def _employee_status(value: Any, column: str, *, period_to: str) -> dict[str, Any]:
+    """Interpret date=enrolled, blank=explicit exclusion, 미가입=unregistered."""
+    if value is None or value == "":
+        return {"state": "EXCLUDED", "acquired_on": None}
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return {"state": "EXCLUDED", "acquired_on": None}
+        if raw == "미가입":
+            return {"state": "NOT_ENROLLED", "acquired_on": None}
+        try:
+            acquired = date.fromisoformat(raw)
+        except ValueError as exc:
+            raise InsuranceCandidateError(
+                f"common employee: {column} must be ISO acquisition date, blank, or 미가입"
+            ) from exc
+        if acquired.isoformat() != raw:
+            raise InsuranceCandidateError(
+                f"common employee: {column} must use YYYY-MM-DD"
+            )
+    elif isinstance(value, datetime):
+        if value.time().isoformat() != "00:00:00":
+            raise InsuranceCandidateError(
+                f"common employee: {column} must not contain time"
+            )
+        acquired = value.date()
+    elif isinstance(value, date):
+        acquired = value
+    else:
+        raise InsuranceCandidateError(
+            f"common employee: {column} must be a date, blank, or 미가입"
+        )
+    return {
+        "state": "ENROLLED" if acquired.isoformat() <= period_to else "NOT_YET_ACQUIRED",
+        "acquired_on": acquired.isoformat(),
+    }
+
+
+def read_employee_insurance_status(
+    employee_xlsx: str | Path,
+    *,
+    employee_ids: Iterable[str],
+    period_to: str,
+) -> dict[str, dict[str, dict[str, Any]]]:
+    """Read canonical common/employee.xlsx only; no new Payroll input workbook.
+
+    The caller supplies the exact verified contract roster. Missing *columns*
+    are errors. Explicit blank *cells* mean EXCLUDED and require no review.
+    """
+    path = Path(employee_xlsx)
+    if path.name != "employee.xlsx":
+        raise InsuranceCandidateError("common employee: expected employee.xlsx")
+    wanted = set(employee_ids)
+    required = ("employee_id", *COMMON_INSURANCE_COLUMNS.values())
+    seen: dict[str, dict[str, dict[str, Any]]] = {}
+    try:
+        # Common staff roster has active and terminated employee sheets.
+        for sheet in ("재직자", "퇴사자"):
+            for row in read_sheet(path, required, sheet_name=sheet):
+                worker = row["employee_id"]
+                if not isinstance(worker, str) or not worker.strip():
+                    raise InsuranceCandidateError(
+                        "common employee: employee_id must be nonempty Excel text"
+                    )
+                worker = worker.strip()
+                if worker not in wanted:
+                    continue
+                if worker in seen:
+                    raise InsuranceCandidateError(
+                        "common employee: duplicate selected employee across sheets"
+                    )
+                seen[worker] = {
+                    kind: _employee_status(
+                        row[column], column, period_to=period_to,
+                    ) for kind, column in COMMON_INSURANCE_COLUMNS.items()
+                }
+    except (InputLayoutError, OSError) as exc:
+        raise InsuranceCandidateError("common employee: invalid employee workbook") from exc
+    if set(seen) != wanted:
+        raise InsuranceCandidateError("common employee: missing selected payroll employee")
+    return seen
+
+
+def review_employee_insurance_status(
+    employee_status: Mapping[str, Mapping[str, Mapping[str, Any]]] | None,
+    *,
+    employee_ids: Iterable[str],
+    insurance_review: Mapping[str, Any] | None,
+) -> dict[str, list[str]]:
+    """Build ONLY insurance review reasons, not allowance/earnings warnings.
+
+    Explicitly excluded employees are not errors or zero-assessment guesses.
+    미가입 is a recorded non-enrolment requiring administrative confirmation,
+    not an implied social-insurance deduction. Acquisition date doesn't
+    determine statutory first-month or partial-month charges.
+    """
+    employees = tuple(employee_ids)
+    if employee_status is None:
+        return {worker: ["INSURANCE_COMMON_STATUS_UNVERIFIED"] for worker in employees}
+    if set(employee_status) != set(employees):
+        raise InsuranceCandidateError("common employee: status roster mismatch")
+    verified = (
+        {row["employee_id"]: row for row in insurance_review["employees"]}
+        if insurance_review is not None else {}
+    )
+    result = {}
+    for worker in employees:
+        state = employee_status[worker]
+        if set(state) != set(COMMON_INSURANCE_COLUMNS):
+            raise InsuranceCandidateError("common employee: incomplete insurance fields")
+        reasons: list[str] = []
+        for kind, record in state.items():
+            if record["state"] == "NOT_ENROLLED":
+                reasons.append(f"INSURANCE_NOT_ENROLLED:{kind}")
+            elif record["state"] == "ENROLLED" and kind in CONTRIBUTION_KINDS:
+                if worker not in verified:
+                    reasons.append(f"INSURANCE_PREMIUM_UNVERIFIED:{kind}")
+            elif record["state"] not in ("EXCLUDED", "NOT_YET_ACQUIRED", "ENROLLED"):
+                raise InsuranceCandidateError("common employee: unsupported state")
+        result[worker] = reasons
+    return result
+
+
+def check_insurance_assessment_against_employee_status(
+    employee_status: Mapping[str, Mapping[str, Mapping[str, Any]]],
+    *,
+    insurance_review: Mapping[str, Any],
+) -> None:
+    """Fail closed if an insurance premium is assigned to an excluded worker."""
+    for worker in insurance_review["employees"]:
+        employee_id = worker["employee_id"]
+        states = employee_status[employee_id]
+        for kind in CONTRIBUTION_KINDS:
+            state = states[kind]["state"]
+            if state != "ENROLLED" and (
+                worker["applicable_by_kind"][kind]
+                or worker["candidate_by_kind_won"][kind]
+            ):
+                raise InsuranceCandidateError(
+                    f"common employee: {kind} must not deduct when {state}"
+                )
+        health_state = states["health_insurance"]["state"]
+        if health_state != "ENROLLED" and (
+            worker["applicable_by_kind"]["longterm_care"]
+            or worker["candidate_by_kind_won"]["longterm_care"]
+        ):
+            raise InsuranceCandidateError(
+                "common employee: longterm_care must not deduct without enrolled health insurance"
+            )
 
 
 def _text(value: Any, field: str) -> str:
