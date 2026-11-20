@@ -228,6 +228,19 @@ class EmployerIndustrialInsuranceTests(TestCase):
             with self.subTest(rows=rows), self.assertRaises(EmployerInsuranceError):
                 self.calculate(records=rows)
 
+    def test_all_excluded_employer_cost_omits_empty_insurance_column(self):
+        result = build_payroll_register(
+            [payroll_row("0002"), payroll_row("0003")],
+            show_partial_totals=True,
+            review_reasons_by_employee={"0002": [], "0003": []},
+            employer_industrial_by_employee={"0002": 0, "0003": 0},
+        )
+        keys = [column["key"] for column in result["columns"]]
+        self.assertNotIn("employer_industrial", keys)
+        self.assertIn("known_company_outlay", keys)
+        self.assertNotIn("employer_industrial", result["rows"][0])
+        self.assertEqual(result["rows"][0]["known_company_outlay"], 3000000)
+
     def test_rate_rounding_uses_explicit_policy(self):
         expected = self.calculate([industrial("0001", basis=101, rate="0.015")])
         self.assertEqual(expected["amounts_by_employee"]["0001"], 1)
