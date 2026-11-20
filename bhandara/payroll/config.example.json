@@ -4,7 +4,7 @@
   "run_id": "auto",
   "payroll_period": "2026-11",
   "input_root": "../input",
-  "output_root": "../output",
+  "output_root": "../output/payroll",
   "steps": [
     "review",
     "output"

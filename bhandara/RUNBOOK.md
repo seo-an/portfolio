@@ -29,14 +29,15 @@ bhandara/data/
 │   ├── worktime/           # Worktime 스케줄·출입 Excel
 │   └── payroll/            # Payroll 원본 Excel 7종과 별도 JSON
 └── output/
-    ├── pto-<run_id>/       # PTO 결과 XLSX
-    ├── worktime-<run_id>/  # Worktime 결과
-    └── payroll-<run_id>/   # Payroll 결과
+    ├── paid-time-off/      # PTO 결과: <run_id>/ 하위
+    ├── worktime/           # Worktime 결과: <run_id>/ 하위
+    ├── payroll/            # Payroll 결과: <run_id>/ 하위
+    └── workflow/           # 안내용 빈 폴더 (Workflow의 자체 산출물 아님)
 ```
 
 `input/common`과 실행한 Tool의 `input/<tool>`만 자동 생성되며, 다른 Tool의 입력 폴더는 해당 Tool을 처음 시도할 때 만들어집니다. Output은 비어 있다가 **정상 실행으로 새 실행 ID를 확보한 뒤** 결과가 들어옵니다. JSON의 `run_id: "auto"`는 고유 실행 ID를 만들고, 기존 실행 ID 또는 기존 Excel을 덮어쓰지 않습니다.
 
-예시 JSON은 반드시 `bhandara/data/config`에 복사하여 사용하세요. 복사된 설정의 `input_root: "../input"`, `output_root: "../output"`은 위 안내 폴더를 가리킵니다. 다른 위치의 개인 JSON으로 실행하면 경로는 **그 설정 파일 위치 기준**이므로 따로 조정해야 합니다. 회사 실제 원본·승인 JSON은 가능하면 Git 체크아웃 밖 비공개 경로로 지정하세요. **자동 생성은 빈 폴더만** 수행하며 원본 파일을 만들거나 수정하지 않습니다.
+예시 JSON은 반드시 `bhandara/data/config`에 복사하여 사용하세요. 복사된 설정의 `input_root: "../input"`, `output_root: "../output/<tool>"`은 위 안내 폴더를 가리킵니다. 다른 위치의 개인 JSON으로 실행하면 경로는 **그 설정 파일 위치 기준**이므로 따로 조정해야 합니다. 회사 실제 원본·승인 JSON은 가능하면 Git 체크아웃 밖 비공개 경로로 지정하세요. **자동 생성은 빈 폴더만** 수행하며 원본 파일을 만들거나 수정하지 않습니다.
 
 `bhandara/data/**`는 Git에서 제외합니다. Tool별 예전 `input/output` 경로도 무시 규칙을 유지해, 실제 Excel이 실수로 커밋되지 않도록 합니다. `git clean -fdx`는 Git 무시 파일도 삭제하므로 실행 데이터가 있는 서버에서 사용하면 안 됩니다.
 
@@ -81,7 +82,7 @@ Workflow의 각 Tool은 `run` 또는 명시적으로 검증된 결과의 `reuse`
 
 입력 누락·일자/직원 ID 불일치·SHA-256 변경·승인 자료 부재가 확인되면 실행하지 않고 원인을 확인한다. Slack에 파일만 올리면 자동 분석하거나 계산하지 않는다. 에이전트 연결, 파일 접근 영수증, 보관기간, 후속 댓글 무응답 재현은 [Stage 2~3 운영 연결](OPERATIONS-HANDOFF-2026-11-20.md)에서 별도 검증한다. **실직원 정보를 사용한 자동 검증은 금지**하고 합성자료로만 운영 테스트한다.
 
-> **전환 경고:** 현재 `agent-config`의 Gearbox 일부 어댑터·테스트는 삭제된 공개 Calculator `module.json`과 구형 CLI를 참조합니다. **Portfolio CI가 모두 PASS여도 Gearbox 전체 회귀는 Stage 2에서 호출 계약을 전환하기 전까지 실패할 수 있습니다.** 활성 `.external/portfolio`를 이 PR 브랜치로 전환하면 구형 Hermes 요청이 실패할 수 있으므로, 실제 운영 프로세스 영향 확인 없이 서버 브랜치를 전환·배포하지 마세요. `agent-config`는 이번 PR에서 수정하지 않습니다.
+> **현행 상태:** Portfolio #80·#81·#82, agent-config #211은 병합됐다. 신규 Tool/Workflow 코드와 자연어 Index·Ananda 네이티브 파일 Module은 합성 테스트를 마쳤지만 **실제 운영 Hermes 이미지 반영 및 Slack 파일 수신·후속 요청·Excel 전송 E2E는 아직 확인되지 않았다.** 서버 동기화 시 기존 업데이트 스크립트의 `git clean -ffdx`가 ignored 실자료를 삭제할 수 있어, [agent-config 운영 안전 동기화 수정 PR #212](https://github.com/seo-an/agent-config/pull/212)이 병합·적용되기 전에는 기존 `update-bhandara-server.sh --apply`를 실행하지 않는다. Tool 간 Workflow는 **각 Tool의 출력 루트가 서로 다른 형제 폴더**여야 한다.
 
 ## 6. 개발·서버 테스트
 

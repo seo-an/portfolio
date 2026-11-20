@@ -68,9 +68,14 @@ class WorkspaceTest(unittest.TestCase):
                             root / "input" / "common",
                             root / "input" / tool,
                             root / "output",
+                            root / "output" / tool,
                         ):
                             self.assertTrue(directory.is_dir(), str(directory))
-                self.assertEqual(list((root / "output").iterdir()), [])
+                        self.assertEqual(list((root / "output" / tool).iterdir()), [])
+                self.assertEqual(
+                    sorted(p.name for p in (root / "output").iterdir()),
+                    ["paid-time-off", "payroll", "workflow", "worktime"],
+                )
 
     def test_repeated_scaffolding_does_not_modify_existing_input_or_output(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -79,7 +84,7 @@ class WorkspaceTest(unittest.TestCase):
                 first = workspace.ensure_tool_workspace("worktime")
                 source = first["tool_input"] / "original.xlsx"
                 source.write_bytes(b"SYNTHETIC_ORIGINAL_KEEP")
-                old = first["output"] / "past-run"
+                old = first["tool_output"] / "past-run"
                 old.mkdir()
                 old_output = old / "worktime-result.xlsx"
                 old_output.write_bytes(b"SYNTHETIC_PREVIOUS_RESULT")
@@ -87,7 +92,7 @@ class WorkspaceTest(unittest.TestCase):
                 self.assertEqual(first, again)
                 self.assertEqual(source.read_bytes(), b"SYNTHETIC_ORIGINAL_KEEP")
                 self.assertEqual(old_output.read_bytes(), b"SYNTHETIC_PREVIOUS_RESULT")
-                self.assertEqual(sorted(x.name for x in first["output"].iterdir()),
+                self.assertEqual(sorted(x.name for x in first["tool_output"].iterdir()),
                                  ["past-run"])
 
     def test_symlink_and_non_directory_never_redirect_workspace_to_other_files(self):
@@ -123,8 +128,8 @@ class WorkspaceTest(unittest.TestCase):
         self.assertIn("/bhandara/payroll/output/**", ignore)
         names = (
             "bhandara/data/input/worktime/employee.xlsx",
-            "bhandara/data/output/worktime-001/worktime-result.xlsx",
-            "bhandara/data/output/payroll-001/payroll-result.xlsx",
+            "bhandara/data/output/worktime/worktime-001/worktime-result.xlsx",
+            "bhandara/data/output/payroll/payroll-001/payroll-result.xlsx",
             "bhandara/paid-time-off/output/pto-001/deduction-quantity-result.xlsx",
             "bhandara/worktime/output/worktime-result.xlsx",
             "bhandara/payroll/output/payroll-result.xlsx",
@@ -153,7 +158,26 @@ class WorkspaceTest(unittest.TestCase):
                 self.assertEqual((base / config["input_root"]).resolve(),
                                  (PROJECT_ROOT / "bhandara/data/input").resolve())
                 self.assertEqual((base / config["output_root"]).resolve(),
-                                 (PROJECT_ROOT / "bhandara/data/output").resolve())
+                                 (PROJECT_ROOT / "bhandara/data/output" / module).resolve())
+
+
+    def test_workflow_default_output_roots_are_siblings_not_ancestor(self):
+        base = PROJECT_ROOT / "bhandara/data/config"
+        outputs = {}
+        for module in ("paid-time-off", "worktime", "payroll"):
+            config = json.loads(
+                (PROJECT_ROOT / "bhandara" / module / "config.example.json")
+                .read_text(encoding="utf-8")
+            )
+            outputs[module] = (base / config["output_root"]).resolve()
+        self.assertEqual(len(set(outputs.values())), 3)
+        payroll_root = outputs["payroll"]
+        for name in ("paid-time-off", "worktime"):
+            with self.subTest(tool=name):
+                self.assertFalse(outputs[name].is_relative_to(payroll_root))
+                self.assertFalse(payroll_root.is_relative_to(outputs[name]))
+        # The Workflow handoff guard rejects any upstream source under Payroll
+        # output_root: the distributed examples must satisfy that contract.
 
 
 class ExclusiveExcelOutputTest(unittest.TestCase):

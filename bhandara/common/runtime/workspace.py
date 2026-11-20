@@ -35,7 +35,7 @@ def _ensure_directory(path: Path) -> Path:
 def ensure_tool_workspace(tool: str) -> dict[str, Path]:
     """Show stable placement by creating empty config/input/output folders.
 
-    Private run data belongs in data/input/{common,TOOL} and data/output/run_id.
+    Private run data belongs in data/input/{common,TOOL} and data/output/TOOL/run_id.
     No run_id output directory is created here: individual Tool executors must
     reserve it only when genuinely producing results, without overwrite.
     """
@@ -47,9 +47,11 @@ def ensure_tool_workspace(tool: str) -> dict[str, Path]:
     output_root = _ensure_directory(root / "output")
     _ensure_directory(input_root / "common")
     specific = _ensure_directory(input_root / tool)
+    tool_output = _ensure_directory(output_root / tool)
     return {
         "config": config,
         "input": input_root,
         "tool_input": specific,
         "output": output_root,
+        "tool_output": tool_output,
     }
