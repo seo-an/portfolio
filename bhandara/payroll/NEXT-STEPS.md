@@ -129,7 +129,13 @@
 - 공시요율 버전/적용기간은 Excel, 계산식·산정기준/최저·최고/절사/대상/보험별 부담 주체는 검증된 정책 JSON 등으로 관리. 국민연금 기준소득월액·건강보험 보수월액·장기요양 건강보험료 기반·고용보험 산정대상 보수는 서로 다르다. **기본급×동일비율 일괄 적용 금지**. 근로소득세·지방소득세 등 그 외 공제항목도 아직 미구현.
 - `payroll_taxability`는 **지급 시 과세/비과세**(예: 식대)에 관한 구분이다. 연말정산 기능이 아니다. 실제 법정 요건·한도·지급정책 확인 없이 임의로 `NON_TAXABLE`을 확정하지 않는다.
 - 입사/퇴사 비정상 기간, 사용·미사용 휴가의 급여 반영, 근로자/외부 용역 구분, 직원별 `earnings_complete`/`deductions_complete` 생성 기준을 설계한다.
-- 미확정이면 합계/실지급액을 공란으로 하고 `PARTIAL_REVIEW_ONLY` 보존. 완전한 수치도 `REVIEW_REQUIRED`이고 **송금·신고 승인 상태가 아니다**.
+- 통합 Payroll Flow에서는 미확정이어도 **이미 계산된 항목의 잠정 합계와 실지급 차액**을 표시하고 `검증요청 · 잠정합계`/검토 사유를 함께 표시한다. 임의 0원 확정은 금지. 완전한 수치도 `REVIEW_REQUIRED`이며 **송금·신고 승인 상태가 아니다**.
+
+### 사용자 요청 반영 — PR #77 잠정 합계와 검증요청
+
+P2-2 근로·지방소득세 후보 PR #76은 사용자 서버 테스트·병합 완료. 이번에는 별도 완결 판정기를 만들지 않고 기존 **Output 단일 호출에서 이미 계산된 지급·공제 금액만 합산**해 잠정 지급합계·공제합계·실지급액을 보여준다. `earnings_complete`/`deductions_complete`는 기존 계산 단계의 근거 상태를 그대로 유지하고, 하나라도 미완료라면 **`검증요청 · 잠정합계`** 및 `review_requests`로 표시한다. 사용자가 확인해야 할 미수신 금액은 임의로 0원 확정하지 않는다. 실제 지급 승인·신고는 별도.
+
+같은 PR에서 `python3 -B bhandara/_tests/run.py`로 **Bhandara 전체 unittest 주제별 PASS/FAIL/ERROR/SKIP**을 집계한다. Gearbox의 `gearbox/_tests/run.py`와 `core_run.py`은 별도 실행으로 유지. CI 및 사용자 서버 검증·병합 전에는 완료 아님.
 
 ## P3: JSON Tool CLI + 합성 통합 E2E
 
@@ -156,7 +162,7 @@
 ```bash
 # 컨테이너 검증 예시
 sudo docker exec -w /opt/agent-config/.external/portfolio hermes \
-  /opt/hermes/.venv/bin/python -B -m unittest discover -s bhandara/tests -p 'test_*.py'
+  /opt/hermes/.venv/bin/python -B bhandara/_tests/run.py
 sudo docker exec -w /opt/agent-config hermes \
   /opt/hermes/.venv/bin/python -B gearbox/_tests/run.py
 sudo docker exec -w /opt/agent-config hermes \
