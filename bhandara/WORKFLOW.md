@@ -75,6 +75,8 @@ sha256sum /private/hr/results/worktime/wt-202611/worktime-result.xlsx
 
 정확한 경로/해시/기간 불일치, Payroll 7종 XLSX 누락, 외부 승인 JSON 누락, PTO 신청 상세 누락, Worktime 출력 단계 누락, 미확정 Closing 연결, 기존 결과 덮어쓰기 시 중단한다. Payroll 내부 검토에서 오류가 나도 지급 승인으로 해석하지 않는다.
 
+> **전환 경고:** 현재 `agent-config`의 Gearbox 일부 어댑터·테스트는 삭제된 공개 Calculator `module.json`과 구형 CLI를 참조합니다. **Portfolio CI가 모두 PASS여도 Gearbox 전체 회귀는 Stage 2에서 호출 계약을 전환하기 전까지 실패할 수 있습니다.** 활성 `.external/portfolio`를 이 PR 브랜치로 전환하면 구형 Hermes 요청이 실패할 수 있으므로, 실제 운영 프로세스 영향 확인 없이 서버 브랜치를 전환·배포하지 마세요. `agent-config`는 이번 PR에서 수정하지 않습니다.
+
 ## 서버 검증
 
 서버 호스트 절대경로와 Docker 컨테이너 내부 경로를 구분한다.
