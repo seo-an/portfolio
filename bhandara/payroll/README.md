@@ -162,6 +162,10 @@
 
 [PTO 마감 전/확정 공통 계약](PTO-CLOSING-REVIEW.md). 당월 Closing이 없으면 `pto_sources["closing_file"]=None`으로 같은 `reconcile_pto_closing()`를 호출한다. Usage 실행 기준일·Deduction 파일 해시·정확 신청수량/승인 시각을 대조하고 기존 급여대장의 **검토상태 열**에 `마감 전 · 변동 가능`을 표시한다. 마감 확정 후에는 원래 Closing 월간 수량 교차 검증으로 전환한다. 외부 승인된 휴가 임금결정과 중복 차감 방지는 두 상태에서 같은 코드를 사용하며 결과는 전부 미승인 검토 후보다.
 
+## P2-1 — 외부 확정 산정기준액으로 4대보험 공제 후보
+
+[4대보험 후보 계산 계약](INSURANCE-CANDIDATES.md). 기존 7개 XLSX 중 `deduction-map.xlsx`의 4종 근로자 부담률과 `CONTRACTS.deduction_code`를 사용한다. 직원별 **보험마다 다른 산정기준액/가입 적용 여부/근거**는 외부에서 승인한 `insurance_assessment_plan`으로만 받는다. 기간과 요율 정책이 불일치하거나 산정기준액이 없으면 계산을 차단한다. 별도 8번째 Excel 없이 보험료를 기존 `deductions` 동적 열에 보여주지만 **원천세 미구현으로 공제합계와 실지급액은 공란**이다.
+
 ## 실행 / 테스트
 
 ```bash

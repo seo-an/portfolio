@@ -24,6 +24,7 @@ from bhandara.payroll.overtime_candidates import (
     OvertimeCandidateError, _interval, calculate_overtime_candidates,
 )
 from bhandara.payroll.output import build_payroll_register
+from bhandara.payroll.insurance_candidates import calculate_insurance_candidates
 from bhandara.payroll.leave_wage_adjustments import (
     reconcile_leave_wage_decisions, apply_leave_wage_decisions,
     check_pto_overtime_intervals,
@@ -180,6 +181,7 @@ def build_contract_scoped_overtime_preview(
     rollup_policy: Mapping[str, Any],
     pto_sources: Mapping[str, Any] | None = None,
     pto_wage_plan: Mapping[str, Any] | None = None,
+    insurance_assessment_plan: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Contract-scoped approved overtime is a *candidate*, never final wages.
 
@@ -312,6 +314,30 @@ def build_contract_scoped_overtime_preview(
             pto_wage_review, attendance_plan=attendance_plan,
         )
     _attach_overtime_items(components["payroll_rows"], rows)
+    insurance_review = None
+    if insurance_assessment_plan is not None:
+        if "deduction_map" not in inputs.roles:
+            raise ContractOvertimeAdapterError(
+                "insurance: selected DEDUCTION MAP workbook role required"
+            )
+        insurance_review = calculate_insurance_candidates(
+            coverage, inputs.for_role("deduction_map"),
+            assessment_plan=insurance_assessment_plan,
+            period_from=period_from, period_to=period_to,
+        )
+        for employee in components["payroll_rows"]:
+            worker = employee["employee_id"]
+            # Never silently append duplicate or previously applied insurance.
+            existing = {item["item_id"] for item in employee["deductions"]}
+            new_items = insurance_review["items_by_employee"][worker]
+            if existing.intersection(item["item_id"] for item in new_items):
+                raise ContractOvertimeAdapterError(
+                    "insurance: deduction item already applied"
+                )
+            employee["deductions"].extend(new_items)
+        settlement_review["insurance_candidate_review"] = (
+            "EXPLICIT_ASSESSMENT_BASES_REVIEW_ONLY"
+        )
     out = {
         "payroll_register": build_payroll_register(components["payroll_rows"]),
         "settlement_review": settlement_review,
@@ -331,6 +357,8 @@ def build_contract_scoped_overtime_preview(
                 employee["review_status"] = "PTO 마감 전 · 변동 가능"
     if pto_wage_review is not None:
         out["pto_wage_review"] = pto_wage_review
+    if insurance_review is not None:
+        out["insurance_review"] = insurance_review
     out["overtime_candidate_review"] = {
         "schema_version": "0.1",
         "rows": rows,
