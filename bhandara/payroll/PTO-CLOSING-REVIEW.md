@@ -13,7 +13,7 @@
 
 `마감 전`은 **잠정 검토상태**이므로 월말까지 승인·취소·수정된 자료를 다시 받아 재계산해야 한다. 결과의 `closing_id`는 일반적인 Closing ID가 아니라 `PRE_CLOSING:<실행 기준일>:<Usage SHA256>` 식별자로, **같은 날 Usage 파일이 변경돼도 이전 임금결정 자료를 재사용하지 않도록** 한다. `pto_wage_plan.pto_closing_id`에도 이 정확한 식별자를 전달해야 한다. 마감 확정 시에는 종전 정식 Closing ID와 정확 월간 수량 검증을 사용한다.
 
-급여대장에서는 기존 `PAYROLL` 시트의 **검토상태 열**에 `PARTIAL_REVIEW_ONLY · PTO 마감 전 (변동 가능)`을 표시한다. **새 Excel 열이나 시트는 만들지 않는다.** 단독 `PARTIAL_REVIEW_ONLY`와 `NOT_APPROVED`, 지급합계/공제합계/실지급액 공란은 유지한다.
+급여대장에서는 기존 `PAYROLL` 시트의 **검토상태 열**에 `PTO 마감 전 · 변동 가능`을 표시한다. **새 Excel 열이나 시트는 만들지 않는다.** 단독 `PARTIAL_REVIEW_ONLY`와 `NOT_APPROVED`, 지급합계/공제합계/실지급액 공란은 유지한다.
 
 ## 사용한 기존 정본
 
