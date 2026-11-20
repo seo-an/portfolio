@@ -26,6 +26,7 @@ from bhandara.payroll.overtime_candidates import (
 from bhandara.payroll.output import build_payroll_register
 from bhandara.payroll.leave_wage_adjustments import (
     reconcile_leave_wage_decisions, apply_leave_wage_decisions,
+    check_pto_overtime_intervals,
 )
 from bhandara.payroll.pto_closing_review import reconcile_pto_closing
 from bhandara.payroll.settlement_coverage import validate_settlement_coverage
@@ -298,6 +299,9 @@ def build_contract_scoped_overtime_preview(
     # exact PTO source review, and before the single dynamic Output render.
     pto_wage_review = None
     if pto_wage_plan is not None:
+        check_pto_overtime_intervals(
+            tuple(pto_sources["pto_claims"]), source_approvals,
+        )
         pto_wage_review = reconcile_leave_wage_decisions(
             pto_review, attendance, wage_plan=pto_wage_plan,
         )
