@@ -100,13 +100,20 @@ def _columns_for_group(
     } for code in sorted(active)]
 
 
-def build_payroll_register(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
-    """Build a reproducible dynamic-column, single-sheet Payroll view.
+def build_payroll_register(
+    rows: Iterable[Mapping[str, Any]],
+    *,
+    show_partial_totals: bool = False,
+) -> dict[str, Any]:
+    """Build the existing dynamic one-sheet register, optionally showing known sums.
 
-    Every employee explicitly declares earnings_complete and deductions_complete.
-    Missing or false declarations leave relevant totals blank. Fully supplied
-    totals are still REVIEW_REQUIRED, never payment approval.
+    The legacy standalone preview keeps blank totals by default. The integrated
+    Flow sets show_partial_totals=True: known amounts are added ONCE and
+    incomplete-source flags are recorded separately. Neither is authorization
+    to pay the displayed net candidate.
     """
+    if type(show_partial_totals) is not bool:
+        raise PayrollOutputError("show_partial_totals: explicit boolean required")
     normalized: list[dict[str, Any]] = []
     seen_employees: set[str] = set()
     for source in rows:
@@ -158,6 +165,7 @@ def build_payroll_register(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     ])
 
     result_rows: list[dict[str, Any]] = []
+    review_flags: dict[str, list[str]] = {}
     for source in normalized:
         item_maps = {
             category: {item["item_id"]: item["amount"] for item in source[category]}
@@ -167,8 +175,14 @@ def build_payroll_register(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
             sum(item_maps[category].values()) for category in earning_fields
         )
         deductions_total = sum(item_maps["deductions"].values())
-        gross = earnings_total if source["earnings_complete"] else None
-        deduction = deductions_total if source["deductions_complete"] else None
+        flags = []
+        if not source["earnings_complete"]:
+            flags.append("EARNINGS_UNVERIFIED")
+        if not source["deductions_complete"]:
+            flags.append("DEDUCTIONS_UNVERIFIED")
+        review_flags[source["employee_id"]] = flags
+        gross = earnings_total if show_partial_totals or source["earnings_complete"] else None
+        deduction = deductions_total if show_partial_totals or source["deductions_complete"] else None
         net = gross - deduction if gross is not None and deduction is not None else None
         row = {
             "employee_id": source["employee_id"],
@@ -176,7 +190,11 @@ def build_payroll_register(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
             "gross_pay": gross,
             "deduction_total": deduction,
             "net_pay": net,
-            "review_status": "REVIEW_REQUIRED" if net is not None else "PARTIAL_REVIEW_ONLY",
+            "review_status": (
+                "검증요청 · 잠정합계" if show_partial_totals and flags
+                else "REVIEW_REQUIRED" if net is not None
+                else "PARTIAL_REVIEW_ONLY"
+            ),
         }
         if has_names:
             row["employee_name"] = source["employee_name"]
@@ -194,4 +212,6 @@ def build_payroll_register(rows: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
         "columns": columns,
         "rows": result_rows,
         "approval_state": "NOT_APPROVED",
+        "review_flags": review_flags,
+        "totals_are_provisional": bool(show_partial_totals and any(review_flags.values())),
     }
