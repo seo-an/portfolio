@@ -154,6 +154,10 @@
 
 [정확한 PTO Closing/사용 상세 교차검증](PTO-CLOSING-REVIEW.md). 기존 `deduction-quantity-result.xlsx`의 정확한 분자·분모, `usage-ledger-result.xlsx`의 신청/발생 배정 상세, **외부에서 확정한** `closing-result.xlsx`의 월별 숨김 정본을 비교한다. Worktime 10열의 **하루 신청 ID 하나**는 여러 PTO 상세 신청 중 대표 참조와 대조하며, 다른 신청은 외부 승인 상세 명세에서 별도 보존한다. 신규 Payroll Flow의 선택적 `pto_sources` 입력으로 호출하지만 지급/감액 금액은 자동 생성하지 않는다. 이미 확정한 PTO/Worktime 산식과 Excel 계약, Payroll 7개 입력 및 PAYROLL 단일 Output은 수정하지 않는다.
 
+## P1-5b-2b-2: 복수 휴가의 별도 임금결정과 고정수당 감액 후보
+
+[복수 PTO 임금결정 계약](LEAVE-WAGE-ADJUSTMENTS.md). P1-5b-2b-1의 확정 Closing·PTO 정확분수/신청별 수량 대조(PR #72 병합)를 먼저 통과한 경우에만 **회사 외부 승인 기본급/고정수당 감액금액**을 받는다. Worktime 일별 대표 신청에서 P1-5b-1이 이미 차감한 금액은 다시 차감하지 않고, 추가 신청의 별도 결정만 반영한다. 수당 ID와 현재 지급 후보·금액 상한을 확인하고 유급휴가에 임의 감액을 만들지 않는다. 검토용 후보이며 과세·실지급액은 여전히 미완료다. 기존 7개 Excel·WORKTIME 10열·PAYROLL 단일 Output 그대로.
+
 ## 실행 / 테스트
 
 ```bash
