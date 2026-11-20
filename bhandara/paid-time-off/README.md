@@ -2,7 +2,7 @@
 
 > **현재 기준: 2026-11-19, PR #56 병합 후.** Entitlement·Deduction Quantity·Allocation·Expiry/Carryover·사용내역·Closing의 독립 계산·Excel 및 **JSON 기반 선택적 Tool Flow/CLI 구현과 합성·서버 테스트를 완료**했습니다. **Gearbox/Slack 운영 연결 및 실자료 검증은 미완료**입니다.
 >
-> 기존 `pto-calculator` v0.2.1과 Gearbox 호환성 기준은 변경하지 않았습니다. 신규 PTO Tool 독립 실행은 준비되었으며 **다음 본선은 Payroll 설계**, 운영 연결은 별도 트랙입니다.
+**현행 Paid Time Off Tool은 독립 JSON CLI와 Workflow 인계를 지원합니다. 실제 Hermes·Slack 운영 연결은 별도 단계입니다.**
 
 ## 1. 핵심 구조
 
@@ -153,4 +153,4 @@ python3 -m unittest discover -s bhandara/tests -p 'test_*.py'
 
 ## 새 JSON Tool CLI
 
-사용자가 JSON에서 `as_of_date`, `input_root`, `output_root`, `steps`를 지정하고 `python3 run.py bhandara paid-time-off`로 실행합니다. 상세: [JSON Tool CLI 계약](TOOL-CLI.md). 구형 `pto-calculator` CLI는 그대로 유지합니다.
+**현행 Paid Time Off Tool은 독립 JSON CLI와 Workflow 인계를 지원합니다. 실제 Hermes·Slack 운영 연결은 별도 단계입니다.**
