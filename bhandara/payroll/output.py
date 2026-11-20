@@ -105,6 +105,7 @@ def build_payroll_register(
     *,
     show_partial_totals: bool = False,
     review_reasons_by_employee: Mapping[str, list[str]] | None = None,
+    employer_industrial_by_employee: Mapping[str, int] | None = None,
 ) -> dict[str, Any]:
     """Build the existing dynamic one-sheet register, optionally showing known sums.
 
@@ -117,6 +118,8 @@ def build_payroll_register(
         raise PayrollOutputError("show_partial_totals: explicit boolean required")
     if review_reasons_by_employee is not None and not show_partial_totals:
         raise PayrollOutputError("review_reasons_by_employee: partial totals required")
+    if employer_industrial_by_employee is not None and not show_partial_totals:
+        raise PayrollOutputError("employer_industrial_by_employee: partial totals required")
     normalized: list[dict[str, Any]] = []
     seen_employees: set[str] = set()
     for source in rows:
@@ -159,6 +162,15 @@ def build_payroll_register(
             for reason in reasons:
                 _required_text(reason, "review_reason")
 
+    if employer_industrial_by_employee is not None:
+        if not isinstance(employer_industrial_by_employee, Mapping):
+            raise PayrollOutputError("employer industrial: mapping required")
+        if set(employer_industrial_by_employee) != seen_employees:
+            raise PayrollOutputError("employer industrial: complete employee roster required")
+        for amount in employer_industrial_by_employee.values():
+            if type(amount) is not int or amount < 0:
+                raise PayrollOutputError("employer industrial: nonnegative integer KRW required")
+
     has_names = any(row["employee_name"] is not None for row in normalized)
     columns = [{"key": "employee_id", "group": "직원정보", "label": "직원 ID"}]
     if has_names:
@@ -174,8 +186,18 @@ def build_payroll_register(
     columns.extend([
         {"key": "deduction_total", "group": "공제합계", "label": "공제합계"},
         {"key": "net_pay", "group": "실지급액", "label": "실지급액"},
-        {"key": "review_status", "group": "검토", "label": "검토상태"},
     ])
+    if employer_industrial_by_employee is not None:
+        if any(employer_industrial_by_employee.values()):
+            columns.append({
+                "key": "employer_industrial", "group": "사업주 부담·회사 전용",
+                "label": "산재보험료(사업주)",
+            })
+        columns.append({
+            "key": "known_company_outlay",
+            "group": "회사 비용·확인분", "label": "회사 비용(확인분)",
+        })
+    columns.append({"key": "review_status", "group": "검토", "label": "검토상태"})
 
     result_rows: list[dict[str, Any]] = []
     review_flags: dict[str, list[str]] = {}
@@ -218,6 +240,12 @@ def build_payroll_register(
                 else "PARTIAL_REVIEW_ONLY"
             ),
         }
+        if employer_industrial_by_employee is not None:
+            employer_premium = employer_industrial_by_employee[source["employee_id"]]
+            row["employer_industrial"] = employer_premium if employer_premium else None
+            # Gross wages, not employee net pay, are the base company expense.
+            # This is a *known subset*; other employer charges aren't inferred.
+            row["known_company_outlay"] = earnings_total + employer_premium
         if has_names:
             row["employee_name"] = source["employee_name"]
         for column in columns:
@@ -236,4 +264,37 @@ def build_payroll_register(
         "approval_state": "NOT_APPROVED",
         "review_flags": review_flags,
         "totals_are_provisional": bool(show_partial_totals and any(review_flags.values())),
+        "employer_cost_complete": False if employer_industrial_by_employee is not None else None,
+        "employer_cost_scope": (
+            "INTERNAL_ADMIN_ONLY_KNOWN_COST_COMPONENTS"
+            if employer_industrial_by_employee is not None else None
+        ),
+    }
+
+
+
+def build_employee_payroll_view(
+    register: Mapping[str, Any], *, employee_id: str,
+) -> dict[str, Any]:
+    """Explicitly exclude employer costs from any future employee notice.
+
+    Never send the administrative PAYROLL workbook to employees. Consumers
+    generating an employee view must use this safe allowlisted projection.
+    """
+    employee_id = _required_text(employee_id, "employee_id")
+    rows = [row for row in register["rows"] if row["employee_id"] == employee_id]
+    if len(rows) != 1:
+        raise PayrollOutputError("employee view: expected one selected employee")
+    allowed_columns = [
+        col for col in register["columns"]
+        if col["key"] not in ("employer_industrial", "known_company_outlay")
+    ]
+    allowed_keys = {col["key"] for col in allowed_columns}
+    return {
+        "columns": allowed_columns,
+        "rows": [{key: value for key, value in rows[0].items()
+                  if key in allowed_keys}],
+        "approval_state": register["approval_state"],
+        "employee_id": employee_id,
+        "report_scope": "EMPLOYEE_ONLY_NO_EMPLOYER_CHARGES",
     }
