@@ -141,6 +141,14 @@ P2-2 근로·지방소득세 후보 PR #76은 사용자 서버 테스트·병합
 
 [공통 직원상태와 산재 사업주 비용](EMPLOYER-INSURANCE.md). 공통 `employee.xlsx`에 보험별 **취득일 / 공란(적용 제외) / `미가입`** 표기를 사용한다. 국민연금의 고령 만기 등 미가입 여부를 급여에서 나이로 자동 판단하지 않는다. **근로자 급여 검토 플래그는 소득세·지방소득세·근로자 부담 보험(국민연금/건강보험·장기요양/고용보험)으로 제한**하고, 정상 미해당 수당·기타 공제에 대한 경고는 발생시키지 않는다. 산재보험료는 별도 사업주 비용으로 계산해 직원 급여 3종 합계와 완전히 분리한다. 관리자 단일시트 Output에는 산재보험료/회사 비용(현재 확인된 항목) 열을 추가하고, 직원별 조회에서는 숨긴다. 산재 외 사업주 보험 3종, 실제 납부 검증 등은 추후 확장한다.
 
+### P3-1 구현 중 — 신규 Payroll JSON Tool CLI
+
+PR #77 **서버 테스트 완료·병합 확인**. 결정: Payroll은 근로자 지급/공제와 근로자 급여 미확정 검토를 담당하고, **사업주 산재보험·현재 확인된 회사 비용은 관리자 급여대장에 별도 표시하는 인계 자료까지만** 유지한다. 사업주 총부담 보험 합산이나 기업 인건비·회계 계산을 Payroll 내부에 더하지 않는다.
+
+[신규 P3 독립 Tool CLI](TOOL-CLI.md): `run.py bhandara payroll` / `data/config/payroll.json`에서 `payroll_period,input_root,output_root,run_id=auto,steps`와 기존 외부 JSON 원장 참조를 읽고, Payroll 통합 Flow **1회 호출**해 PAYROLL XLSX 및 선택적 검토 JSON을 저장한다. 7개 Excel Reader/Worktime·PTO 원본/공통 직원보험 상태/Output 형식은 그대로다. 소급 승인·금액 승인 원장의 진위 인증, 법적 지급 확정, Gearbox 운영연결 및 레거시 제거는 **P3-1에 포함되지 않는다**. CI·사용자 서버 검증/병합 전에는 완료로 취급하지 않는다.
+
+**P3-2 잔여:** 50명 × 계약변경·수당/보너스·휴가·초과근무·보험/원천세, 다회 재실행, 일별 정확분수와 승인 모집단의 합성 전체 E2E/Golden 비교. 사용자가 원할 때만 `agent-config` 운영 연결을 재개한다.
+
 ## P3: JSON Tool CLI + 합성 통합 E2E
 
 1. PTO·Worktime과 동일하게 개인 JSON 설정에서 `payroll_period`, `input_root`, `output_root`, `run_id=auto`, `steps`, 파일 역할 참조를 읽고 고정 명령 한 줄로 실행. `--period/--input-dir/--output-dir`를 매번 수정시키지 않는다.

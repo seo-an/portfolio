@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "tool": "payroll",
+  "run_id": "auto",
+  "payroll_period": "2026-11",
+  "input_root": "/private/hr/input",
+  "output_root": "/private/hr/output",
+  "steps": [
+    "review",
+    "output"
+  ],
+  "files": {
+    "worktime": "worktime/worktime-result.xlsx",
+    "employee": "common/employee.xlsx"
+  },
+  "source_files": {
+    "settlement_plan": "payroll/decisions/settlement-plan.json",
+    "attendance_plan": "payroll/decisions/attendance-plan.json",
+    "verified_work": "payroll/decisions/verified-work.json",
+    "approved_segments": "payroll/decisions/approved-overtime.json",
+    "evidence_registry": "payroll/decisions/evidence-registry.json",
+    "rate_policy": "payroll/decisions/rate-policy.json",
+    "rollup_policy": "payroll/decisions/rollup-policy.json",
+    "insurance_assessment_plan": "payroll/decisions/insurance-assessment.json",
+    "withholding_plan": "payroll/decisions/withholding.json",
+    "industrial_assessment_plan": "payroll/decisions/industrial-assessment.json"
+  }
+}
