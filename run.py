@@ -117,6 +117,20 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.collection == "bhandara":
+        if args.module_id == "workflow":
+            if any((args.data_root, args.run_id, args.source, args.input_dir,
+                    args.normalized, args.output_dir, args.operation, args.manifest,
+                    args.scenario_id, args.isolate_worker_failures, args.period,
+                    args.paths_config, args.worktime_result)):
+                print("WORKFLOW_INVALID: use the JSON config, not CLI overrides",
+                      file=sys.stderr)
+                return 2
+            from pathlib import Path
+            from bhandara.workflow import main as workflow_main
+            config = (Path(args.config) if args.config
+                      else Path(__file__).resolve().parent /
+                      "bhandara/data/config/workflow.json")
+            return workflow_main(config)
         if args.module_id == "paid-time-off":
             if any((args.data_root, args.run_id, args.source, args.input_dir,
                     args.normalized, args.output_dir, args.operation, args.manifest,

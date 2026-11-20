@@ -5,7 +5,7 @@ as_of: "2026-11-20"
 primary_repo: "seo-an/portfolio"
 runtime_repo: "seo-an/agent-config"
 subject: "Bhandara 3-Tool operational integration, stages 1-4"
-implementation_status: "NOT_STARTED"
+implementation_status: "STAGE1_PR_PENDING_VALIDATION"
 portfolio_cli_status: "IMPLEMENTED_AND_USER_TESTED"
 runtime_connection_status: "NOT_CONNECTED"
 agent_config_edit: "PAUSED_REQUIRES_EXPLICIT_USER_AUTHORIZATION"
@@ -14,6 +14,8 @@ mandatory_50_person_golden_e2e: false
 ---
 
 # Bhandara 운영 연결 인수인계 — 1~4단계
+
+> **진행 알림(2026-11-20):** Stage 1 Tool 간 Workflow 구현이 `feat/bhandara-stage1-tool-workflow-20261120` 브랜치에서 사용자 서버 테스트·병합 대기 중이다. [Stage 1 실행 계약](WORKFLOW.md) 참고. Stage 2~4는 여전히 미착수이고 `agent-config` 수정·배포는 사용자 명시적 재개 승인 전 PAUSE. 아래 원래 미구현 설명/체크리스트는 PR 검증 전의 기준 상태를 보존한다.
 
 > **새 대화 시작용 문서.** 이미 완료된 Payroll P0~P3 기능을 다시 설계하거나 같은 계산을 중복 구현하지 않는다. 현재 과제는 **① Tool 간 Workflow → ② Gearbox/Hermes·Slack 연결 → ③ 운영 오류·보관 검증 → ④ 레거시 철수**다. 실제 작업은 아직 시작하지 않았으며 이 문서는 계획과 인수인계만 확정한다.
 
