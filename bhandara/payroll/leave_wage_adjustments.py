@@ -95,15 +95,19 @@ def reconcile_leave_wage_decisions(
     if wage_plan["schema_version"] != "0.1":
         raise LeaveWageAdjustmentError("leave_wage_plan: unsupported schema")
     if wage_plan["pto_closing_id"] != pto_review.get("closing_id"):
-        raise LeaveWageAdjustmentError("leave_wage_plan: mismatched confirmed Closing")
+        raise LeaveWageAdjustmentError("leave_wage_plan: PTO source identity mismatch")
     policy = _text(wage_plan["policy_ref"], "policy_ref")
     if not isinstance(wage_plan["decisions"], (list, tuple)):
         raise LeaveWageAdjustmentError("decisions: list required")
     source_requests = pto_review.get("requests")
-    if (pto_review.get("source_consistency") != "MATCHED_FOR_CURRENT_QUARTER_MONTH"
-            or pto_review.get("closing_confirmed") is not True
+    valid_sources = {
+        ("MATCHED_FOR_CURRENT_QUARTER_MONTH", True),
+        ("MATCHED_PROVISIONAL_AS_OF", False),
+    }
+    if ((pto_review.get("source_consistency"),
+         pto_review.get("closing_confirmed")) not in valid_sources
             or not isinstance(source_requests, list)):
-        raise LeaveWageAdjustmentError("PTO: confirmed source review required")
+        raise LeaveWageAdjustmentError("PTO: consistent confirmed or pre-close source review required")
     expected: dict[tuple[str, str, str, str], Mapping[str, Any]] = {}
     for request in source_requests:
         key = (
@@ -170,6 +174,8 @@ def reconcile_leave_wage_decisions(
     return {
         "schema_version": "0.1",
         "pto_closing_id": pto_review["closing_id"],
+        "closing_status": pto_review["closing_status"],
+        "change_possible": pto_review["change_possible"],
         "policy_ref": policy,
         "requests": [by_request[key] for key in sorted(by_request)],
         "base_reductions_by_employee": dict(base_total),
