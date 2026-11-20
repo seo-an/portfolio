@@ -24,6 +24,8 @@ _GROUP_COLOR = {
     "공제": "58616D",
     "공제합계": "58616D",
     "실지급액": "204A61",
+    "사업주 부담·회사 전용": "576577",
+    "회사 비용·확인분": "425369",
     "검토": "58616D",
 }
 _MONEY_FORMAT = '#,##0;[Red]-#,##0;0'
@@ -127,7 +129,9 @@ def write_payroll_result_xlsx(result: Mapping[str, Any], path: str | Path) -> Pa
                 else:
                     cell.number_format = _MONEY_FORMAT
                     cell.alignment = Alignment(vertical="center", horizontal="right")
-                if column["key"] in {"gross_pay", "deduction_total", "net_pay"}:
+                if column["key"] in {
+                    "gross_pay", "deduction_total", "net_pay", "known_company_outlay"
+                }:
                     cell.fill = PatternFill("solid", fgColor="EAF0F4")
                     cell.font = Font(name="맑은 고딕", size=10, bold=True, color="1A303E")
         name_columns = sum(1 for col in columns if col["key"] in {"employee_id", "employee_name"})
