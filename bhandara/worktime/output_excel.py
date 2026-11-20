@@ -5,6 +5,7 @@ There is no separate human/payroll view and no status/approval columns.
 """
 from __future__ import annotations
 
+from io import BytesIO
 from pathlib import Path
 from typing import Any
 
@@ -48,7 +49,13 @@ def write_worktime_xlsx(result: dict[str, Any], path: str | Path) -> Path:
         widths = (16, 17, 20, 18, 16, 21, 22, 20, 18, 22)
         for index, width in enumerate(widths, start=1):
             sheet.column_dimensions[get_column_letter(index)].width = width
-        book.save(target)
+        # Serialize first, then exclusively CREATE the target. A second run or
+        # race with an existing workbook must never trigger Workbook.save(path)
+        # which would otherwise replace an existing Excel file.
+        memory = BytesIO()
+        book.save(memory)
+        with target.open("xb") as stream:
+            stream.write(memory.getvalue())
     finally:
         book.close()
     return target

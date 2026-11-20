@@ -4,6 +4,7 @@ Only formats a validated register. It never fills missing calculations.
 """
 from __future__ import annotations
 
+from io import BytesIO
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -139,7 +140,13 @@ def write_payroll_result_xlsx(result: Mapping[str, Any], path: str | Path) -> Pa
         if rows:
             sheet.auto_filter.ref = f"A2:{get_column_letter(len(columns))}{2 + len(rows)}"
         sheet.print_title_rows = "1:2"
-        book.save(target)
+        # Serialize first, then exclusively CREATE the target. A second run or
+        # race with an existing workbook must never trigger Workbook.save(path)
+        # which would otherwise replace an existing Excel file.
+        memory = BytesIO()
+        book.save(memory)
+        with target.open("xb") as stream:
+            stream.write(memory.getvalue())
     finally:
         book.close()
     return target

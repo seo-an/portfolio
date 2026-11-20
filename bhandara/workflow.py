@@ -15,6 +15,7 @@ from tempfile import TemporaryDirectory
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from bhandara.common.runtime.workspace import ensure_tool_workspace
 from bhandara.common.io.input_layout import period_bounds
 from bhandara.common.utils.hashing import sha256_file
 
@@ -232,6 +233,7 @@ def _guard_handoffs(artifacts: dict[str, dict[str, str]],
 
 def execute(config_file: str | Path) -> dict[str, Any]:
     """Run only selected upstream Tools; Payroll's existing Flow runs once."""
+    ensure_tool_workspace("workflow")
     plan = _load_workflow(config_file)
     payroll = _validate_run_configs(plan)
     # Reuse references are verified *before* invoking any calculators.

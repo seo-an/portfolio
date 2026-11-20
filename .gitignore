@@ -24,3 +24,11 @@ venv/
 !/bhandara/common/module/*/input/.gitkeep
 /bhandara/common/module/*/output/**
 !/bhandara/common/module/*/output/.gitkeep
+
+# Optional tool-local workspace paths must remain private too.
+# Canonical JSON Tool data lives under /bhandara/data/ (already ignored).
+# Do not globally ignore *.xlsx: public synthetic fixtures may be intentional.
+/bhandara/worktime/input/**
+/bhandara/worktime/output/**
+/bhandara/payroll/input/**
+/bhandara/payroll/output/**

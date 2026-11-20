@@ -15,6 +15,8 @@ import re
 import sys
 from typing import Any
 
+from bhandara.common.runtime.workspace import ensure_tool_workspace
+
 STAGES = ("entitlement", "deduction-quantity", "usage-ledger", "closing")
 FILE_KEYS = frozenset((
     "employee", "attendance", "proration", "approved_leave", "grant_references",
@@ -69,8 +71,9 @@ def _read_config(config_path: Path) -> dict[str, Any]:
         raise ToolConfigError("as_of_date must be canonical")
     input_root = _require_path(doc.get("input_root"), "input_root", config_path.parent)
     output_root = _require_path(doc.get("output_root"), "output_root", config_path.parent)
-    if input_root == output_root:
-        raise ToolConfigError("input_root and output_root must differ")
+    if (input_root == output_root or output_root.is_relative_to(input_root)
+            or input_root.is_relative_to(output_root)):
+        raise ToolConfigError("input/output roots must not contain one another")
     raw_files = doc.get("files", {})
     if not isinstance(raw_files, dict) or set(raw_files) - FILE_KEYS:
         raise ToolConfigError(f"files permits only {sorted(FILE_KEYS)}")
@@ -166,7 +169,10 @@ def _run_closing(config: dict[str, Any], results: dict[str, Path]) -> Path:
 
 def execute(config_path: str | Path) -> dict[str, str]:
     """Run exactly the ordered JSON steps; never invoke unspecified modules."""
+    ensure_tool_workspace("paid-time-off")
     config = _read_config(Path(config_path).resolve())
+    if (config["output_root"] / config["run_id"]).exists():
+        raise ToolConfigError("run_id already exists; output overwrite forbidden")
     result: dict[str, Path] = {}
     for stage in config["steps"]:
         if stage == "entitlement":

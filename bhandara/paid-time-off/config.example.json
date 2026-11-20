@@ -4,8 +4,8 @@
   "run_id": "auto",
   "as_of_date": "2026-11-30",
   "policy_id": "YOUR_APPROVED_POLICY_ID",
-  "input_root": "/private/hr/input",
-  "output_root": "/private/hr/output",
+  "input_root": "../input",
+  "output_root": "../output",
   "steps": [
     "entitlement",
     "deduction-quantity"
