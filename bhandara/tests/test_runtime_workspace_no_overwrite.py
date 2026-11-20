@@ -132,13 +132,9 @@ class WorkspaceTest(unittest.TestCase):
                 for tool, name in modules:
                     with self.subTest(tool=tool):
                         module = importlib.import_module(name)
-                        with self.assertRaises(Exception) as caught:
+                        with self.assertRaises(ValueError) as caught:
                             module.execute(missing)
-                        exc = caught.exception
-                        self.assertFalse(
-                            isinstance(exc, OSError) and exc.errno == errno.EROFS,
-                            f"Scaffold unexpectedly blocked {tool}: {exc}",
-                        )
+                        self.assertNotIn("read-only checkout", str(caught.exception))
             self.assertFalse(root.exists())
 
     def test_permission_denied_is_not_silently_treated_as_readonly(self):
