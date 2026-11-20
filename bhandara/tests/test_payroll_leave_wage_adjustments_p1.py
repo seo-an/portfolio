@@ -81,10 +81,9 @@ class LeaveWageDecisionTests(unittest.TestCase):
         )
 
     def valid(self, **kwargs):
-        return [
-            decision("R1"),
-            decision("R2", treatment="UNPAID_LEAVE", amount=60000, **kwargs),
-        ]
+        settings = {"treatment": "UNPAID_LEAVE", "amount": 60000}
+        settings.update(kwargs)
+        return [decision("R1"), decision("R2", **settings)]
 
     def test_mixed_paid_unpaid_on_same_day_independent_money(self):
         reviewed = self.review(self.valid(fixed=[
@@ -179,10 +178,11 @@ class LeaveWageExcelFlowTests(unittest.TestCase):
                  wage_present=True, pto_present=True):
         inputs = self.prepare(include_fixed=include_fixed)
         worktime = self.root / "worktime-result.xlsx"
-        write_worktime_xlsx(
-            {"schema_version": "0.1", "rows": self.fixture.worktime},
-            worktime,
-        )
+        if not worktime.exists():
+            write_worktime_xlsx(
+                {"schema_version": "0.1", "rows": self.fixture.worktime},
+                worktime,
+            )
         sha = sha256_file(worktime)
         first = event(
             treatment=anchor_treatment, amount=anchor_amount,
