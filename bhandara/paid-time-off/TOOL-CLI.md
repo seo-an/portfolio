@@ -1,5 +1,7 @@
 # Paid Time Off — JSON 설정 기반 선택적 Tool CLI
 
+> **독립 Tool CLI 구현·검증 완료.** Payroll·Worktime과 서로 자동 호출되는 것은 아니다. 정확한 결과 경로·기간·사용량·마감 여부를 인계하는 **Workflow Stage 1은 아직 미구현**이다. 자세한 다음 작업과 운영/Slack 연결 승인 경계는 [운영 연결 인수인계](../OPERATIONS-HANDOFF-2026-11-20.md)를 따른다.
+
 ## 사용 방법
 
 **명령어를 매번 수정하지 않습니다.** `config.example.json`을 사용자 전용 설정 파일 `bhandara/data/config/paid-time-off.json`으로 복사하고, **파일 안의 실행 기준일·경로·실행 단계**를 지정합니다. 실제 HR 원본·사용자 설정은 공개 Git에 커밋하지 않습니다.

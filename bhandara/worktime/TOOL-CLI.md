@@ -1,5 +1,7 @@
 # Worktime — JSON 설정 기반 Tool CLI
 
+> **독립 Tool CLI 구현·검증 완료.** `worktime-result.xlsx`는 **근무 사실 출력**이지 Payroll의 실제 추가수당 승인 근거를 대체하지 않는다. Tool 간 명시적 경로·기간·승인 JSON 인계와 Gearbox/Hermes·Slack 실제 연결은 [운영 연결 인수인계](../OPERATIONS-HANDOFF-2026-11-20.md)에 따라 이후 진행한다. `agent-config` 작업은 사용자 승인 전까지 PAUSE.
+
 ## 사용 방법
 
 복잡한 명령 옵션을 매번 입력하지 않습니다. 한 번 `config.example.json`을 개인 설정 경로로 복사하고 JSON의 **기간·입출력 경로·선택 단계**만 변경합니다.

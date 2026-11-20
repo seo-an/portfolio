@@ -1,4 +1,8 @@
-# Payroll — 신규 계약·수당·성과급 코어 + 동적 급여대장 Output (2026-11-19)
+# Payroll — 독립 JSON Tool CLI·동적 급여대장·검토 출력 (2026-11-20)
+
+> **현재:** Portfolio PR #78까지 사용자 서버 테스트·병합 완료. **독립 `python3 run.py bhandara payroll` 실행 가능**하며 7개 XLSX·Worktime/선택 PTO·승인정책 JSON을 사용해 급여대장/검토 JSON을 산출한다. **Tool 간 Workflow 및 Gearbox·Hermes·Slack 실운영 호출은 아직 연결되지 않았다.** 다음 작업은 [운영 1~4단계 인수인계](../OPERATIONS-HANDOFF-2026-11-20.md)에 따른다. 별도 Golden 50인 E2E는 사용자 결정으로 필수 과제에서 제외. 회사 비용 산정 기능은 **관리자용 산재보험/확인분 출력까지**로 종료한다.
+
+> 아래 P0/P1/P2 구현 과정은 개발 이력 설명이다. 과거 단계 당시의 미완료 표현은 **현행 운영 상태가 아님**을 유의한다.
 
 > **현재 상태: PARTIAL_REVIEW_ONLY.** P0 코어·단일 동적 Excel Output(PR #59/#60), P0-1 독립 Reader(PR #62), P0-2/3 정확 산정기간·검토용 Adapter(PR #63), P1-1 Worktime 근무사실 검토 Bridge(PR #64)는 **모두 병합 완료**. P1-2 승인구간 수당 후보(PR #65)와 P1-3 독립 출처원장 내용 대조(PR #66)도 **병합 완료**. P1-4 중복가산 후보(PR #67)까지 병합 완료. P1-5a 계약·재직기간 일할 후보(PR #68)도 병합 완료. P1-5b-1 승인 휴가·결근 근거 대조와 기본급 차감 후보(PR #69)까지 병합 완료. P1-5b-2a 계약별 초과근무수당 후보 통합(PR #70)도 병합 완료. 후속 **Flow 경량화 PR**에서는 중간 급여대장 역변환을 제거하고 Worktime 원본 파싱·계약 검증·동적 Output 생성 횟수를 각각 1회로 정리하되 **법적 정책 인증·실제 지급 승인·휴가/입퇴사 정산·보험/세금·독립 JSON CLI 및 Gearbox/Slack 연결은 미구현**이다. 이 결과는 지급·신고·회계 확정 자료가 아니며 구형 `payroll-calculator/`도 교체하지 않는다.
 
@@ -164,11 +168,11 @@
 
 ## P2-1 — 외부 확정 산정기준액으로 4대보험 공제 후보
 
-[4대보험 후보 계산 계약](INSURANCE-CANDIDATES.md). 기존 7개 XLSX 중 `deduction-map.xlsx`의 4종 근로자 부담률과 `CONTRACTS.deduction_code`를 사용한다. 직원별 **보험마다 다른 산정기준액/가입 적용 여부/근거**는 외부에서 승인한 `insurance_assessment_plan`으로만 받는다. 기간과 요율 정책이 불일치하거나 산정기준액이 없으면 계산을 차단한다. 별도 8번째 Excel 없이 보험료를 기존 `deductions` 동적 열에 보여주지만 **원천세 미구현으로 공제합계와 실지급액은 공란**이다.
+[4대보험 후보 계산 계약](INSURANCE-CANDIDATES.md). 기존 7개 XLSX 중 `deduction-map.xlsx`의 4종 근로자 부담률과 `CONTRACTS.deduction_code`를 사용한다. 직원별 **보험마다 다른 산정기준액/가입 적용 여부/근거**는 외부에서 승인한 `insurance_assessment_plan`으로만 받는다. 기간과 요율 정책이 불일치하거나 산정기준액이 없으면 계산을 차단한다. 별도 8번째 Excel 없이 보험료를 기존 `deductions` 동적 열에 보여주지만 **당시 P2-1 단독 단계에서는 원천세가 아직 미연결이라 합계·실지급액이 미완료였지만, **PR #77부터는 계산된 항목의 잠정 합계를 출력**한다**이다.
 
 ## P2-2 — 지급항목별 과세·비과세 분리 및 원천징수 후보
 
-[과세분류·근로/지방소득세 공제 계약](TAX-WITHHOLDING.md). 기존 7개 Payroll Excel·한 시트 Output은 유지한다. 기본급, PTO 차감 후 고정수당, 계약별 초과근무, 성과급의 **실제 지급 후보 전액**에 대해 외부 확인 과세/비과세 분할 금액을 비교한다. `FIXED ALLOWANCE MAP.payroll_taxability`와 비과세 정책 참조를 검증하고, 별도 확인·승인한 **근로소득세와 지방소득세 원 단위 공제 후보**를 기존 동적 공제 열로 출력한다. 세액표/비과세 법정한도는 자동 계산하지 않으며 지급합계·공제합계·실지급액은 계속 공란이다.
+[과세분류·근로/지방소득세 공제 계약](TAX-WITHHOLDING.md). 기존 7개 Payroll Excel·한 시트 Output은 유지한다. 기본급, PTO 차감 후 고정수당, 계약별 초과근무, 성과급의 **실제 지급 후보 전액**에 대해 외부 확인 과세/비과세 분할 금액을 비교한다. `FIXED ALLOWANCE MAP.payroll_taxability`와 비과세 정책 참조를 검증하고, 별도 확인·승인한 **근로소득세와 지방소득세 원 단위 공제 후보**를 기존 동적 공제 열로 출력한다. 세액표/비과세 법정한도는 자동 계산하지 않는다. **PR #77 이후 계산된 금액의 잠정 지급합계·공제합계·실지급 차액은 표시**하지만 실제 승인·신고는 수행하지 않는다.
 
 ## 잠정 합계·검증요청 플래그 (PR #77)
 
@@ -180,14 +184,22 @@
 
 **산재보험료는 외부 확인 요율·산정기준액으로 회사 부담 후보를 계산**하고, 관리자 급여대장 `사업주 부담·회사 전용`과 `회사 비용(확인분)`으로만 출력한다. 직원 지급합계·공제합계·실지급액에 포함하지 않으며 직원별 조회에는 사업주 비용을 삭제한다. **회사 비용(확인분)은 아직 다른 3종 사업주 보험료·퇴직충당을 포함하지 않은 일부 비용**이다.
 
-## P3-1 — JSON 설정으로 독립 실행 (진행 중)
+## P3-1 — JSON 설정으로 독립 실행 (PR #78 병합·검증 완료)
 
 [Payroll Tool CLI 설명](TOOL-CLI.md), [설정 예제](config.example.json). 기존 7개 단일시트 XLSX, Worktime 결과, 외부 검증된 승인/정책 JSON의 **파일 참조**만 지정하여 `python3 run.py bhandara payroll`로 한 번에 실행한다. 새 계산기·중복 급여대장·회사 원가분석 로직은 만들지 않는다. 결과는 `payroll-result.xlsx/PAYROLL`과 간략한 `payroll-review.json`이며 원본 인력 파일은 복제하지 않는다. **회사 비용(확인분)은 다른 모듈로 인계 가능한 부분합계**, 실제 전체 인건비가 아니다.
 
 ## 실행 / 테스트
 
 ```bash
-python3 -m unittest bhandara.tests.test_payroll_core_v1 -v
+# 기존 신규 Payroll JSON Tool CLI — 설정 경로: bhandara/data/config/payroll.json
+python3 run.py bhandara payroll
+
+# Payroll Tool CLI 합성 회귀
+python3 -B -m unittest bhandara.tests.test_payroll_json_tool_cli -v
+
+# Bhandara 전체 주제별 PASS/FAIL/ERROR/SKIP
+python3 -B bhandara/_tests/run.py
 ```
 
-**Excel Reader, P0 검토용 기간/ID/표시명 Adapter, P1-1 Worktime 사실 검토는 병합됐다.** 실제 계약 유효기간과 일할, 인정 초과근무·공제액 산정, 선택적 Payroll Tool CLI와 전체 Flow 연결은 남았다. [우선순위와 선행조건](NEXT-STEPS.md)을 따른다. `payroll-calculator` 구형 입력/결과를 새 Worktime `WORKTIME` Excel로 자동 대체하지 않는다. 새 Tool 계약이나 버전이 바뀔 때는 Gearbox 호환성 검증이 필수이며, 현재 `agent-config`는 사용자 지시에 따라 PAUSE 중이다.
+각 Tool의 **독립 실행은 구현·검증됐으나**, **Portfolio Workflow 인계 → Gearbox/Hermes·Slack 연결 → 후속 새 메시지 무응답 진단 → 레거시 철수**는 아직 시작하지 않았다. 실직원 원본·지급 승인 자동화가 아니며 외부 증빙이 없는 보험·세액·수당을 임의 확정하지 않는다. [정확한 남은 일](NEXT-STEPS.md) · [운영 인수인계](../OPERATIONS-HANDOFF-2026-11-20.md). 사용자 재개 지시 전까지 `agent-config` 수정 금지; 서버 정리는 나중에 일괄 수행.
+

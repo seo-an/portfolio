@@ -1,184 +1,53 @@
-# 신규 Payroll — 다음 구현 체크리스트 (2026-11-20 · Flow 경량화 검증 중)
+# Payroll — 최신 상태 및 운영 연결 우선순위 (2026-11-20)
 
-> **진행 현황:** Portfolio PR #58~#60(문서/코어/동적 단일 Output), #62(7종 Reader), #63(P0 기간·표시명 Adapter), #64(P1-1 Worktime 사실 검토) **병합 완료**. P1-2 승인구간 수당 **후보** 산정(PR #65), P1-3 출처 기록 대조(PR #66)도 병합 완료다. P1-4 중복가산 후보 PR #67도 병합 완료. P1-5a 재직·계약분할 일할 후보(PR #68)까지 병합 완료. P1-5b-1 휴가·결근 근거 대조와 기본급 차감 후보(PR #69)도 병합 완료됐다. P1-5b-2a 계약별 초과근무 단가 적용 및 단일 검토대장 통합(PR #70)까지 병합 완료. **계약·근태·초과근무 Flow 경량화**는 별도 리팩터링 PR에서 검증 중이다. 신규 Payroll이 최종 급여를 확정하거나 지급한다는 뜻은 아니다.
+> **독립 Payroll Tool CLI 구현·검증 완료(PR #78까지 사용자 서버 테스트·병합).** 더 이상 P0~P3를 미구현으로 표시하거나, 새로운 50명 Golden E2E를 운영 연결의 필수 전제로 요구하지 않는다. 다음 작업의 정본은 [Bhandara 운영 연결 1~4단계 인수인계](../OPERATIONS-HANDOFF-2026-11-20.md)다.
 
-## 현재 코드와 미구현의 정확한 경계
+## 구현·병합 완료
 
-| 이미 완료 | 다음 구현 필요 |
-|---|---|
-| `payroll/core.py`: 계약/수당/성과급 코어. `input_excel.py`: 7종 Reader. `contract_period.py`: 정확 산정기간만 선택. `review_adapter.py`: 지급항목 표시명 및 검토용 Output 결합 | 계약의 실제 법적 유효기간·중간 변경/입퇴사 일할, 승인된 추가근로/휴가 정산, 보험료·세금 공제액, 완료상태 판정 |
-| `payroll/input-files.json`: 고정 7개 파일명·시트 및 v1.1 표시명 필드 | JSON 설정 기반 선택적 Tool CLI, `input_root/output_root`, `steps`, 재실행 `run_id`, 외부 결과 참조/인계 및 예외 격리 |
-| `payroll/output.py`: `build_payroll_register`, 동적 열/조건부 합계; P0 Adapter는 항상 미완료 플래그 전달 | 실제 산정 검증 후 직원별 `earnings_complete`/`deductions_complete`를 책임 있게 판정할 연결 |
-| `payroll/output_excel.py`: `write_payroll_result_xlsx`, **`payroll-result.xlsx`/`PAYROLL` 단일 시트**, 2단 헤더, 미수령 공란, 덮어쓰기 차단 | 전체 Flow의 끝에서 해당 Writer 호출, 검증된 산출물로 실제 출력 검증 |
-| `payroll-calculator/`: 구형 계산기의 검증된 코드와 테스트 유지 | 재사용 후보 확인 후 별도 Adapter; 구형 Worktime JSON에 신규 Worktime XLSX를 곧장 전달하는 행위 금지 |
+| 영역 | 현재 제공하는 기능 | 정본 |
+|---|---|---|
+| Payroll 입력 | 독립 7개 XLSX, 직원 계약/수당·성과급·공제율 매핑, 기간·ID/중복 검증 | [`input-files.json`](input-files.json) |
+| Worktime 연계 | `worktime-result.xlsx` 10열 사실 검토, 외부 검증 구간/승인과 계약별 초과근무 후보 | [`CONTRACT-SCOPED-OVERTIME.md`](CONTRACT-SCOPED-OVERTIME.md) |
+| PTO 연계 | 확정 Closing 또는 현재 기준일 자료로 복수 휴가 대조, 별도 승인 원 단위 감액·중복차감 방지 | [`PTO-CLOSING-REVIEW.md`](PTO-CLOSING-REVIEW.md) |
+| 보험/원천징수 | Common 취득일·공란(적용 제외)·미가입, 근로자 부담 보험, 항목별 과세·비과세/외부 원천세 후보 | [`INSURANCE-CANDIDATES.md`](INSURANCE-CANDIDATES.md) · [`TAX-WITHHOLDING.md`](TAX-WITHHOLDING.md) |
+| 사업주 산재보험 | 관리자용 산재보험료·회사 비용(확인분) 표시만 수행. 전체 인건비/회계 계산은 다른 Tool의 미래 책임 | [`EMPLOYER-INSURANCE.md`](EMPLOYER-INSURANCE.md) |
+| Payroll Output | `PAYROLL` 한 시트/2단 헤더, 동적 항목/미해당 공란, **계산된 항목의 잠정 합계**, 미확인 보험·소득세 검토요청 | [`OUTPUT-CONTRACT.md`](OUTPUT-CONTRACT.md) |
+| 독립 Tool 실행 | JSON 설정 → 기존 Payroll 검토 Flow 1회 → `payroll-result.xlsx` + 선택 `payroll-review.json`, 원본 SHA·덮어쓰기 방지 | [`TOOL-CLI.md`](TOOL-CLI.md) |
 
-## P0: 계산 코어와 실제 Excel 연결 (가장 먼저)
+정식 지급·송금·세무 신고·원본 승인권한 인증은 구현됐다고 주장하지 않는다. `NOT_APPROVED` 상태는 유지하며 외부에서 확정한 정책·원천징수액을 코드가 임의로 재산정하지 않는다.
 
-**구현 현황:** P0-1 Reader는 사용자 서버 검증 후 Portfolio PR #62로 병합됐다. P0-2 `contract_period.py`(정확히 일치하는 산정기간만)·P0-3 `review_adapter.py`(ID/이름/금액 및 미완료 플래그)는 PR #63으로 병합됐다. [새 스키마와 동작 계약](PERIOD-PREVIEW.md). **법적 계약 유효기간 판정·입퇴사 일할, 변동수당/실제 공제 계산 및 CLI는 여전히 미구현**이며, 후속 PR은 CI/서버 검증과 사용자 병합 전에는 완료로 취급하지 않는다.
+## 남은 작업 — 계산기 확장이 아니라 운영 연결
 
+1. **Stage 1 / Portfolio Workflow:** `paid-time-off`와 `worktime` 실행결과를 `payroll` 설정의 정확 경로·기간·해시로 인계하고, 부족한 승인 JSON은 명시적으로 요구한다. 내부 모듈의 별도 재구현·중복 계산기·`flow/` 물리 폴더를 만들지 않는다.
+2. **Stage 2 / Gearbox·Hermes·Slack:** **사용자의 명시적 `agent-config` 작업 재개 승인 후** 인증된 새 명령을 신규 Tool CLI에 연결한다. 업로드만 하면 정형 ACK를 반환하는 기존 보안 동작은 유지하고, 다중 첨부를 임의 선택하지 않는다.
+3. **Stage 3 / 운영 안정화:** 새 검토 요청에 후속 답변이 없는 현상은 업로드 ACK 정상 동작과 별개로 합성파일 재현. 권한 영수증·TTL·삭제/수정 이벤트·실패 응답·회신 경로를 확인한다. 기존 파일 보관 24시간/인증 근태 검토 최초 캐시부터 3시간의 **선택적 정책**을 무단 변경하지 않는다.
+4. **Stage 4 / 레거시 철수:** 새 Tool의 운영 호출·Gearbox 호환·문서/샘플 경로가 확인되면 `pto-calculator`, `worktime-calculator`, `payroll-calculator`를 **각각 별도 PR**로 이전/제거한다. [철수 게이트](../LEGACY-RETIREMENT.md)를 확인한다.
 
-1. `input-files.json` 정본으로 7개 **분리 XLSX, 각 1시트**를 엄격히 읽는다. 필수 헤더, 중복 키, ID의 선행 0, 수식 금지, 잘못된 금액/배분율, 기간을 검증한다. **파일이 존재한다는 이유만으로 계산/검토 승인 금지**.
-2. `CONTRACTS`에서 직원/계약의 **적용기간**을 확정한다. 재계약·연봉협상으로 하나의 급여 산정기간에 계약이 둘 이상 걸치면 **자동으로 한 건을 고르지 않는다**. 기간별 분할 계산/외부 확인 계약을 설계한다. `calculation_period_from/to`는 현재 단순 문자열 보존이며 아직 적용기간 선택이 아니다.
-3. `contract_id`로 고정수당 배정을, `deduction_code`로 공제율 정책을, `bonus_id`로 팀/프로젝트 예산과 직원 배분율을 연결한다. 계약 ID가 바뀌면 옛 수당 배정을 무단 상속하지 않는다.
-4. **출력 표시명**의 정본은 기존 `FIXED ALLOWANCE MAP.allowance_name`, `BONUS BUDGET.bonus_name`으로 추가했다(스키마 v1.1). 같은 수당 ID는 Level이 달라도 이름을 일치시킨다. 보너스 배정 직원의 실제 소속·프로젝트 참여 증빙은 미확인이다.
-5. `review_adapter.py`가 선택한 계약의 기본급·수당·성과급을 `output.py` 입력으로 연결한다. 지급합계/공제합계/실지급액은 P1/P2 미완료이므로 공란이며, **항상 `PARTIAL_REVIEW_ONLY`**이다. 정식 Tool CLI는 P3로 남긴다.
+**사용자가 확정한 제외 범위:** 별도 50명 Golden E2E 전용 체계, Payroll 내부 추가 회사 총인건비 분석, 새로운 DB/상시 서버, 임의의 법적 급여 승인, 현재 서버 정리.
 
-### 고정 입력 7개 (`input_root/payroll/`)
+## 운영 차단 조건
 
-| 파일 | 연결 |
-|---|---|
-| `pay-contract.xlsx` | `employee_id`, `contract_id`, 연·월·주급, 계약금액, 기본급 일급, 산정기간, 지급일, `deduction_code` |
-| `allowance-assignments.xlsx` | **`contract_id + allowance_id + level`**, 직원 ID 불필요 |
-| `fixed-allowance-map.xlsx` | `allowance_id + level → amount + payroll_taxability` |
-| `deduction-map.xlsx` | `deduction_code → national_pension/health_insurance/longterm_care/employment_insurance` |
-| `overtime-rules.xlsx` | 조기·지연·연장·야간·휴일 판단 기준·승인·구간/배율용 샘플; 실제 계산 미구현 |
-| `bonus-budget.xlsx` | `bonus_id`, 팀 또는 프로젝트 하나, 예산 |
-| `bonus-allocation.xlsx` | `bonus_id + employee_id + allocation_ratio`, ID별 비율 합계 1 |
+- **`agent-config` 수정·배포 PAUSE**: 사용자 재개 지시 없이는 코드를 변경하지 않는다.
+- **NOT_CONNECTED**: Payroll 독립 CLI 병합은 Slack 실자료 계산 연결 완료를 의미하지 않는다.
+- **개인정보**: 실제 인사/급여 원본·계산결과를 공개 Git에 넣거나 일반 로그에 기록하지 않는다.
+- **불명확한 승인**: Worktime 사실을 승인 초과근무로 추정하거나 PTO 마감 전을 확정으로 승격하지 않는다.
+- **자료 누락**: 인증된 원본·필수 JSON·실행 기간/경로가 누락되면 성공으로 보고하지 않는다.
+- **서버 cleanup 및 운영 배포**: 사용자 요청대로 **나중에 한 번에** 처리. 현재 문서 PR에서는 수행하지 않는다.
 
-**스키마 v1.1 유의:** 수당 매핑과 성과급 예산 시트의 `allowance_name`, `bonus_name`이 새 필수 열이다. 이전 ZIP/공개 파일은 최신 스키마를 충족하지 않을 수 있다. 승인 없이 공개 합성 샘플 자동 갱신 금지.
-
-**공개 샘플 업로드 별도 잔여:** `bhandara/examples/sample/input/payroll/pay-contract.xlsx`는 main에서 확인됨. 다른 6개 신규 고정 파일은 2026-11-19 확인 시 GitHub main에서 조회되지 않았음. 이전에 제공된 다운로드 ZIP은 Git commit이나 CLI 자동 인식의 증거가 아니다. 기존 공개 `pay-contract.xlsx`의 **실제 시트/스키마가 새 CONTRACTS 계약과 맞는지도 확인해야 한다**. 정식 공개 샘플은 사용자 승인 없는 `refresh.py --apply`로 덮어쓰지 않는다.
-
-## P1: Worktime·승인된 근로의 급여 지급 판단
-
-**P1-1 PR #64 병합 완료:** `worktime_bridge.py`와 [WORKTIME-BRIDGE.md](WORKTIME-BRIDGE.md) 추가. Worktime 10열 XLSX의 기간·직원·분값/ID를 검증하여 잠재 검토 코드를 생성하지만, **지급 인정시간과 금액은 아직 계산하지 않는다**. P1-2에는 별도의 승인된 구간/휴가/스케줄 및 정책·일급 분모 계약이 필요하다. 서버 검증·병합 전 구현 완료로 취급하지 않는다.
-
-
-- 신규 Worktime 인계: `worktime-result.xlsx` / `WORKTIME` 10열. 시간 사실은 `scheduled_min`, `actual_min`, `clock_in_delta_min`, `clock_out_delta_min` **네 개**이며, `actual_min=null`은 0이 아니다.
-- 출근 Δ = 예정−기록, 퇴근 Δ = 기록−예정. **둘 다 승인이 아니라 시각 비교 사실**이다. `actual_min`에 포함된 시간을 다시 더하지 않는다.
-- 조기출근/지연퇴근/연장·야간·휴일/잔업 지급 규칙, 최저 인정시간·미승인 처리, 정산단위, 구간·일자 넘김, 중첩수당 적용과 수당 기준 일급 배율을 사용자가 정의한 `overtime-rules.xlsx`에 맞춘다. **일급×배율의 분할 시간 환산 방법은 정책으로 확정**한다. 임의로 `standard_day_minutes`를 계약에 복원하지 않는다.
-- Worktime 결과의 일별 총분과 Δ만으로 **야간 시간대·휴일 구간** 또는 결재 상태는 산출되지 않는다. 스케줄 및 외부 검증·승인 구간의 참조 계약이 필요하다.
-- 반차 예: 소정 480분, 검증실근로 300분, 외부 승인휴가 240분 → 추가 60분 가능성은 **검토 대상일 뿐, 자동 지급 확정이 아님**. 다중 구간/복수 휴가 신청도 계약 확장이 필요하다.
-- 구형 `payroll-calculator`의 계산 함수·어댑터는 재사용 가능성만 검토한다. 새 Worktime 결과를 구형 `ordinary_hours/overtime_hours/night_hours` 등에 그대로 대응시키지 않는다.
-
-### P1-2 PR #65 병합 완료 — 승인된 근로구간의 금액 **후보**
-
-`overtime_candidates.py` / `overtime_preview.py`와 [가산수당 후보 계약](OVERTIME-CANDIDATES.md)을 추가한다. Worktime의 Δ 또는 예정 대비 실제 분수만으로 수당을 추정하지 않으며, 외부 검증 실제근로구간·승인구간·정책 분모와 반올림·기본급 포함 여부가 **모두 명시**되어야만 후보 금액을 계산한다. **P1-4 정책을 지정하지 않으면** 중복 구간은 종전대로 거절한다. 수당은 기존 단일 동적 급여대장의 후보 열에 보일 수 있지만 **모든 완료 플래그 False, 합계 공란, 미승인**은 유지한다.
-
-**여전히 P1 잔여:** 실제 승인·검증 레코드의 출처/권한/서명 확인 Reader, 분할근무·복수 휴가 원장·사업장별 소정/법정 휴일 검증, 중복가산·통상임금 및 분모/정산 정책 확정, 시간대/익일근로 적용, 종료/미승인 근로 예외·정식 완료 판단. **이 기능 PR은 CI·사용자 서버 검증/병합 전까지 완료로 취급하지 않는다.**
-
-### P1-3 PR #66 병합 완료 — 별도 출처 원장 레코드 대조
-
-`evidence_reconciliation.py` / `evidence_preview.py`에서 P1-2의 근로검증/승인/분류/기본급 포함 참조를 [독립 원장 계약](EVIDENCE-RECONCILIATION.md)과 대조한다. 이 구현은 **레코드 내용 일치 검사이지 원장 진위 인증은 아니다**. 별도 외부 원장 Reader·결재권한/서명·스냅샷 완전성/최신성 검증, 중복가산 정책과 휴일·휴가 판정은 아직 필요하다. 출처 원본의 진위/승인 권한은 여전히 외부 검증이 필요하다.
-
-### P1-4 PR #67 병합 완료 — 승인 구간의 중복가산 시간분할·기본 1배분 중복방지
-
-`overtime_stacking.py`는 [명시적 중복 정책](OVERTIME-STACKING.md)에 기록된 **정확한 활성 분류 집합**만 허용한다. 직원별 시작·종료 분 경계에서 분류 중복을 확인하고, 같은 분의 기본급 포함 사실은 **전부 같은 값**이어야 한다. 미포함이면 정책에서 지정한 `unpaid_base_owner` 항목에 기준 1배분 임금을 한 번만 남기고 다른 항목에서는 중복 기준임금을 뺀다. 집합·정책 부재, 기본급 포함 여부 충돌, 동일 분류 중복은 차단. 수당 후보를 계산할 수 있다는 뜻이지 **한국 법령·취업규칙상 지급액 확인을 마쳤다는 의미는 아니다**. 실제 법률/회사 규칙 검증은 여전히 별도다.
-
-**P1 남은 실제 적용 조건:** 독립 출처원장의 인증/권한/최신성·전체 승인 누락 검증, 실제 휴일 분류와 법정/회사 중복가산 기준, 통상임금의 기준분모 및 소정근로/휴게·휴가 연계, 중도 계약/입퇴사 정산·예외 처리. P2/P3와 별도이며 최종 급여 확정은 여전히 금지.
-
-**레거시 철수는 목표이나 아직 하지 않았다.** 모든 신규 Tool과 Gearbox 인계·E2E/Golden 회귀를 완료한 후 구형 계산기 3종을 단계별 삭제한다. [철수 게이트](../LEGACY-RETIREMENT.md).
-
-### P1-5b-1 PR #69 병합 완료 — 근태·휴가 정산 증빙 대조 및 기본급 후보 조정
-
-`attendance_reconciliation.py`와 `attendance_preview.py`의 [근태·휴가 정산 계약](ATTENDANCE-SETTLEMENT.md). `worktime-result.xlsx`의 단일 일별 휴가 참조와 외부 승인 사건구간·금액을 명시적으로 대조한다. 회사가 선언한 결근 코드에서 대응 정산 근거가 없으면 중단하며, 지각·조퇴·근무분수 차이만으로 임의 차감하지 않는다. **유급휴가=명시적 기본급 감액 0**, 무급휴가/결근은 승인 원장이 제공한 **차감액(원)**만 기본급 후보에서 차감한다. P1-5a의 월중 계약변경 적용일도 검증하고 SHA-256으로 Worktime 자료를 고정한다. 한 날짜에 복수 휴가 사건은 기존 Worktime 단일 leave ID 계약상 차단한다. 초과근무 승인구간과 휴가 시간대는 **목록이 제출된 경우** 겹침만 검사하고 **금액은 합산하지 않는다**. 지급합계·실지급액 공란/미승인 상태 그대로. P1-5b-1 원장 자체의 권한·진위 검증은 여전히 외부 연결이 필요하다.
-
-### P1-5b-2a PR #70 병합 완료 — 재계약 전후 승인 초과근무 수당 결합
-
-신규 `contract_scoped_overtime.py`와 [계약별 초과근무 합산 계약](CONTRACT-SCOPED-OVERTIME.md)은 P1-3 승인 원장 대조·P1-5a 재직/계약 배정·P1-5b-1 휴가/근태 검토를 통과한 뒤, 기존 P1-2 수당 계산기를 **계약별로 반복 호출**하고 후보 금액을 기존 동적 단일 `PAYROLL` 시트에 한 번만 합친다. 이 PR은 확정된 PTO/Worktime/Payroll Core·Output/Reader 코드를 변경하지 않는다. 계약경계 가로지르기, 직원/근거 불일치·휴가/근로 시간 충돌은 차단한다. `rollup_policy=ROUND_PER_CONTRACT_RULE_THEN_SUM`이라는 **명시적인 반올림·합산 기준**을 외부 정책으로 요구한다. 법정·사규 적정성·원장 진위는 미검증이며 합계/실지급액은 계속 공란. 법적 요율/출처원장 진위·완결 급여는 여전히 별도 검증이 필요하다.
-
-**P1-5b-2b 잔여:** 복수 휴가 신청/상세시간 원장과 PTO Closing의 정합성, 고정수당 감액 정책, 신뢰된 근로/휴가 원장의 전체 모집단 검증, 법적 규정/통상임금 적용. 그다음 P2/P3.
-
-**P1-5b-2 추가 과제:** 계약 변경에 따라 승인 초과근무 구간의 기준 임금·배율을 선택하는 방식, 승인근로와 휴가 복수구간의 정본 인계, PTO Closing 연차 잔여·사용 대조, 고정수당의 휴가 감액 정책·급여 항목 표시, 이벤트 원장 인증·누락검증. 이후 P2/P3.
-
-### P1-5a PR #68 병합 완료 — 계약변경/입퇴사 일할 **후보**
-
-`settlement_coverage.py` / `segmented_settlement.py`와 [P1-5a 계약](SEGMENTED-SETTLEMENT.md)에서 별도 **재직기간 증빙·계약 ID별 승인된 날짜 배정**을 먼저 확인한 다음, 명시된 `CALENDAR_DAYS` 정책의 기본급·고정수당 후보액을 계산한다. 재직 중 누락/중첩 기간은 0원 처리하지 않고 차단한다. 계약별 금액을 합산한 뒤 직원×항목×기간 단위로 원 단위 절사/반올림을 한다. 성과급은 기존 명시적 예산·배분율을 직원당 한 번 반영하며 자동 일할하지 않는다. 원장의 실제 진위와 정책의 법적 적정성은 아직 인증되지 않는다.
-
-**P1-5b-2 잔여:** 근태·유급/무급휴가·결근의 원장/승인 증빙, 휴가 지급·공제 분모와 가산시간 중복 제외, 계약분할 일급 변화와 승인 초과근무 시간 구간의 재조정, 중도퇴사 정산 검증, P1-2~4 수당과 P1-5a 일할의 **최종 안전한 조합**. P1-5a는 독립 검토 대장 생성만 지원하고 **완결 급여/지급 승인 아님**. GitHub CI·사용자 서버 검증/PR 병합 전에는 완료로 표시하지 않는다.
-
-### 후속 리팩터링 진행 — Payroll 통합 검토 Flow 단일화
-
-[변경 전후 호출 및 계약](INTEGRATED-FLOW.md). P1-5a의 계약별 기본급·수당을 **지급항목 원시 목록**으로 반환하는 내부 함수를 분리하고, P1-5b-2a 통합 경로에서는 Worktime 데이터 파싱·계약 배정 검증·`build_payroll_register()`를 **각각 1회**로 제한한다. 기존에는 근태 단계에서 중간 동적 급여대장을 만든 뒤 그 열을 역변환해 수당을 붙였으나, 리팩터링 이후 **모든 후보 항목을 모은 뒤 한 번만** Output을 생성한다. 안전한 구조검사·SHA-256 및 기존 공개 함수·입출력 계약은 유지한다. **금액 정책 변경 없음**. 회귀와 서버 검증 전에는 완료로 처리하지 않는다.
-
-**다음 단계:** Flow 경량화 테스트/병합 → P1-5b-2b PTO Closing·복수 휴가/고정수당 감액 정책 → P2 실제 보험/원천세·공제 → P3 신규 Payroll JSON CLI/통합 E2E → 운영 연결 후 레거시 제거.
-
-### P1-5b-2b-1 진행 — PTO 사용상세/Closing 월별 정본·복수 신청 대조
-
-[기존 PTO 산출물 검토 계약](PTO-CLOSING-REVIEW.md). **확정된 Closing**의 당분기 월간 사용일수 ↔ `deduction-quantity-result.xlsx` 정확 분수 ↔ `usage-ledger-result.xlsx` 신청/배정 상세를 비교한다. Worktime 한 날짜의 신청 ID 하나는 복수 PTO 신청 가운데 하나를 대표 참조로 사용한다. 추가 신청은 외부 `pto_claims` 명세에서 읽고 시간 중복·총분수·직원/휴가 종류를 교차 검증하지만 **Payroll P1-5b-1 단일 사건 지급/공제 계산을 묵시적으로 변경하지 않는다**. 미확정 Closing, 분기 불일치, 중복/누락 신청, 월별 정확 수량 불일치를 모두 차단한다. 다른 PTO 파일로 급여 수당을 임의 정산하지 않는다. GitHub CI/사용자 서버 검증·병합 전에는 완료 아님.
-
-**P1-5b-2b-2 잔여:** 복수 PTO 승인 사건의 유급/무급 임금처리, 외부 고정수당 휴가/결근 감액 기준과 **중복차감 방지**, 감액된 기본급/고정수당·초과근무 후보의 1회 Output 연결. 분기 Closing이 아직 없는 월의 임시 지급검토 경로와 실제 서명·권한 검증도 추가 필요.
-
-### P1-5b-2b-2 진행 — 복수 PTO 임금결정/수당 감액 후보
-
-[승인된 신청별 임금결정과 중복차감 방지 계약](LEAVE-WAGE-ADJUSTMENTS.md). PR #72(확정 PTO Closing·사용상세 정합성 검토)는 사용자 서버 검증·병합 완료. 이 단계는 `pto_sources` 전체 신청과 1:1 대응하는 **별도 승인 `pto_wage_plan`**을 제공받은 경우, 근태 대표 신청에서 이미 차감된 기본급은 **재차감하지 않고** 나머지 요청의 기본급 감액 후보만 더한다. 고정수당은 기존 계약/수당 매핑으로 산출된 금액을 기준으로 ID별 승인 감액액을 합산·상한 검사 후 감액한다. 모든 PTO 요청의 시간대와 승인 초과근무 겹침도 검사한다. 법적 감액 적격성·승인자 신원은 별도 확인이 필요하며 합계/순지급액은 미완료. GitHub CI 및 사용자 서버 검증·병합 전 완료 아님.
-
-**후속:** 분기 Closing 전 당월 PTO 승인 자료 검토 경로와 잔여 P1 증빙 인증/정책 검증 → P2 보험/원천세/공제 → P3 JSON Tool CLI/합성 E2E → Gearbox 운영 전환 및 레거시 철수.
-
-### P1-5b-2b-3 진행 — PTO 당월 마감 전/확정 단일 경로
-
-당월 Closing이 없어도 `pto_sources["closing_file"]=None`이면 **같은 PTO 정본 대조·임금결정 함수를 재사용**하여 현재 `Usage Ledger` 실행 기준일까지 계산한다. 결제·임금처리 후보 검증은 동일하고 `closing_status="마감 전"`, `change_possible=True` 및 기존 PAYROLL `검토상태` 열 `마감 전 · 변동 가능` 표시만 다르다. 정식 마감 확정 시 원래 Closing 대조를 실행해 `마감 확정` 상태로 재검토한다. 마감 전 Usage의 `Deduction SHA256`과 신청 모집단/정확 분수가 불일치하면 단순 표시가 아니라 중단한다. 스냅샷 식별자를 임금결정 계획에 연결하므로 당일 파일 변경에도 이전 근거를 재활용할 수 없다. [공통 경로 설명](PTO-CLOSING-REVIEW.md). 사용자 서버 테스트·병합 전 완료 아님.
-
-**P1 잔여:** 실제 승인자 신원/출처권한 및 휴일·통상임금 적용 적격성, 외부 승인 내역 전체 모집단 검증 → P2 보험·원천세/공제 → P3 신규 JSON Tool CLI/전체 E2E → Gearbox 운영 전환 및 레거시 철수.
-
-### P1 최근 확정 및 P2-1 신규 보험료 후보
-
-사용자 서버 검증 후 **PR #74 PTO 마감 전·확정 동일 경로 병합 완료**. P1 추가 승인자 신원/출처권한, 휴일/통상임금 및 전체 승인 원장 완전성은 외부 운영 계약이 남아 있다.
-
-**P2-1 구현 중:** [근로자 부담 4대보험 후보 계산](INSURANCE-CANDIDATES.md). 확정된 `deduction-map.xlsx` 요율과 기존 계약의 `deduction_code`를 그대로 사용하고, 국민연금/건강보험/고용보험별 **외부 확정 산정기준액**, 장기요양의 명시적 건강보험료 기준, 보험별 가입 적용 여부 및 원 단위 정책을 받아 후보를 계산한다. 입력 7종/단일 PAYROLL 출력/별도 납부·송금 미실행 원칙 유지. 실제 법정 요율·상한·가입 자격·조세와 사용자 서버 검증·PR 병합은 미완료. **P2-2는 과세/비과세 검토와 근로소득세·지방소득세 등 기타 공제.**
-
-### P2-2 진행 — 지급항목 전액 과세/비과세 대조 + 근로/지방소득세 후보
-
-사용자 서버 검증·병합된 **PR #75 4대보험 공제 후보** 다음 단계. [P2-2 세금·과세구분 계약](TAX-WITHHOLDING.md). 기존 `FIXED ALLOWANCE MAP.payroll_taxability`에 따라 검토한 **직원별 실제 기본급/수당/성과급 후보의 과세+비과세 금액을 항목마다 정확히 대조**한다. 별도 승인된 근로소득세·지방소득세 원 단위 금액을 기존 `deductions` 열에 추가한다. 7개 입력 Excel/한 시트 Output/Worktime·PTO 계산 코어는 변동 없음. 원천징수세액표·비과세한도·실제 신고/승인은 자동 계산하지 않는다. 직원 전체 모집단/원장 참조 누락이나 과세 합계 불일치 차단. Bhandara/Gearbox CI 및 사용자 서버 테스트·병합 전 완료 아님.
-
-**P2 후속:** 보험·세금·기타 공제 전체 모집단/중복 정산·지급완결 상태를 검증하고 최종 검토용 합계/순지급액 게이트 구축. P3 독립 Payroll JSON Tool CLI와 통합 합성 E2E, Gearbox 운영 이전·Golden 비교 후 레거시 철수.
-
-## P2: 공제·과세 및 전액 지급/순지급 계산
-
-- `DEDUCTION MAP`은 **근로자 부담율 매핑**이다. 현재 `resolve_deduction_mapping`은 요율만 조회하며 실제 공제액을 계산하지 않는다.
-- 공시요율 버전/적용기간은 Excel, 계산식·산정기준/최저·최고/절사/대상/보험별 부담 주체는 검증된 정책 JSON 등으로 관리. 국민연금 기준소득월액·건강보험 보수월액·장기요양 건강보험료 기반·고용보험 산정대상 보수는 서로 다르다. **기본급×동일비율 일괄 적용 금지**. 근로소득세·지방소득세 등 그 외 공제항목도 아직 미구현.
-- `payroll_taxability`는 **지급 시 과세/비과세**(예: 식대)에 관한 구분이다. 연말정산 기능이 아니다. 실제 법정 요건·한도·지급정책 확인 없이 임의로 `NON_TAXABLE`을 확정하지 않는다.
-- 입사/퇴사 비정상 기간, 사용·미사용 휴가의 급여 반영, 근로자/외부 용역 구분, 직원별 `earnings_complete`/`deductions_complete` 생성 기준을 설계한다.
-- 통합 Payroll Flow에서는 미확정이어도 **이미 계산된 항목의 잠정 합계와 실지급 차액**을 표시하고 `검증요청 · 잠정합계`/검토 사유를 함께 표시한다. 임의 0원 확정은 금지. 완전한 수치도 `REVIEW_REQUIRED`이며 **송금·신고 승인 상태가 아니다**.
-
-### 사용자 요청 반영 — PR #77 잠정 합계와 검증요청
-
-P2-2 근로·지방소득세 후보 PR #76은 사용자 서버 테스트·병합 완료. 이번에는 별도 완결 판정기를 만들지 않고 기존 **Output 단일 호출에서 이미 계산된 지급·공제 금액만 합산**해 잠정 지급합계·공제합계·실지급액을 보여준다. `earnings_complete`/`deductions_complete`는 기존 계산 단계의 근거 상태를 그대로 유지하고, 하나라도 미완료라면 **`검증요청 · 잠정합계`** 및 `review_requests`로 표시한다. 사용자가 확인해야 할 미수신 금액은 임의로 0원 확정하지 않는다. 실제 지급 승인·신고는 별도.
-
-같은 PR에서 `python3 -B bhandara/_tests/run.py`로 **Bhandara 전체 unittest 주제별 PASS/FAIL/ERROR/SKIP**을 집계한다. Gearbox의 `gearbox/_tests/run.py`와 `core_run.py`은 별도 실행으로 유지. CI 및 사용자 서버 검증·병합 전에는 완료 아님.
-
-### PR #77 후속 보강 — 직원보험 취득상태·산재 회사 부담
-
-[공통 직원상태와 산재 사업주 비용](EMPLOYER-INSURANCE.md). 공통 `employee.xlsx`에 보험별 **취득일 / 공란(적용 제외) / `미가입`** 표기를 사용한다. 국민연금의 고령 만기 등 미가입 여부를 급여에서 나이로 자동 판단하지 않는다. **근로자 급여 검토 플래그는 소득세·지방소득세·근로자 부담 보험(국민연금/건강보험·장기요양/고용보험)으로 제한**하고, 정상 미해당 수당·기타 공제에 대한 경고는 발생시키지 않는다. 산재보험료는 별도 사업주 비용으로 계산해 직원 급여 3종 합계와 완전히 분리한다. 관리자 단일시트 Output에는 산재보험료/회사 비용(현재 확인된 항목) 열을 추가하고, 직원별 조회에서는 숨긴다. 산재 외 사업주 보험 3종, 실제 납부 검증 등은 추후 확장한다.
-
-### P3-1 구현 중 — 신규 Payroll JSON Tool CLI
-
-PR #77 **서버 테스트 완료·병합 확인**. 결정: Payroll은 근로자 지급/공제와 근로자 급여 미확정 검토를 담당하고, **사업주 산재보험·현재 확인된 회사 비용은 관리자 급여대장에 별도 표시하는 인계 자료까지만** 유지한다. 사업주 총부담 보험 합산이나 기업 인건비·회계 계산을 Payroll 내부에 더하지 않는다.
-
-[신규 P3 독립 Tool CLI](TOOL-CLI.md): `run.py bhandara payroll` / `data/config/payroll.json`에서 `payroll_period,input_root,output_root,run_id=auto,steps`와 기존 외부 JSON 원장 참조를 읽고, Payroll 통합 Flow **1회 호출**해 PAYROLL XLSX 및 선택적 검토 JSON을 저장한다. 7개 Excel Reader/Worktime·PTO 원본/공통 직원보험 상태/Output 형식은 그대로다. 소급 승인·금액 승인 원장의 진위 인증, 법적 지급 확정, Gearbox 운영연결 및 레거시 제거는 **P3-1에 포함되지 않는다**. CI·사용자 서버 검증/병합 전에는 완료로 취급하지 않는다.
-
-**P3-2 잔여:** 50명 × 계약변경·수당/보너스·휴가·초과근무·보험/원천세, 다회 재실행, 일별 정확분수와 승인 모집단의 합성 전체 E2E/Golden 비교. 사용자가 원할 때만 `agent-config` 운영 연결을 재개한다.
-
-## P3: JSON Tool CLI + 합성 통합 E2E
-
-1. PTO·Worktime과 동일하게 개인 JSON 설정에서 `payroll_period`, `input_root`, `output_root`, `run_id=auto`, `steps`, 파일 역할 참조를 읽고 고정 명령 한 줄로 실행. `--period/--input-dir/--output-dir`를 매번 수정시키지 않는다.
-2. 논리적 Flow에서 선택한 단계만 실행하고, 기존 단계 결과를 사용하면 경로·계약·기간을 명시한다. **별도 `flow/` 폴더를 만들지 않는다.**
-3. 합성 50명 × 일부 수당 지급, 연봉협상 중간 계약 변경, 전원 0원/음수 정산, 초과근무 중복·미승인, 비정기 성과급 100% 배분, 공제 미검증, 실행 재시도·중복파일 등을 테스트.
-4. `output.py`와 `output_excel.py`에 전달되는 열 ID·표시명·금액·완료 플래그가 일치하는지 단일 `payroll-result.xlsx`를 실제 열어 검증. 정규화 결과/검토 결과를 별도 불필요한 중복 Excel로 남기지 않는다.
-
-### 확정 Output
-
-`payroll-result.xlsx` / `PAYROLL` 한 시트, 2단 그룹/항목 헤더. **50명 중 1명만 받는 항목도 그 열을 생성**, 미해당자는 공란, 전원 0원은 열 제거. 그룹은 직원정보 → 기본급 → 고정수당 → 초과근무수당 → 성과급 → 지급합계 → 공제 → 공제합계 → 실지급액 → 검토. `(group,item_id)`로 열 식별, 같은 수당 ID의 Level은 열 하나. 음수 소급 조정도 열 생성. 금액 검토 미완료 시 합계와 실지급액을 가짜 0으로 만들지 않음. [정본 계약](OUTPUT-CONTRACT.md).
-
-## 병행 / 후순위 (현재 차단)
-
-- **`agent-config` 작업 PAUSE**: 사용자가 다시 명시적으로 재개하기 전까지 Gearbox/Slack/Hermes 설정·문서·배포를 수정하지 않는다.
-- Slack 파일 업로드 ACK 뒤 새 요청에도 무응답 보고는 **원인 미확인**. 업로드만 ACK하는 정상 설계와 후속 별도 메시지 무응답을 분리해 합성 재현 필요.
-- 신규 PTO/Worktime/Payroll의 Gearbox Workflow 운영 연결 및 여러 첨부의 역할 매핑, 권한/TTL/원본 삭제/결과 Slack 회신은 별도 트랙. 현재 미연결.
-- PTO Use Promotion, Worktime Closing, 다중 근무·복수 휴가 구간 지원도 계속 남아 있다. Payroll 본선과 섞어 구현하지 않는다.
-
-## 작업 프로토콜
-
-`seo-an/portfolio`에서 **별도 브랜치 → unittest → 일반 PR → 서버에서 PR 브랜치 직접 테스트 → 사용자 병합 → 서버 main 갱신·브랜치 정리**. 서버 push·Draft PR·worktree 사용 요구 금지. Tool 계약/버전 변경 시 Gearbox 기능/인프라 호환성 검증 필수.
+## 변경 검증 기준
 
 ```bash
-# 컨테이너 검증 예시
-sudo docker exec -w /opt/agent-config/.external/portfolio hermes \
-  /opt/hermes/.venv/bin/python -B bhandara/_tests/run.py
-sudo docker exec -w /opt/agent-config hermes \
-  /opt/hermes/.venv/bin/python -B gearbox/_tests/run.py
-sudo docker exec -w /opt/agent-config hermes \
-  /opt/hermes/.venv/bin/python -B gearbox/_tests/core_run.py
+# Bhandara 전체 unittest: 주제별 PASS/FAIL/ERROR/SKIP 요약
+sudo docker exec -w /opt/agent-config/.external/portfolio \
+  hermes /opt/hermes/.venv/bin/python -B bhandara/_tests/run.py
+
+# Gearbox 기능/인프라 회귀 — 버전 변경 시 반드시 함께 확인
+sudo docker exec -w /opt/agent-config \
+  hermes /opt/hermes/.venv/bin/python -B gearbox/_tests/run.py
+sudo docker exec -w /opt/agent-config \
+  hermes /opt/hermes/.venv/bin/python -B gearbox/_tests/core_run.py
 ```
 
-**다음 과제:** Flow 경량화 PR을 서버에서 직접 검증·병합 → P1-5b-2b PTO Closing·복수 휴가·고정수당 감액 검증 → P2 보험/세금 → P3 독립 CLI와 합성 E2E. `agent-config`는 PAUSE. 레거시 철수는 신규 3 Tool의 운영/회귀 전환 뒤에만 시행한다.
+위 명령은 **향후 코드/운영 연결 PR의 검증 안내**이며 현재 자동 실행한 기록이 아니다. Git 작업은 `branch → unittest → 일반 PR → 사용자 서버에서 해당 브랜치 직접 테스트 → 사용자 merge`. Draft/worktree/서버 push 지시 금지.
+
+**바로 다음 대화에서 Stage 1부터.** 상세 입력·인수인계·중단 조건은 [운영 연결 인수인계](../OPERATIONS-HANDOFF-2026-11-20.md)를 우선한다.
