@@ -77,6 +77,6 @@ attendance_type, leave_type, leave_request_id
 
 ## 운영 연결과 구형 계산기 분리
 
-본 CLI는 독립 Tool 실행만 담당합니다. 새 Worktime 결과를 구형 `payroll-calculator`의 `worktime-result.json`처럼 전달하지 않습니다. Gearbox/Slack 운영 연동과 현장 자료 처리, 외부 근태 승인, 분할근무/복수 신청의 데이터 계약은 후속입니다.
+본 CLI는 Worktime 사실 검증의 독립 실행 계약입니다. Payroll은 Worktime 10열 Excel만 명시적으로 인계받고, 외부 근로구간·승인 원장 검증을 별도로 수행합니다. Gearbox/Hermes·Slack 운영 연결과 실제 직원 승인 절차는 별도입니다.
 
 테스트: `python3 -m unittest bhandara.tests.test_worktime_json_tool_cli -v`, 이후 전체 Gearbox 기능·인프라 회귀를 수행합니다.
