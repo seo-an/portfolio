@@ -104,6 +104,7 @@ def build_payroll_register(
     rows: Iterable[Mapping[str, Any]],
     *,
     show_partial_totals: bool = False,
+    review_reasons_by_employee: Mapping[str, list[str]] | None = None,
 ) -> dict[str, Any]:
     """Build the existing dynamic one-sheet register, optionally showing known sums.
 
@@ -114,6 +115,8 @@ def build_payroll_register(
     """
     if type(show_partial_totals) is not bool:
         raise PayrollOutputError("show_partial_totals: explicit boolean required")
+    if review_reasons_by_employee is not None and not show_partial_totals:
+        raise PayrollOutputError("review_reasons_by_employee: partial totals required")
     normalized: list[dict[str, Any]] = []
     seen_employees: set[str] = set()
     for source in rows:
@@ -145,6 +148,16 @@ def build_payroll_register(
         normalized.append(row)
     if not normalized:
         raise PayrollOutputError("at least one employee required")
+    if review_reasons_by_employee is not None:
+        if not isinstance(review_reasons_by_employee, Mapping):
+            raise PayrollOutputError("review_reasons_by_employee: mapping required")
+        if set(review_reasons_by_employee) != seen_employees:
+            raise PayrollOutputError("review_reasons_by_employee: employee roster mismatch")
+        for reasons in review_reasons_by_employee.values():
+            if not isinstance(reasons, list) or len(reasons) != len(set(reasons)):
+                raise PayrollOutputError("review_reasons_by_employee: distinct list required")
+            for reason in reasons:
+                _required_text(reason, "review_reason")
 
     has_names = any(row["employee_name"] is not None for row in normalized)
     columns = [{"key": "employee_id", "group": "직원정보", "label": "직원 ID"}]
@@ -175,11 +188,18 @@ def build_payroll_register(
             sum(item_maps[category].values()) for category in earning_fields
         )
         deductions_total = sum(item_maps["deductions"].values())
-        flags = []
-        if not source["earnings_complete"]:
-            flags.append("EARNINGS_UNVERIFIED")
-        if not source["deductions_complete"]:
-            flags.append("DEDUCTIONS_UNVERIFIED")
+        if review_reasons_by_employee is None:
+            # Backward-compatible standalone Preview: retain the historical
+            # earnings/deductions completion markers in this mode only.
+            flags = []
+            if not source["earnings_complete"]:
+                flags.append("EARNINGS_UNVERIFIED")
+            if not source["deductions_complete"]:
+                flags.append("DEDUCTIONS_UNVERIFIED")
+        else:
+            # Integrated Flow: only tax and social-insurance checks determine
+            # 검증요청. Unassigned benefits and other deductions are N/A.
+            flags = list(review_reasons_by_employee[source["employee_id"]])
         review_flags[source["employee_id"]] = flags
         gross = earnings_total if show_partial_totals or source["earnings_complete"] else None
         deduction = deductions_total if show_partial_totals or source["deductions_complete"] else None
