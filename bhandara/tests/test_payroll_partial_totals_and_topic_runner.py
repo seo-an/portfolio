@@ -113,7 +113,7 @@ class GroupedRunnerTests(unittest.TestCase):
         result = GroupedTestResult()
         suite.run(result)
         self.assertFalse(result.wasSuccessful())
-        topic = result.by_topic["Other"]
+        topic = result.by_topic["Payroll"]  # MiniTests is defined in a Payroll test module
         self.assertEqual(topic["PASS"], 1)
         self.assertEqual(topic["FAIL"], 2)
         self.assertEqual(topic["SKIP"], 1)
