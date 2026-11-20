@@ -1,6 +1,6 @@
 # 반다라 사용 안내서 — 처음 사용하는 사람을 위한 설명
 
-> **현재 상태(2026-11-20):** 신규 `paid-time-off`, `worktime`, `payroll` 모두 **독립 JSON Tool CLI가 구현·검증·병합**됐습니다(Portfolio #78까지). 이제 남은 일은 **서로 다른 Tool의 Workflow 인수인계, Gearbox/Hermes·Slack 운영 연결, 후속 새 메시지 무응답 원인 진단, 레거시 철수**입니다. 아직 Slack에서 새 Tool을 바로 실행할 수 있는 상태가 아니며 `agent-config` 작업은 사용자 승인 전까지 PAUSE입니다.
+> **현재 상태(2026-11-20):** 신규 `paid-time-off`, `worktime`, `payroll` 모두 **독립 JSON Tool CLI가 구현·검증·병합**됐습니다(Portfolio #78까지). Stage 1 Tool Workflow 연결은 **구현 브랜치의 PR 검증 대기**이고, 그다음 남은 일은 **Gearbox/Hermes·Slack 운영 연결, 후속 새 메시지 무응답 원인 진단, 레거시 철수**입니다. 아직 Slack에서 새 Tool을 바로 실행할 수 있는 상태가 아니며 `agent-config` 작업은 사용자 승인 전까지 PAUSE입니다.
 
 > **최신 인수인계 문서:** [운영 연결 1~4단계](OPERATIONS-HANDOFF-2026-11-20.md). **서버 브랜치 정리·배포는 사용자 요청에 따라 추후 일괄 처리**합니다. 별도 50명 Golden E2E를 필수 단계로 요구하지 않습니다.
 
@@ -12,12 +12,14 @@
 python3 run.py bhandara paid-time-off
 python3 run.py bhandara worktime
 python3 run.py bhandara payroll
+# Stage 1 PR 검증·병합 후 Tool 간 단일 Workflow 명령
+python3 run.py bhandara workflow
 ```
 
 - **PTO:** [설정·Flow](paid-time-off/TOOL-CLI.md) — 발생/차감/사용원장, 마감은 확정된 경우만 선택.
 - **Worktime:** [설정·Flow](worktime/TOOL-CLI.md) — 검증된 근로·근태 사실, 결과 `worktime-result.xlsx`/`WORKTIME` 10열.
 - **Payroll:** [설정·Flow](payroll/TOOL-CLI.md) — 7개의 별도 단일 시트 XLSX + Worktime 및 승인·정책 JSON, 결과 `payroll-result.xlsx`/`PAYROLL` 한 시트 + `payroll-review.json`.
-- **세 Tool은 독립 실행**하며, 자동으로 서로 호출하거나 Slack 업로드만으로 실행하지 않습니다. 순서·파일 경로 인계는 [운영 Stage 1](OPERATIONS-HANDOFF-2026-11-20.md#1-단계--portfolio-tool-간-workflow-연결)에서 정합니다.
+- **세 Tool은 독립 실행**을 유지합니다. 선택한 Tool만 명시적으로 연결하는 [Stage 1 Workflow 사용법](WORKFLOW.md)이 추가됐으며, 현재는 **PR 검증·병합 대기** 중입니다. Slack 업로드만으로 자동 호출하지 않습니다.
 - **급여의 잠정 합계는 지급 승인액이 아닙니다.** 미확인 보험·세금 사유만 검토 플래그로 표시하며 미해당 수당/기타 공제 공란은 정상입니다. 산재보험·회사 비용 확인분은 관리자 전용 정보로 근로자 급여 총액에서 제외합니다.
 - 실제 직원/급여 자료와 개인 설정 JSON은 공개 저장소나 허용되지 않은 Slack 채널에 올리지 않습니다.
 
