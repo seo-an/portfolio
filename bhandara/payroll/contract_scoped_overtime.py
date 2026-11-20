@@ -25,6 +25,7 @@ from bhandara.payroll.overtime_candidates import (
 )
 from bhandara.payroll.output import build_payroll_register
 from bhandara.payroll.insurance_candidates import calculate_insurance_candidates
+from bhandara.payroll.tax_withholding import review_taxability_and_withholding
 from bhandara.payroll.leave_wage_adjustments import (
     reconcile_leave_wage_decisions, apply_leave_wage_decisions,
     check_pto_overtime_intervals,
@@ -182,6 +183,7 @@ def build_contract_scoped_overtime_preview(
     pto_sources: Mapping[str, Any] | None = None,
     pto_wage_plan: Mapping[str, Any] | None = None,
     insurance_assessment_plan: Mapping[str, Any] | None = None,
+    withholding_plan: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Contract-scoped approved overtime is a *candidate*, never final wages.
 
@@ -338,6 +340,26 @@ def build_contract_scoped_overtime_preview(
         settlement_review["insurance_candidate_review"] = (
             "EXPLICIT_ASSESSMENT_BASES_REVIEW_ONLY"
         )
+    tax_review = None
+    if withholding_plan is not None:
+        tax_review = review_taxability_and_withholding(
+            components["payroll_rows"], coverage,
+            inputs.for_role("fixed_allowance_map"),
+            inputs.for_role("allowance_assignments"),
+            withholding_plan=withholding_plan,
+            period_from=period_from, period_to=period_to,
+        )
+        for employee in components["payroll_rows"]:
+            new_items = tax_review["items_by_employee"][employee["employee_id"]]
+            existing = {item["item_id"] for item in employee["deductions"]}
+            if existing.intersection(item["item_id"] for item in new_items):
+                raise ContractOvertimeAdapterError(
+                    "withholding: deduction item already present"
+                )
+            employee["deductions"].extend(new_items)
+        settlement_review["tax_withholding_candidate_review"] = (
+            "EXPLICIT_PAY_ITEM_SPLITS_AND_EXTERNAL_TAX_AMOUNTS_REVIEW_ONLY"
+        )
     out = {
         "payroll_register": build_payroll_register(components["payroll_rows"]),
         "settlement_review": settlement_review,
@@ -359,6 +381,8 @@ def build_contract_scoped_overtime_preview(
         out["pto_wage_review"] = pto_wage_review
     if insurance_review is not None:
         out["insurance_review"] = insurance_review
+    if tax_review is not None:
+        out["tax_withholding_review"] = tax_review
     out["overtime_candidate_review"] = {
         "schema_version": "0.1",
         "rows": rows,
