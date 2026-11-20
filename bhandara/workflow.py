@@ -251,6 +251,10 @@ def execute(config_file: str | Path) -> dict[str, Any]:
         pto = _execute_upstream("paid-time-off", plan, expected)
     worktime = _execute_upstream("worktime", plan, {"output": "worktime-result.xlsx"})
     selected = {"worktime": worktime["output"]}
+    # Never retain PTO references from a previous standalone Payroll config.
+    # Only this Workflow's explicitly selected SHA-pinned artifacts may pass.
+    for stale in ("pto_usage", "pto_deduction", "pto_closing"):
+        payroll["files"].pop(stale, None)
     payroll["files"]["worktime"] = worktime["output"]["path"]
     if pto is not None:
         for key, record in pto.items():
