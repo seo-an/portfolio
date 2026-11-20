@@ -112,7 +112,6 @@ class PreClosingPTOTests(unittest.TestCase):
             original = self.fixture.usage_meta[key]
             with self.subTest(key=key, changed=changed):
                 self.fixture.usage_meta[key] = changed
-                self.make_provisional() if False else None
                 self.fixture.usage_path.write_bytes(pto_usage.make_usage_workbook(
                     summary=[], details=self.fixture.details, expiry_result=None,
                     issues=[], metadata=self.fixture.usage_meta,
