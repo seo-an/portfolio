@@ -1,6 +1,6 @@
 """Standalone, explicitly invoked PTO entitlement Excel boundary.
 
-This is NOT the legacy PTO runner, a general Tool dispatcher or Gearbox hook.
+This runner handles only the Paid Time Off domain; no Gateway side effects.
 All business arithmetic stays inside entitlement; this file owns workbook I/O.
 """
 from __future__ import annotations
