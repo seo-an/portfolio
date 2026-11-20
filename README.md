@@ -49,6 +49,28 @@ cp bhandara/workflow.example.json bhandara/data/config/workflow.json
 
 실행 자세한 설명: [처음 사용하는 사람용 RUNBOOK](bhandara/RUNBOOK.md) · [Workflow 인계](bhandara/WORKFLOW.md) · [Common 계약](bhandara/BASE-CONTRACT.md).
 
+## 실행 폴더 자동 생성과 Git 제외
+
+각 JSON Tool(Paid Time Off·Worktime·Payroll) 또는 Workflow를 **한 번이라도 실행 시도하면**, 설정 JSON이나 입력 자료가 없어 계산이 실패하더라도 아래 **빈 안내용 폴더**가 자동 생성됩니다. 이전 파일과 폴더를 삭제·이동·덮어쓰지 않습니다.
+
+```text
+portfolio/
+└── bhandara/
+    └── data/                   # .gitignore: 실행·원본·결과 전부 제외
+        ├── config/             # 개인 JSON 설정 파일
+        ├── input/
+        │   ├── common/         # 공통 직원정보(예: employee.xlsx)
+        │   ├── paid-time-off/  # 휴가·근태 원본
+        │   ├── worktime/       # 스케줄·출입원장
+        │   └── payroll/        # 급여 Excel 7종 및 승인 JSON
+        └── output/
+            └── <run_id>/      # 성공한 Tool의 결과. 기존 폴더 재사용 불가
+```
+
+실제로는 실행을 시도한 Tool의 `input/<tool>` 폴더와 `input/common`만 먼저 생성됩니다. 각 Tool의 `config.example.json`을 `bhandara/data/config/<tool>.json`에 **복사한 경우에만** 예시의 `input_root: "../input"`, `output_root: "../output"`이 위 경로를 가리킵니다. 별도 JSON에서 설정한 외부 비공개 경로는 그대로 우선하며, 안내 폴더에 임의로 원본을 복사하거나 원본의 내용을 바꾸지 않습니다.
+
+**출력 보존:** 동일한 `run_id`가 이미 있으면 작업을 중단합니다. Worktime·Payroll XLSX 저장도 생성 전용 모드(`xb`)라 파일 존재 확인과 실제 저장 사이에 다른 파일이 생겨도 덮어쓰지 않습니다. Git은 `bhandara/data/**` 및 Tool별 실행 폴더를 무시하지만, `bhandara/tests/`의 공개 합성 샘플은 등록할 수 있습니다. 실직원 자료는 Git 작업 폴더보다 Git 밖의 승인된 비공개 디렉터리 사용을 권장합니다.
+
 ## 지급·보안 경계
 
 Payroll이 표시하는 지급합계·공제합계·실지급 차액은 **잠정 금액**이며 `NOT_APPROVED` 상태다. 외부 승인 없이 지급, 세금·보험 신고, 자동 송금하지 않는다. Worktime의 근로 사실만으로 추가수당을 승인하지 않는다. PTO Closing은 **확정된 원본만** 지급 검토에 연결한다. 산재보험료와 회사 비용(확인분)은 관리자용이며 직원별 조회에서 제외한다.
