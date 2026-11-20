@@ -328,7 +328,7 @@ def build_contract_scoped_overtime_preview(
             # Reuse the existing 검토상태 column; do not add an eighth input,
             # a second output sheet, or any new Payroll header.
             for employee in out["payroll_register"]["rows"]:
-                employee["review_status"] = "PARTIAL_REVIEW_ONLY · PTO 마감 전 (변동 가능)"
+                employee["review_status"] = "PTO 마감 전 · 변동 가능"
     if pto_wage_review is not None:
         out["pto_wage_review"] = pto_wage_review
     out["overtime_candidate_review"] = {
