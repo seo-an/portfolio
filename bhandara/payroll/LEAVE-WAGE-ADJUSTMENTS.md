@@ -8,6 +8,12 @@ PTO의 사용일수(예: `1/4`일)는 급여에서 얼마를 차감해야 하는
 
 외부에서 한 달 전체 지급액이 이미 감소된 계약금액을 넣었다면 다시 감액하지 않는다. `base_not_pre_adjusted=true`와 `fixed_not_pre_adjusted=true`는 **기존 기본급/수당에 해당 금액이 사전 차감되지 않았음**을 외부가 증빙한 경우에만 승인할 수 있는 선언이다. 실제 승인자의 신원·권한/서명은 아직 코드가 인증하지 않는다.
 
+## 마감 전에도 동일한 임금결정 경로 사용
+
+[마감 전/확정 PTO 대조](PTO-CLOSING-REVIEW.md)에 따라 `pto_sources["closing_file"]=None`이면 `pto_closing_review["closing_status"]`가 **`마감 전`**이 된다. 이때도 각 PTO 요청의 정확 수량과 신청/승인 증빙은 같은 검증을 수행하며, `pto_wage_plan`의 임금결정·기본급/고정수당 **중복차감 방지**도 같은 함수를 사용한다.
+
+다만 이 경우 `pto_wage_plan["pto_closing_id"]`는 기존 정식 Closing ID가 아니라 `pto_closing_review["closing_id"]`의 **`PRE_CLOSING:<as_of_date>:<Usage SHA256>`** 값을 받아야 한다. 원본 Usage가 바뀌면 이전 승인금액 자료를 자동 재사용할 수 없다. 결과의 `closing_status="마감 전"` 및 `change_possible=True`는 지급액 확정이 아니라 **월말에 변동할 수 있는 잠정 검토**를 뜻한다.
+
 ## 입력 계약
 
 신규 필수 Excel을 추가하지 않는다. [기존 PTO 검증 경로](PTO-CLOSING-REVIEW.md)의 `pto_sources`와 함께 다음 **선택적 in-memory `pto_wage_plan`**을 전달한다.

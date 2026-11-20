@@ -322,6 +322,13 @@ def build_contract_scoped_overtime_preview(
     }
     if pto_review is not None:
         out["pto_closing_review"] = pto_review
+        settlement_review["pto_closing_status"] = pto_review["closing_status"]
+        settlement_review["pto_change_possible"] = pto_review["change_possible"]
+        if not pto_review["closing_confirmed"]:
+            # Reuse the existing 검토상태 column; do not add an eighth input,
+            # a second output sheet, or any new Payroll header.
+            for employee in out["payroll_register"]["rows"]:
+                employee["review_status"] = "PTO 마감 전 · 변동 가능"
     if pto_wage_review is not None:
         out["pto_wage_review"] = pto_wage_review
     out["overtime_candidate_review"] = {

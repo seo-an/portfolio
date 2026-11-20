@@ -170,77 +170,103 @@ def _claims(
 def reconcile_pto_closing(
     *,
     usage_file: str | Path,
-    closing_file: str | Path,
+    closing_file: str | Path | None,
     deduction_file: str | Path,
     worktime_rows: Iterable[Mapping[str, Any]],
     pto_claims: Iterable[Mapping[str, Any]],
     period_from: str,
     period_to: str,
 ) -> dict[str, Any]:
-    """Audit approved PTO by exact fractions; never create monetary components.
+    """Same PTO request/quantity reconciliation for confirmed and pre-close data.
 
-    Only payroll months inside the closing's *current* quarter are accepted:
-    earlier quarters may be aggregates from a previous confirmed Closing.
+    No Closing file means a strictly pinned as-of Usage/Deduction snapshot,
+    not a claimed final quarter. Confirmed Closing validation stays strict.
     """
     start, end = _date(period_from, "period_from"), _date(period_to, "period_to")
     if (start.day != 1 or start.year != end.year or start.month != end.month or
             end != (date(end.year + (end.month == 12), end.month % 12 + 1, 1)
                     - timedelta(days=1))):
         raise PTOClosingReviewError("payroll period: exact full calendar month required")
-    usage, closing, deduction = map(Path, (usage_file, closing_file, deduction_file))
+    usage, deduction = Path(usage_file), Path(deduction_file)
     usage_meta, usage_sha = _metadata(usage, "usage-ledger-result.xlsx")
-    closing_meta, closing_sha = _metadata(closing, "closing-result.xlsx")
     _, deduction_sha = _metadata(deduction, "deduction-quantity-result.xlsx")
-    closing_id = closing_meta.get("참조 ID")
-    match = re.fullmatch(r"Closing-([1-4])\.4-(\d{4})", str(closing_id))
-    if not match:
-        raise PTOClosingReviewError("Closing: invalid closing ID")
-    quarter, year = int(match[1]), int(match[2])
-    if year != start.year or (start.month - 1) // 3 + 1 != quarter:
-        raise PTOClosingReviewError("Closing: payroll month is not in current quarter")
-    cutoff = date(year, quarter * 3, (31 if quarter in (1, 4) else 30))
-    if closing_meta.get("마감 기준일") != cutoff.isoformat():
-        raise PTOClosingReviewError("Closing: closing cutoff mismatch")
-    if closing_meta.get("확정여부") != "확정":
-        raise PTOClosingReviewError("Closing: explicit confirmation required")
-    if closing_meta.get("사용내역 SHA256") != usage_sha:
-        raise PTOClosingReviewError("Closing: usage ledger fingerprint mismatch")
-    if str(closing_meta.get("검토 필요 건수")) != "0":
-        raise PTOClosingReviewError("Closing: unresolved source issues")
-    if (usage_meta.get("마감 판정 ID") != closing_id
-            or usage_meta.get("실행 기준일") != cutoff.isoformat()
-            or usage_meta.get("계산 상태") != "계산 완료"):
-        raise PTOClosingReviewError("PTO usage: cutoff/closing ID/completion mismatch")
+    confirmed = closing_file is not None
+    closing = Path(closing_file) if confirmed else None
+    closing_meta, closing_sha = (
+        _metadata(closing, "closing-result.xlsx")
+        if confirmed else ({}, None)
+    )
+    if confirmed:
+        closing_id = closing_meta.get("참조 ID")
+    else:
+        # The pending source identity changes whenever the Usage snapshot does.
+        # This prevents a wage decision for an older same-day snapshot from
+        # being silently applied to newly revised PTO requests.
+        cutoff = _date(usage_meta.get("실행 기준일"), "PTO usage as-of")
+        if not start <= cutoff <= end:
+            raise PTOClosingReviewError("PTO usage: pre-close as-of outside payroll month")
+        if str(usage_meta.get("마감 판정 ID")) != "없음":
+            raise PTOClosingReviewError("PTO usage: provisional snapshot must not claim Closing")
+        if usage_meta.get("계산 상태") != "계산 완료":
+            raise PTOClosingReviewError("PTO usage: unresolved provisional snapshot")
+        if usage_meta.get("Deduction SHA256") != deduction_sha:
+            raise PTOClosingReviewError("PTO usage: provisional Deduction fingerprint mismatch")
+        closing_id = f"PRE_CLOSING:{cutoff.isoformat()}:{usage_sha}"
+    if confirmed:
+        match = re.fullmatch(r"Closing-([1-4])\.4-(\d{4})", str(closing_id))
+        if not match:
+            raise PTOClosingReviewError("Closing: invalid closing ID")
+        quarter, year = int(match[1]), int(match[2])
+        if year != start.year or (start.month - 1) // 3 + 1 != quarter:
+            raise PTOClosingReviewError("Closing: payroll month is not in current quarter")
+        cutoff = date(year, quarter * 3, (31 if quarter in (1, 4) else 30))
+        if closing_meta.get("마감 기준일") != cutoff.isoformat():
+            raise PTOClosingReviewError("Closing: closing cutoff mismatch")
+        if closing_meta.get("확정여부") != "확정":
+            raise PTOClosingReviewError("Closing: explicit confirmation required")
+        if closing_meta.get("사용내역 SHA256") != usage_sha:
+            raise PTOClosingReviewError("Closing: usage ledger fingerprint mismatch")
+        if str(closing_meta.get("검토 필요 건수")) != "0":
+            raise PTOClosingReviewError("Closing: unresolved source issues")
+        if (usage_meta.get("마감 판정 ID") != closing_id
+                or usage_meta.get("실행 기준일") != cutoff.isoformat()
+                or usage_meta.get("계산 상태") != "계산 완료"):
+            raise PTOClosingReviewError("PTO usage: cutoff/closing ID/completion mismatch")
+        year = start.year
+    else:
+        year = start.year
 
     if _rows(usage, "검토사항", ("employee_id", "reason"), optional=True):
         raise PTOClosingReviewError("PTO usage: unresolved review items")
 
     detail_rows = _rows(usage, "사용상세", DETAIL_FIELDS)
     deduction_rows = _rows(deduction, "차감상세", DEDUCTION_FIELDS)
-    closing_rows = _rows(closing, "_수량정본", ("employee_id", MONTH_FIELDS[start.month-1]))
-    report_rows = _rows(closing, "마감보고", ("employee_id", "마감상태"))
-    roster = {}
-    for row in report_rows:
-        worker = _text(row["employee_id"], "Closing employee_id")
-        if worker in roster:
-            raise PTOClosingReviewError("Closing: duplicate employee")
-        if row["마감상태"] == "자료확인 필요":
-            raise PTOClosingReviewError("Closing: employee still requires source review")
-        roster[worker] = row["마감상태"]
     monthly = {}
-    for row in closing_rows:
-        worker = _text(row["employee_id"], "Closing exact employee_id")
-        if worker in monthly:
-            raise PTOClosingReviewError("Closing: duplicate exact employee")
-        monthly[worker] = _quantity(row[MONTH_FIELDS[start.month-1]], "Closing exact monthly usage")
-    if set(roster) != set(monthly):
-        raise PTOClosingReviewError("Closing: report/exact employee roster mismatch")
+    if confirmed:
+        closing_rows = _rows(closing, "_수량정본", ("employee_id", MONTH_FIELDS[start.month-1]))
+        report_rows = _rows(closing, "마감보고", ("employee_id", "마감상태"))
+        roster = {}
+        for row in report_rows:
+            worker = _text(row["employee_id"], "Closing employee_id")
+            if worker in roster:
+                raise PTOClosingReviewError("Closing: duplicate employee")
+            if row["마감상태"] == "자료확인 필요":
+                raise PTOClosingReviewError("Closing: employee still requires source review")
+            roster[worker] = row["마감상태"]
+        for row in closing_rows:
+            worker = _text(row["employee_id"], "Closing exact employee_id")
+            if worker in monthly:
+                raise PTOClosingReviewError("Closing: duplicate exact employee")
+            monthly[worker] = _quantity(row[MONTH_FIELDS[start.month-1]], "Closing exact monthly usage")
+        if set(roster) != set(monthly):
+            raise PTOClosingReviewError("Closing: report/exact employee roster mismatch")
 
     expected: dict[tuple[str, str, str, str], Fraction] = {}
     monthly_deductions: dict[str, Fraction] = defaultdict(Fraction)
     for row in deduction_rows:
         day = _date(row["leave_date"], "PTO deduction date")
-        if (day.year, day.month) != (year, start.month):
+        if (day.year, day.month) != (year, start.month) or (
+                not confirmed and day > cutoff):
             continue
         key = (
             _text(row["employee_id"], "deduction.employee_id"),
@@ -269,6 +295,8 @@ def reconcile_pto_closing(
         day = _date(row["leave_date"], "usage.leave_date")
         if (day.year, day.month) != (year, start.month):
             continue
+        if not confirmed and day > cutoff:
+            raise PTOClosingReviewError("PTO usage: future request included in as-of snapshot")
         key = (
             _text(row["employee_id"], "usage.employee_id"),
             _text(row["request_id"], "usage.request_id"),
@@ -290,11 +318,16 @@ def reconcile_pto_closing(
     for key, amount in expected.items():
         if abs(amount - displayed[key]) > Fraction(allocation_lines[key], 10_000_000):
             raise PTOClosingReviewError("PTO: usage display disagrees with exact deduction")
-    for worker, closing_amount in monthly.items():
-        if monthly_deductions[worker] != closing_amount:
-            raise PTOClosingReviewError("PTO: exact deduction does not equal Closing monthly amount")
-    if set(monthly_deductions) - set(monthly):
-        raise PTOClosingReviewError("PTO: deduction employee missing from Closing")
+    if confirmed:
+        for worker, closing_amount in monthly.items():
+            if monthly_deductions[worker] != closing_amount:
+                raise PTOClosingReviewError("PTO: exact deduction does not equal Closing monthly amount")
+        if set(monthly_deductions) - set(monthly):
+            raise PTOClosingReviewError("PTO: deduction employee missing from Closing")
+    else:
+        # Current as-of usage has no confirmed monthly Closing quantity.
+        # The same exact request and displayed-usage checks above apply.
+        monthly = dict(monthly_deductions)
 
     # The Worktime ten-column contract stays untouched; a day's single
     # anchor must refer to at least one of multiple external PTO requests.
@@ -306,14 +339,20 @@ def reconcile_pto_closing(
         if amount != expected[key]:
             raise PTOClosingReviewError("PTO: approved minutes/divisor disagree with exact deduction")
 
-    for file, sha in ((usage, usage_sha), (closing, closing_sha), (deduction, deduction_sha)):
+    originals = [(usage, usage_sha), (deduction, deduction_sha)]
+    if confirmed:
+        originals.append((closing, closing_sha))
+    for file, sha in originals:
         if sha256_file(file) != sha:
             raise PTOClosingReviewError("PTO: source workbook changed during review")
     return {
         "schema_version": "0.1",
         "period_from": period_from, "period_to": period_to,
         "closing_id": closing_id,
-        "closing_confirmed": True,
+        "closing_confirmed": confirmed,
+        "closing_status": "마감 확정" if confirmed else "마감 전",
+        "as_of_date": cutoff.isoformat(),
+        "change_possible": not confirmed,
         "source_sha256": {"usage": usage_sha, "closing": closing_sha, "deduction": deduction_sha},
         "monthly_usage_days": {
             worker: str(quantity) for worker, quantity in sorted(monthly.items())
@@ -328,7 +367,10 @@ def reconcile_pto_closing(
             sum(k[0] == worker and k[2] == day for k in claims) > 1
             for worker, day in {(key[0], key[2]) for key in claims}
         ),
-        "source_consistency": "MATCHED_FOR_CURRENT_QUARTER_MONTH",
+        "source_consistency": (
+            "MATCHED_FOR_CURRENT_QUARTER_MONTH" if confirmed
+            else "MATCHED_PROVISIONAL_AS_OF"
+        ),
         "source_authenticity": "NOT_AUTHENTICATED_BY_THIS_MODULE",
         "salary_treatment": "NOT_ASSESSED",
         "approval_state": "NOT_APPROVED",

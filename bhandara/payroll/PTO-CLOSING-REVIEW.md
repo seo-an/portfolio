@@ -1,6 +1,19 @@
-# Payroll P1-5b-2b-1 — PTO Closing·복수 사용신청 **읽기 전용 대조**
+# Payroll PTO 사용량 검토 — 마감 전·마감 확정 **동일 검증 경로**
 
-2026-11-20. **이번 단계는 지급/공제 금액 결정이 아닌 기존 PTO 산출물의 진위 미인증 내부 일치검사다.** 신규 Payroll의 7개 Excel, Worktime의 10열, 단일 PAYROLL Excel, PTO Tool의 파일 형식/계산 코어 모두 변경하지 않는다.
+2026-11-20. **마감 전에도 같은 `reconcile_pto_closing()`로 PTO 사용·신청수량을 대조한다.** Closing이 없으면 현재 기준일(as-of)의 Usage Ledger와 Deduction Quantity로 계산하고 **`마감 전 · 변동 가능`**을 표시한다. Closing이 확정된 경우 기존처럼 당분기 Closing 숨김 수량 정본까지 대조한다. **이번 단계는 지급/공제의 법적 적정성이나 외부 원장 진위를 인증하지 않는다.** 기존 Payroll 7개 Excel, Worktime 10열, 단일 PAYROLL Excel, PTO Tool 형식·계산 코어는 변경하지 않는다.
+
+## 마감 여부에 따른 **동일 함수의 검증 범위**
+
+| 구분 | 입력 자료 | 검증 범위 | 결과 상태 |
+|---|---|---|---|
+| **마감 전** | `usage-ledger-result.xlsx` + `deduction-quantity-result.xlsx`, `closing_file=None` | Usage 실행 기준일 현재까지 승인 신청·정확 분자/분모·일별 Worktime 대표 신청 및 복수 상세 시간, Deduction SHA-256 | `closing_status="마감 전"`, `change_possible=True` |
+| **마감 확정** | 위 2개 + 확정 `closing-result.xlsx` | 기존 대조 + Closing 당분기 월간 정확 집계·마감 승인·Usage 파일 해시 | `closing_status="마감 확정"`, `change_possible=False` |
+
+**마감 전 조건:** `Usage Ledger/정책정보`의 `마감 판정 ID=없음`, `계산 상태=계산 완료`, `실행 기준일`이 조회하는 급여월 안에 있어야 한다. `Deduction SHA256`은 제출한 Deduction 파일과 일치해야 한다. **실행 기준일 이후 승인된 미래 신청은 잠정 사용량에 반영하지 않고**, Usage에 미래 사용행이 있으면 중단한다. 실행 기준일 이전의 승인 신청·사용상세가 한 건이라도 누락되면 기존처럼 오류로 중단한다.
+
+`마감 전`은 **잠정 검토상태**이므로 월말까지 승인·취소·수정된 자료를 다시 받아 재계산해야 한다. 결과의 `closing_id`는 일반적인 Closing ID가 아니라 `PRE_CLOSING:<실행 기준일>:<Usage SHA256>` 식별자로, **같은 날 Usage 파일이 변경돼도 이전 임금결정 자료를 재사용하지 않도록** 한다. `pto_wage_plan.pto_closing_id`에도 이 정확한 식별자를 전달해야 한다. 마감 확정 시에는 종전 정식 Closing ID와 정확 월간 수량 검증을 사용한다.
+
+급여대장에서는 기존 `PAYROLL` 시트의 **검토상태 열**에 `PTO 마감 전 · 변동 가능`을 표시한다. **새 Excel 열이나 시트는 만들지 않는다.** 단독 `PARTIAL_REVIEW_ONLY`와 `NOT_APPROVED`, 지급합계/공제합계/실지급액 공란은 유지한다.
 
 ## 사용한 기존 정본
 
@@ -11,7 +24,7 @@
 
 ## 기간의 안전 경계
 
-Payroll 기간은 **정확히 한 달**이어야 하며, **확정된 Closing의 현재 분기 안에 해당 월이 있어야 한다.** 예를 들어 2026년 11월 급여에는 `Closing-4.4-2026`을 사용할 수 있다(분기말 12월 31일 마감·외부 확정 후). 반면 2026년 9월 자료를 Q4 마감과 직접 대조하는 행위는 차단한다. 이 자료가 있다 해도 11월 급여를 11월 말에 즉시 확정할 수 있다는 뜻은 아니다.
+Payroll 기간은 **정확히 한 달**이어야 한다. **확정 Closing을 제공할 때만** 해당 Closing의 현재 분기 안에 급여월이 있어야 한다. 예를 들어 2026년 11월 급여에는 `Closing-4.4-2026`을 사용할 수 있다(분기말 12월 31일 마감·외부 확정 후). 반면 2026년 9월 자료를 Q4 마감과 직접 대조하는 행위는 차단한다. 이 자료가 있다 해도 11월 급여를 11월 말에 즉시 확정할 수 있다는 뜻은 아니다.
 
 Q4 PTO Usage에는 이전 분기에서 인계된 수량이 포함될 수 있으므로, **요청별 상세와 월별 수량은 해당 Closing의 현재 분기 안의 월에 대해서만** 독립적으로 검증한다. 1~3분기 자료를 같은 Q4 파일에서 무리하게 재구성하지 않는다.
 
@@ -54,6 +67,31 @@ Worktime 10열에는 1명의 하루에 신청 ID 하나만 있다. 따라서 Pay
 
 ## Flow 연결
 
+### 마감 전 호출 예제
+
+```python
+pto_sources = {
+    "usage_file": "/secure/pto/usage-ledger-result.xlsx",
+    "closing_file": None,
+    "deduction_file": "/secure/pto/deduction-quantity-result.xlsx",
+    "pto_claims": pto_claims,
+}
+review = reconcile_pto_closing(
+    usage_file=pto_sources["usage_file"],
+    closing_file=pto_sources["closing_file"],
+    deduction_file=pto_sources["deduction_file"],
+    worktime_rows=worktime_rows,
+    pto_claims=pto_claims,
+    period_from="2026-11-01",
+    period_to="2026-11-30",
+)
+# review["closing_status"] == "마감 전"
+# review["change_possible"] is True
+# pto_wage_plan["pto_closing_id"] = review["closing_id"]
+```
+
+
+
 ```python
 from bhandara.payroll.contract_scoped_overtime import build_contract_scoped_overtime_preview
 
@@ -83,7 +121,7 @@ pto_review = result["pto_closing_review"]
 
 - Closing이 확정되었다는 사실만으로 **연차·대휴의 유급/무급 여부, 사용촉진 면책, 미사용연차수당 지급, 휴가 관련 고정수당 차감** 등을 계산하지 않는다.
 - Worktime 일별 1개 신청 ID를 Payroll P1-5b-1이 하나의 승인 휴가 사건으로 처리하는 기존 계약은 변경하지 않는다. **복수 PTO 신청의 대조 성공이 모든 신청의 지급·감액 처리를 완료했다는 의미는 아니다.** 기존 Payroll의 근태 사건은 기존 단일 사건으로 처리하고, 추가 신청은 PTO 검토 증빙으로만 남긴다.
-- `Closing-4.4-2026`이 **12월 31일 이후에 확정**되어야 11월 건을 교차검증할 수 있다. 사용 시점에 마감이 없다면 이번 자료로 통과할 수 없다. 장차 실무 월별 처리에는 **확정된 사용신청+Deduction Quantity를 기준으로 하는 잠정 검토 경로**를 별도로 구분해야 한다.
+- `Closing-4.4-2026`은 12월 31일 이후 확정 시 정식 대조할 수 있다. **그 이전 11월 급여 검토에는 `closing_file=None`과 as-of Usage + Deduction을 사용하며 `마감 전`으로 표기**한다. 이를 마감 확정 자료로 간주하지 않는다.
 - PTO 사용량/Closing은 **현금 급여의 과세·공제/정산 정본이 아니다**. 회사 규칙 및 외부 지급 결정·상세원장 진위·실제 서명 권한은 독립 검증 대상이다.
 - 신규 Flow는 \`PARTIAL_REVIEW_ONLY\`, \`NOT_APPROVED\`, \`earnings_complete=False\`, \`deductions_complete=False\` 및 **지급합계·공제합계·실지급액 공란**을 유지한다.
 

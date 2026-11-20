@@ -105,6 +105,12 @@
 
 **후속:** 분기 Closing 전 당월 PTO 승인 자료 검토 경로와 잔여 P1 증빙 인증/정책 검증 → P2 보험/원천세/공제 → P3 JSON Tool CLI/합성 E2E → Gearbox 운영 전환 및 레거시 철수.
 
+### P1-5b-2b-3 진행 — PTO 당월 마감 전/확정 단일 경로
+
+당월 Closing이 없어도 `pto_sources["closing_file"]=None`이면 **같은 PTO 정본 대조·임금결정 함수를 재사용**하여 현재 `Usage Ledger` 실행 기준일까지 계산한다. 결제·임금처리 후보 검증은 동일하고 `closing_status="마감 전"`, `change_possible=True` 및 기존 PAYROLL `검토상태` 열 `마감 전 · 변동 가능` 표시만 다르다. 정식 마감 확정 시 원래 Closing 대조를 실행해 `마감 확정` 상태로 재검토한다. 마감 전 Usage의 `Deduction SHA256`과 신청 모집단/정확 분수가 불일치하면 단순 표시가 아니라 중단한다. 스냅샷 식별자를 임금결정 계획에 연결하므로 당일 파일 변경에도 이전 근거를 재활용할 수 없다. [공통 경로 설명](PTO-CLOSING-REVIEW.md). 사용자 서버 테스트·병합 전 완료 아님.
+
+**P1 잔여:** 실제 승인자 신원/출처권한 및 휴일·통상임금 적용 적격성, 외부 승인 내역 전체 모집단 검증 → P2 보험·원천세/공제 → P3 신규 JSON Tool CLI/전체 E2E → Gearbox 운영 전환 및 레거시 철수.
+
 ## P2: 공제·과세 및 전액 지급/순지급 계산
 
 - `DEDUCTION MAP`은 **근로자 부담율 매핑**이다. 현재 `resolve_deduction_mapping`은 요율만 조회하며 실제 공제액을 계산하지 않는다.
