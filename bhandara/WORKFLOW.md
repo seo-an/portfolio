@@ -1,6 +1,6 @@
 # Bhandara Stage 1 — Tool 간 Payroll Workflow
 
-> **상태: PR 검증 대기.** 별도 계산 모듈/DB/서버를 만들지 않고 기존 독립 Tool의 호출·파일 인계만 연결한다. 운영 Slack/Gearbox 배포는 이 작업 범위가 아니다.
+> **상태: Portfolio PR #80 사용자 서버 테스트 및 병합 완료.** 별도 계산 모듈/DB/서버를 만들지 않고 기존 독립 Tool의 호출·파일 인계만 연결한다. 운영 Slack/Gearbox 배포는 이 작업 범위가 아니다.
 
 ## 목적과 원칙
 
@@ -75,27 +75,23 @@ sha256sum /private/hr/results/worktime/wt-202611/worktime-result.xlsx
 
 정확한 경로/해시/기간 불일치, Payroll 7종 XLSX 누락, 외부 승인 JSON 누락, PTO 신청 상세 누락, Worktime 출력 단계 누락, 미확정 Closing 연결, 기존 결과 덮어쓰기 시 중단한다. Payroll 내부 검토에서 오류가 나도 지급 승인으로 해석하지 않는다.
 
-## PR·서버 검증
+## 서버 검증
+
+서버 호스트 절대경로와 Docker 컨테이너 내부 경로를 구분한다.
 
 ```bash
-# PR 브랜치 당겨서 직접 테스트 (worktree 아님)
-cd /opt/agent-config/.external/portfolio
-git fetch origin feat/bhandara-stage1-tool-workflow-20261120
-git switch feat/bhandara-stage1-tool-workflow-20261120
+cd /opt/agents/config/agent-config/.external/portfolio
 
-# 신규 표적 unittest
 sudo docker exec -w /opt/agent-config/.external/portfolio hermes \
   /opt/hermes/.venv/bin/python -B -m unittest bhandara.tests.test_workflow_tool_handoff -v
 
-# 기존 Bhandara 전체
 sudo docker exec -w /opt/agent-config/.external/portfolio hermes \
   /opt/hermes/.venv/bin/python -B bhandara/_tests/run.py
 
-# 호환성: agent-config 코드 변경 없이 읽기·검증만
 sudo docker exec -w /opt/agent-config hermes \
   /opt/hermes/.venv/bin/python -B gearbox/_tests/run.py
 sudo docker exec -w /opt/agent-config hermes \
   /opt/hermes/.venv/bin/python -B gearbox/_tests/core_run.py
 ```
 
-이 명령은 **사용자 서버 실행 안내**이며 여기서 실행했다고 주장하지 않는다. PR이 병합되기 전까지 기존 운영 CLI는 변경되지 않는다. Stage 2는 사용자 명시적 재개 승인 전까지 `agent-config` PAUSE.
+**Portfolio Git 병합과 Hermes 운영 전환은 별개**다. Stage 2~3에서 에이전트 인증·실행·회신·TTL 검증을 진행하기 전까지 `agent-config` 수정·배포는 PAUSE.
