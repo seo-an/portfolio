@@ -1,19 +1,12 @@
 # Portfolio · Bhandara(반다라)
 
-> **현행 개발 상태(2026-11-19):** 신규 Paid Time Off·Worktime JSON Tool CLI, 신규 Payroll P0 Reader·Core·단일 Excel Output, P1-1~4 근무사실/승인구간 수당 후보·원장 대조·중복가산(PR #64~#67 병합)까지 구현됐습니다. P1-5a 재직·계약분할 일할 후보(PR #68)까지 병합됐습니다. P1-5b-1 휴가·결근 근거 대조·명시된 기본급 차감 후보(PR #69)까지 병합됐습니다. P1-5b-2a 계약분할 초과근무 후보 통합(PR #70)도 병합됐습니다. Payroll Flow 내부 경량화는 별도 리팩터링 PR 검증 중입니다. 실제 법정 지급액·공제액·Payroll CLI·운영 연결은 미완료입니다. [최신 남은 일](bhandara/payroll/NEXT-STEPS.md) · [레거시 철수 게이트](bhandara/LEGACY-RETIREMENT.md).
+> **현재 상태(2026-11-20):** 신규 `paid-time-off`·`worktime`·`payroll`의 **독립 JSON Tool CLI와 모듈별/통합 계산 흐름**이 Portfolio PR #78까지 사용자 서버 테스트 및 병합 완료됐습니다. Payroll은 7개 별도 입력 XLSX, Worktime 10열, PTO 마감 전·확정 공통 검토, 지급·공제 잠정 합계/보험·원천세 검토, 관리자용 산재보험료·회사 비용(확인분) 분리 출력을 지원합니다. **산출물은 지급·신고 승인 자료가 아닙니다.**
 
+> **다음 우선순위는 계산 기능 추가가 아닌 운영 연결 1~4단계**입니다: ① Portfolio Tool 간 Workflow 호출순서/경로 인계 → ② 사용자 별도 승인 후 Gearbox·Hermes·Slack 연결 → ③ 새 검토 요청 무응답·접근권한/TTL 운영 검증 → ④ 새 운영 경로가 검증된 후 구형 계산기 철수. 세 Tool의 **실제 Slack 실자료 실행은 여전히 NOT_CONNECTED**이며, `agent-config` 수정은 사용자 재개 승인 전까지 PAUSE. 서버 브랜치·배포 정리는 추후 일괄 처리합니다.
 
-> **Payroll 개발 추가 상태:** #71 통합 Flow 경량화 병합 후 P1-5b-2b-1 PTO Closing·복수 신청의 **검토용 대조**를 별도 PR에서 작업 중입니다. PTO/Worktime 결과는 읽기만 하며 최종 급여 확정·Payroll CLI/운영 전환/레거시 삭제는 아직 하지 않았습니다.
+> **필독 인수인계:** [운영 연결 1~4단계 인수인계(2026-11-20)](bhandara/OPERATIONS-HANDOFF-2026-11-20.md) · [신규 Payroll JSON Tool CLI](bhandara/payroll/TOOL-CLI.md) · [레거시 철수 기준](bhandara/LEGACY-RETIREMENT.md). 사용자는 **별도의 50명 Golden E2E를 필수 단계에서 제외**했습니다. 필요 시 변경된 계약을 겨냥한 `unittest` 회귀만 추가합니다.
 
-> **Payroll 2026-11-20 진행:** #71 경량화와 #72 PTO Closing·복수 신청 수량대조 병합 완료. 현재 별도 승인된 신청별 기본급·고정수당 감액의 중복 적용을 차단하는 P1-5b-2b-2 구현 중. 확정된 PTO/Worktime 산식·7개 Payroll 입력과 한 시트 Output 규격은 유지합니다. 최종 실지급액·보험·원천세·JSON CLI 및 운영 전환은 미완료입니다.
-
-> **PTO 당월 마감 전 검토(진행 중):** #73 신청별 기본급/고정수당 중복차감 방지까지 병합됐습니다. 같은 Payroll Flow에서 **Closing이 없으면 `마감 전 · 변동 가능`, 확정 Closing이 있으면 `마감 확정`**을 표기하도록 경량 개선 중입니다. 7개 Payroll 입력 파일·한 시트 급여대장·PTO/Worktime 결과 규격은 유지하며 실제 지급 승인/보험·세금은 미완료입니다.
-
-> **신규 Payroll 최신:** #74 PTO 마감 전·확정 동일 경로 병합 완료. P2-1 기존 `deduction-map.xlsx`의 근로자 요율과 별도 검증된 보험별 산정기준액으로 4대보험 후보를 계산하는 후속 PR 진행 중입니다. 아직 원천세·공제합계·실지급액은 확정되지 않았고 기존 7종 XLSX/단일 PAYROLL 출력은 유지합니다.
-
-> **Payroll P2 최신:** PR #75 기존 DEDUCTION MAP 기반 4대보험 근로자 부담 후보 병합. 현재 P2-2 지급항목별 과세/비과세 금액과 근로·지방소득세 외부 확인 공제 후보를 기존 한 시트 급여대장에 연결 중. 세액표의 법정 자동계산·공제완료/실지급액·JSON Tool CLI는 아직 미구현입니다.
-
-## 과거 개발 현황 기록 — Payroll PR #60 시점
+## 과거 개발 현황 기록 — Payroll PR #60 시점 (현재 운영 현황 아님)
 
 신규 Paid Time Off와 Worktime은 각각 **계산 Module·Excel·JSON 기반 선택적 Flow/Tool CLI**를 구현해 사용자 서버 검증 후 병합했습니다. 신규 Payroll은 **계약·고정수당·성과급 계산 코어(PR #59)**와 **동적 단일 급여대장 Output(PR #60)**까지 구현했습니다. 다만 **Excel Reader·업무 계산 연결·초과근무수당·실제 공제액·Payroll JSON CLI는 아직 미구현**이므로 현재 지급·신고에 사용할 수 없습니다.
 
@@ -25,7 +18,7 @@
 - **기존 계산기:** `pto-calculator`, `worktime-calculator`, `payroll-calculator`는 구형 독립 실행 및 Gearbox 호환을 위해 보존합니다.
 - **Gearbox/Slack:** 신규 Tool 운영 연결은 **미완료**, 파일 수신 ACK 후 새 요청 무응답 문제는 **원인 미확인**. `agent-config` 수정은 **사용자 요청으로 PAUSE** 상태입니다.
 
-**다음 구현의 우선순위는 새 Payroll 입력 Reader·계약 기간 검증·ID/표시명 Adapter**입니다. 이어서 Worktime 초과근무 산정, 공제액, 독립 JSON CLI를 연결합니다.
+**당시의 다음 구현 우선순위 기록입니다.** 현재 이 항목들은 PR #78까지 병합된 상태이며, 현행 계획은 문서 상단의 운영 연결 1~4단계를 따릅니다.
 
 현황과 미완료 내역: [전체 개발 상태](bhandara/DEVELOPMENT-STATUS-2026-11-19.md) · [Payroll 남은 구현](bhandara/payroll/NEXT-STEPS.md) · [Payroll Output 계약](bhandara/payroll/OUTPUT-CONTRACT.md) · [일반 사용자 실행서](bhandara/RUNBOOK.md).
 
@@ -33,7 +26,7 @@
 
 ## 현재 신규화·레거시 철수 원칙
 
-2026-11-19 기준 신규 `paid-time-off`, `worktime`의 JSON Tool CLI는 구현됐고, 신규 `payroll`의 7종 Excel Reader·계약/수당/성과급 Core·동적 Excel 및 승인구간 수당 검토 후보·출처원장 대조·명시적 중복가산(PR #65~#67)까지 병합됐다. P1-5a 입퇴사/재계약 일할(PR #68)까지 병합됐다. P1-5b-1 휴가·결근 승인 원장/Worktime 일치 및 기본급 차감 후보(PR #69)까지 병합됐다. P1-5b-2a 계약분할별 초과근무 후보(PR #70)도 병합됐다. 현재 신규 Payroll 통합 Flow 내부의 중복 파싱·검증·대장 조립을 경량화하는 중이다. **실제 지급·공제·세액·Gearbox 운영 연결은 미완료**이며 신규 Payroll JSON Tool CLI는 아직 없다.
+현재 신규 `paid-time-off`, `worktime`, `payroll`의 **독립 JSON CLI/Excel 입출력·검토계약이 구현·검증·병합**되었습니다. 미완료인 것은 세 Tool 간 명시적 **Workflow 인계**, Gearbox/Hermes/Slack **운영 실행**, Slack 후속 명령 무응답 원인 진단, **구형 계산기 철수**입니다. 법정 지급 승인·실제 신고·송금·원장 신원 인증은 자동화된 것으로 주장하지 않습니다. Golden 50명 종합 시나리오는 **사용자 결정에 따라 필수조건이 아닙니다.** 상세 작업 범위와 중단조건은 [운영 인수인계서](bhandara/OPERATIONS-HANDOFF-2026-11-20.md)를 따릅니다.
 
 구형 `pto-calculator`, `worktime-calculator`, `payroll-calculator`의 **최종 삭제가 목표**이지만, 신규 Tool·운영 호출·단독 실행과 전체 회귀가 확인된 이후에만 순차적으로 삭제한다. [레거시 철수 게이트](bhandara/LEGACY-RETIREMENT.md).
 
@@ -239,11 +232,11 @@ Payroll의 `payroll-config.json`은 지급·공제 입력, 근태 결과, 급여
 
 이 계약은 각 모듈을 다른 임시 설치 루트에 두고 JSON만 주고받는 **실제 상호배타 테스트에서 PASS**했습니다. 자세한 구조는 [검증 결과](bhandara/MODULE-ISOLATION.md) 및 [운영 실행서](bhandara/RUNBOOK.md)에 있습니다.
 
-> **PR #77 진행:** 기존 한 시트 급여대장의 지급합계·공제합계·실지급액에 **산출된 항목의 잠정 합계**를 보여주며, 미완료 여부는 검토 플래그로 분리합니다. Bhandara 전체 테스트는 `bhandara/_tests/run.py`를 사용하면 주제별 PASS/FAIL/ERROR/SKIP을 볼 수 있습니다. 기존 `unittest discover`도 계속 사용할 수 있습니다. 별도 승인/신고 기능을 추가한 것은 아닙니다.
+> **PR #77 병합 이력:** 기존 한 시트 급여대장의 지급합계·공제합계·실지급액에 **산출된 항목의 잠정 합계**를 보여주며, 미완료 여부는 검토 플래그로 분리합니다. Bhandara 전체 테스트는 `bhandara/_tests/run.py`를 사용하면 주제별 PASS/FAIL/ERROR/SKIP을 볼 수 있습니다. 기존 `unittest discover`도 계속 사용할 수 있습니다. 별도 승인/신고 기능을 추가한 것은 아닙니다.
 
 > **Payroll 직원보험·회사 부담 분리:** 공통 `employee.xlsx`의 보험별 취득일/적용 제외/미가입을 확인합니다. 근로자 소득세와 보험 공제만 미확인 검증요청에 포함하고, 산재보험료는 사업주가 부담하는 별도 비용으로 계산해 **직원 지급합계·공제합계·실지급액에서 제외**합니다. [자세한 계약](bhandara/payroll/EMPLOYER-INSURANCE.md).
 
-> **Payroll P3-1 독립 CLI 작업:** #77 잠정 합계·주제별 unittest·공통 보험상태·산재 사업주 비용까지 사용자 서버 테스트 및 병합 완료. **회사 비용은 추후 모듈에서 소비하도록 관리자 급여대장에만 산출하며 Payroll 안에서 더 확장하지 않습니다.** 기존 7개 XLSX·Worktime/PTO 계약을 유지한 채 `python3 run.py bhandara payroll` JSON 설정 실행을 검증 중입니다. [Payroll Tool CLI](bhandara/payroll/TOOL-CLI.md).
+> **Payroll P3-1 CLI 병합 이력(#78까지):** #77 잠정 합계·주제별 unittest·공통 보험상태·산재 사업주 비용까지 사용자 서버 테스트 및 병합 완료. **회사 비용은 추후 모듈에서 소비하도록 관리자 급여대장에만 산출하며 Payroll 안에서 더 확장하지 않습니다.** 기존 7개 XLSX·Worktime/PTO 계약을 유지한 채 `python3 run.py bhandara payroll` JSON 설정 실행을 검증 중입니다. [Payroll Tool CLI](bhandara/payroll/TOOL-CLI.md).
 
 ## 6. 검증·개인정보·운영 경계
 
