@@ -107,6 +107,6 @@ write_payroll_result_xlsx(
 
 `payroll-result.xlsx`는 기존과 동일한 `PAYROLL` 단일 시트·동적 열 계약이다. **지급합계·공제합계·실지급액은 전부 공란**이며 `earnings_complete=False`, `deductions_complete=False`, `PARTIAL_REVIEW_ONLY` 및 `NOT_APPROVED`를 바꾸지 않는다.
 
-**다음 단계:** [P1-5b-1](ATTENDANCE-SETTLEMENT.md)은 Worktime 휴가·결근 증빙과 외부 원 단위 정산액을 검증해 기본급 후보에 차감하는 별도 조합 함수다. 계약분할된 초과근무·복수 휴가 및 고정수당 정산은 P1-5b-2 잔여. 이후 P2 보험·세금·정산, P3 독립 JSON Tool CLI·전체 E2E, Gearbox 운영 연결 및 레거시 3종의 단계적 철수. `agent-config` 변경 PAUSE, 서버 브랜치 정리 보류.
+**현행:** 관련 계산·검토 기능과 Payroll JSON CLI, Portfolio Workflow가 구현되었습니다. 실제 지급 승인은 없으며 Gearbox/Hermes·Slack 연결은 별도 단계입니다.
 
 합성 테스트: `python3 -m unittest bhandara.tests.test_payroll_segmented_settlement_p1 -v`.
