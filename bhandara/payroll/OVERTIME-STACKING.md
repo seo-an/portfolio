@@ -71,6 +71,6 @@
 - 서로 다른 수당 행의 `minutes`를 단순 합산하면 안 된다. 같은 60분이 두 카테고리에 각각 60분으로 표시될 수 있다. 인건비 집계는 **금액 성분**으로만 수행한다.
 - 최종 급여대장의 수당 **후보 금액**은 보이지만 지급합계·공제합계·실지급액은 여전히 공란. `earnings_complete=False`, `deductions_complete=False`, `PARTIAL_REVIEW_ONLY` 및 `NOT_APPROVED` 유지.
 - 새 JSON Tool CLI, 진짜 원장 진위/권한 검증, 법정 휴일분류·휴가 정산, 중도 계약 분할, P2 공제·원천세 및 실자료 지급승인은 별도 후속.
-- 레거시 Calculator 3종은 새로운 Tool의 모든 계약/운영/회귀검증 후 철수: [철수 게이트](../LEGACY-RETIREMENT.md).
+**현행:** 관련 계산·검토 기능과 Payroll JSON CLI, Portfolio Workflow가 구현되었습니다. 실제 지급 승인은 없으며 Gearbox/Hermes·Slack 연결은 별도 단계입니다.
 
 테스트: `python3 -m unittest bhandara.tests.test_payroll_overtime_stacking_p1 -v` 및 전체 Bhandara/Gearbox 기능·인프라 회귀.
