@@ -57,6 +57,8 @@ Workflow의 각 Tool은 `run` 또는 명시적으로 검증된 결과의 `reuse`
 
 입력 누락·일자/직원 ID 불일치·SHA-256 변경·승인 자료 부재가 확인되면 실행하지 않고 원인을 확인한다. Slack에 파일만 올리면 자동 분석하거나 계산하지 않는다. 에이전트 연결, 파일 접근 영수증, 보관기간, 후속 댓글 무응답 재현은 [Stage 2~3 운영 연결](OPERATIONS-HANDOFF-2026-11-20.md)에서 별도 검증한다. **실직원 정보를 사용한 자동 검증은 금지**하고 합성자료로만 운영 테스트한다.
 
+> **전환 경고:** 현재 `agent-config`의 Gearbox 일부 어댑터·테스트는 삭제된 공개 Calculator `module.json`과 구형 CLI를 참조합니다. **Portfolio CI가 모두 PASS여도 Gearbox 전체 회귀는 Stage 2에서 호출 계약을 전환하기 전까지 실패할 수 있습니다.** 활성 `.external/portfolio`를 이 PR 브랜치로 전환하면 구형 Hermes 요청이 실패할 수 있으므로, 실제 운영 프로세스 영향 확인 없이 서버 브랜치를 전환·배포하지 마세요. `agent-config`는 이번 PR에서 수정하지 않습니다.
+
 ## 6. 개발·서버 테스트
 
 ```bash
@@ -71,4 +73,4 @@ sudo docker exec -w /opt/agent-config hermes \
   /opt/hermes/.venv/bin/python -B gearbox/_tests/core_run.py
 ```
 
-위에서 `cd`는 **호스트의 전체 절대경로**, `docker exec -w`는 **컨테이너 내부 경로**다. 서버 브랜치 삭제·캐시 삭제·배포는 별도 승인 후 일괄 진행한다.
+위에서 `cd`는 **호스트의 전체 절대경로**, `docker exec -w`는 **컨테이너 내부 경로**다. Gearbox 회귀는 현재 미전환 호출을 발견하는 진단이며 Stage 2 전에는 PASS로 가정하지 않는다. 서버 브랜치 삭제·캐시 삭제·배포는 별도 승인 후 일괄 진행한다.
