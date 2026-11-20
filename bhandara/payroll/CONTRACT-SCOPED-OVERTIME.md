@@ -85,7 +85,7 @@ write_payroll_result_xlsx(
 
 ## 다음 순서
 
-P1-5b-2b에서 **복수 휴가 신청/상세구간과 PTO Closing 대조**, **고정수당의 근태 감액 조건**을 신규 어댑터로 정의한다. 신규 Worktime 10열은 변경하지 않고, 외부 휴가 상세원장의 원천을 연결하는 방향이다. 이후 P2 보험·세금/공제, P3 Payroll JSON Tool CLI 및 전체 E2E, Gearbox/Hermes 운영 전환/비교 검증, 마지막 레거시 삭제.
+**현행:** 관련 계산·검토 기능과 Payroll JSON CLI, Portfolio Workflow가 구현되었습니다. 실제 지급 승인은 없으며 Gearbox/Hermes·Slack 연결은 별도 단계입니다.
 
 **확정 모듈 보호:** 신규 `contract_scoped_overtime.py`와 독립 테스트만 추가하고, 기존 `overtime_candidates.py`, `overtime_stacking.py`, `evidence_reconciliation.py`, `segmented_settlement.py`, `attendance_reconciliation.py`, PTO, Worktime, 출력 Writer 등은 수정하지 않는다.
 
