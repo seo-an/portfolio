@@ -24,6 +24,10 @@ from bhandara.payroll.overtime_candidates import (
     OvertimeCandidateError, _interval, calculate_overtime_candidates,
 )
 from bhandara.payroll.output import build_payroll_register
+from bhandara.payroll.leave_wage_adjustments import (
+    reconcile_leave_wage_decisions, apply_leave_wage_decisions,
+    check_pto_overtime_intervals,
+)
 from bhandara.payroll.pto_closing_review import reconcile_pto_closing
 from bhandara.payroll.settlement_coverage import validate_settlement_coverage
 from bhandara.payroll.segmented_settlement import _build_segmented_components
@@ -175,6 +179,7 @@ def build_contract_scoped_overtime_preview(
     rate_policy: Mapping[str, Any],
     rollup_policy: Mapping[str, Any],
     pto_sources: Mapping[str, Any] | None = None,
+    pto_wage_plan: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Contract-scoped approved overtime is a *candidate*, never final wages.
 
@@ -220,18 +225,22 @@ def build_contract_scoped_overtime_preview(
         period_from=period_from, period_to=period_to,
     )
     pto_review = None
+    pto_claim_rows = None
     if pto_sources is not None:
         required = {"usage_file", "closing_file", "deduction_file", "pto_claims"}
         if not isinstance(pto_sources, Mapping) or set(pto_sources) != required:
             raise ContractOvertimeAdapterError("pto_sources: four explicit source fields required")
+        pto_claim_rows = tuple(pto_sources["pto_claims"])
         pto_review = reconcile_pto_closing(
             usage_file=pto_sources["usage_file"],
             closing_file=pto_sources["closing_file"],
             deduction_file=pto_sources["deduction_file"],
-            pto_claims=pto_sources["pto_claims"],
+            pto_claims=pto_claim_rows,
             worktime_rows=worktime_rows,
             period_from=period_from, period_to=period_to,
         )
+    if pto_wage_plan is not None and pto_review is None:
+        raise ContractOvertimeAdapterError("pto_wage_plan: verified PTO sources are required")
     components = _build_segmented_components(
         inputs, coverage=coverage,
         period_from=period_from, period_to=period_to,
@@ -288,7 +297,20 @@ def build_contract_scoped_overtime_preview(
         })
 
     rows = [aggregated[key] for key in sorted(aggregated)]
-    # Only one dynamic Output render. Approval and completion remain false.
+    # Additional per-request monetary decisions can only be applied after
+    # exact PTO source review, and before the single dynamic Output render.
+    pto_wage_review = None
+    if pto_wage_plan is not None:
+        check_pto_overtime_intervals(
+            pto_claim_rows, source_approvals,
+        )
+        pto_wage_review = reconcile_leave_wage_decisions(
+            pto_review, attendance, wage_plan=pto_wage_plan,
+        )
+        apply_leave_wage_decisions(
+            components["payroll_rows"], settlement_review, attendance,
+            pto_wage_review, attendance_plan=attendance_plan,
+        )
     _attach_overtime_items(components["payroll_rows"], rows)
     out = {
         "payroll_register": build_payroll_register(components["payroll_rows"]),
@@ -300,6 +322,8 @@ def build_contract_scoped_overtime_preview(
     }
     if pto_review is not None:
         out["pto_closing_review"] = pto_review
+    if pto_wage_review is not None:
+        out["pto_wage_review"] = pto_wage_review
     out["overtime_candidate_review"] = {
         "schema_version": "0.1",
         "rows": rows,

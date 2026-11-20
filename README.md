@@ -5,6 +5,8 @@
 
 > **Payroll 개발 추가 상태:** #71 통합 Flow 경량화 병합 후 P1-5b-2b-1 PTO Closing·복수 신청의 **검토용 대조**를 별도 PR에서 작업 중입니다. PTO/Worktime 결과는 읽기만 하며 최종 급여 확정·Payroll CLI/운영 전환/레거시 삭제는 아직 하지 않았습니다.
 
+> **Payroll 2026-11-20 진행:** #71 경량화와 #72 PTO Closing·복수 신청 수량대조 병합 완료. 현재 별도 승인된 신청별 기본급·고정수당 감액의 중복 적용을 차단하는 P1-5b-2b-2 구현 중. 확정된 PTO/Worktime 산식·7개 Payroll 입력과 한 시트 Output 규격은 유지합니다. 최종 실지급액·보험·원천세·JSON CLI 및 운영 전환은 미완료입니다.
+
 ## 과거 개발 현황 기록 — Payroll PR #60 시점
 
 신규 Paid Time Off와 Worktime은 각각 **계산 Module·Excel·JSON 기반 선택적 Flow/Tool CLI**를 구현해 사용자 서버 검증 후 병합했습니다. 신규 Payroll은 **계약·고정수당·성과급 계산 코어(PR #59)**와 **동적 단일 급여대장 Output(PR #60)**까지 구현했습니다. 다만 **Excel Reader·업무 계산 연결·초과근무수당·실제 공제액·Payroll JSON CLI는 아직 미구현**이므로 현재 지급·신고에 사용할 수 없습니다.
