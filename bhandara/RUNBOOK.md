@@ -72,6 +72,8 @@ python run.py bhandara payroll-calculator --period 2026-07
 
 > **Payroll 최신 진행:** PR #71 Flow 경량화, PR #72 확정 PTO Closing·복수 신청 수량 대조까지 병합. 신규 P1-5b-2b-2는 **외부 승인된 신청별 기본급·고정수당 감액 후보만** 검토 Flow에 반영하며 합계/순지급액은 미확정입니다. [PTO 임금결정 규약](payroll/LEAVE-WAGE-ADJUSTMENTS.md).
 
+> **PTO 마감 전 Payroll 검토:** 당월 Closing이 없더라도 현재 `Usage Ledger` 실행 기준일까지의 신청·정확 수량을 `Deduction Quantity`와 대조하고 기존 급여대장의 **검토상태 열에 `마감 전 · 변동 가능`**을 표시할 수 있습니다. 이는 최종 급여 승인이 아니며 원본 자료 변경 시 재계산해야 합니다. [PTO 단일 검토 경로](payroll/PTO-CLOSING-REVIEW.md).
+
 ## 1. 먼저 어떤 계산기를 사용할지 고르세요
 
 | 하고 싶은 일 | 선택할 계산기 | 내가 준비할 파일 | 자세한 사용 안내 |
