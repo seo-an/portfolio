@@ -225,15 +225,17 @@ def build_contract_scoped_overtime_preview(
         period_from=period_from, period_to=period_to,
     )
     pto_review = None
+    pto_claim_rows = None
     if pto_sources is not None:
         required = {"usage_file", "closing_file", "deduction_file", "pto_claims"}
         if not isinstance(pto_sources, Mapping) or set(pto_sources) != required:
             raise ContractOvertimeAdapterError("pto_sources: four explicit source fields required")
+        pto_claim_rows = tuple(pto_sources["pto_claims"])
         pto_review = reconcile_pto_closing(
             usage_file=pto_sources["usage_file"],
             closing_file=pto_sources["closing_file"],
             deduction_file=pto_sources["deduction_file"],
-            pto_claims=pto_sources["pto_claims"],
+            pto_claims=pto_claim_rows,
             worktime_rows=worktime_rows,
             period_from=period_from, period_to=period_to,
         )
@@ -300,7 +302,7 @@ def build_contract_scoped_overtime_preview(
     pto_wage_review = None
     if pto_wage_plan is not None:
         check_pto_overtime_intervals(
-            tuple(pto_sources["pto_claims"]), source_approvals,
+            pto_claim_rows, source_approvals,
         )
         pto_wage_review = reconcile_leave_wage_decisions(
             pto_review, attendance, wage_plan=pto_wage_plan,
