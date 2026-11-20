@@ -174,6 +174,11 @@ class EmployerIndustrialInsuranceTests(TestCase):
             "0001": 21000, "0002": 0, "0003": 0,
         })
         self.assertEqual(result["total_candidate_won"], 21000)
+        self.assertEqual(
+            result["employer_review_flags"]["0003"],
+            ["EMPLOYER_INDUSTRIAL_NOT_ENROLLED"],
+        )
+        self.assertEqual(result["employer_review_flags"]["0002"], [])
         self.assertFalse(result["worker_deduction"])
         self.assertFalse(result["employer_cost_complete"])
         register = build_payroll_register(
