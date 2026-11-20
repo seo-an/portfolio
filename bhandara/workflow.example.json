@@ -1,0 +1,15 @@
+{
+  "schema_version": "1.0",
+  "workflow": "payroll",
+  "payroll_period": "2026-11",
+  "run_id": "auto",
+  "tools": {
+    "worktime": {
+      "action": "run",
+      "config": "worktime.json"
+    },
+    "payroll": {
+      "config": "payroll.json"
+    }
+  }
+}
