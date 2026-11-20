@@ -25,8 +25,8 @@ class BootstrapTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("bhandara", result.stdout)
 
-    def test_unknown_calculator_fails_closed(self):
-        result = invoke("run.py", "bhandara", "unpublished-calculator")
+    def test_unknown_tool_fails_closed(self):
+        result = invoke("run.py", "bhandara", "unpublished-tool")
         self.assertEqual(result.returncode, 2)
         self.assertIn("UNAVAILABLE", result.stderr)
         self.assertIn("No calculations were performed", result.stderr)

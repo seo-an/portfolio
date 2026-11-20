@@ -1,6 +1,6 @@
 """Canonical schedule definitions/assignments for the new Worktime tool.
 
-The first (legacy) worksheet of work-schedule.xlsx is not read or changed.
+Unrelated worksheets in work-schedule.xlsx are not read or changed.
 No attendance, approval or payroll inference is made here.
 """
 from __future__ import annotations

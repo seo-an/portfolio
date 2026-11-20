@@ -1,197 +1,76 @@
-# 반다라 사용 안내서 — 처음 사용하는 사람을 위한 설명
+# Bhandara 사용 안내서
 
-> **현재 상태(2026-11-20):** 신규 `paid-time-off`, `worktime`, `payroll` 모두 **독립 JSON Tool CLI가 구현·검증·병합**됐습니다(Portfolio #78까지). Stage 1 Tool Workflow 연결은 **구현 브랜치의 PR 검증 대기**이고, 그다음 남은 일은 **Gearbox/Hermes·Slack 운영 연결, 후속 새 메시지 무응답 원인 진단, 레거시 철수**입니다. 아직 Slack에서 새 Tool을 바로 실행할 수 있는 상태가 아니며 `agent-config` 작업은 사용자 승인 전까지 PAUSE입니다.
+2026-11-20 기준으로 신규 Tool 세 종류와 Workflow를 안내한다. 개인 JSON 설정에서 기간·입력·출력 경로를 선택하면 명령어를 매월 수정할 필요가 없다. 실무 자료를 입력하기 전 **사용자가 검증한 회사 정책과 승인 자료가 있어야 한다.**
 
-> **최신 인수인계 문서:** [운영 연결 1~4단계](OPERATIONS-HANDOFF-2026-11-20.md). **서버 브랜치 정리·배포는 사용자 요청에 따라 추후 일괄 처리**합니다. 별도 50명 Golden E2E를 필수 단계로 요구하지 않습니다.
-
-## 신규 Tool — JSON 설정 한 번, 명령 한 줄
-
-사용자 전용 JSON은 공개 Git에서 제외한 `bhandara/data/config/`에 두고 기간·원본 파일·출력 위치·선택 단계만 명시합니다. 명령어의 `--period`, `--input-dir` 등을 매번 수정하지 않습니다.
+## 1. 설치와 개인 설정
 
 ```bash
-python3 run.py bhandara paid-time-off
-python3 run.py bhandara worktime
-python3 run.py bhandara payroll
-# Stage 1 PR 검증·병합 후 Tool 간 단일 Workflow 명령
+cd /opt/agents/config/agent-config/.external/portfolio
+# 이 경로는 서버 호스트용이다. Docker 컨테이너 내부 경로와 구분한다.
+mkdir -p bhandara/data/config
+cp bhandara/paid-time-off/config.example.json bhandara/data/config/paid-time-off.json
+cp bhandara/worktime/config.example.json bhandara/data/config/worktime.json
+cp bhandara/payroll/config.example.json bhandara/data/config/payroll.json
+cp bhandara/workflow.example.json bhandara/data/config/workflow.json
+```
+
+이 네 개인 JSON은 예시 경로로는 실행되지 않는다. 각 파일에서 기간, 정확한 입력 원본·결과 폴더, 단계, 지급정책·증빙 참조를 설정한다. `bhandara/data/`는 공개 Git의 추적 대상이 아니다. 원본·확정 자료와 출력은 되도록 Git 밖의 비공개 경로에 분리한다.
+
+## 2. 세 Tool 실행
+
+| 명령 | 전제 | 주요 결과 |
+|---|---|---|
+| `python3 run.py bhandara paid-time-off` | 직원정보·근태 판정·승인 휴가 원장, 필요 시 기초인계·발생자료 | PTO 발생·차감·사용원장, 선택 Closing |
+| `python3 run.py bhandara worktime` | 근무표·출퇴근/출입기록·외부 검증 근로자료·회사 정책 | `worktime-result.xlsx`의 `WORKTIME` 한 시트 10열 |
+| `python3 run.py bhandara payroll` | Payroll Excel **7개**, Worktime 결과, **필수 외부 승인/정책 JSON 7개**, 선택 PTO 자료 | `payroll-result.xlsx`, `payroll-review.json` |
+
+각 Tool 독립 설명: [Paid Time Off](paid-time-off/TOOL-CLI.md) · [Worktime](worktime/TOOL-CLI.md) · [Payroll](payroll/TOOL-CLI.md).
+
+## 3. Tool 간 Workflow
+
+```text
+Common 직원·계약·승인 자료
+        ├── Paid Time Off (사용 검토 필요 시)
+        └── Worktime (필수)
+                ↓ 결과 run_id·기간·경로·SHA-256 확인
+             Payroll
+                ↓
+    payroll-result.xlsx + payroll-review.json
+```
+
+```bash
 python3 run.py bhandara workflow
 ```
 
-- **PTO:** [설정·Flow](paid-time-off/TOOL-CLI.md) — 발생/차감/사용원장, 마감은 확정된 경우만 선택.
-- **Worktime:** [설정·Flow](worktime/TOOL-CLI.md) — 검증된 근로·근태 사실, 결과 `worktime-result.xlsx`/`WORKTIME` 10열.
-- **Payroll:** [설정·Flow](payroll/TOOL-CLI.md) — 7개의 별도 단일 시트 XLSX + Worktime 및 승인·정책 JSON, 결과 `payroll-result.xlsx`/`PAYROLL` 한 시트 + `payroll-review.json`.
-- **세 Tool은 독립 실행**을 유지합니다. 선택한 Tool만 명시적으로 연결하는 [Stage 1 Workflow 사용법](WORKFLOW.md)이 추가됐으며, 현재는 **PR 검증·병합 대기** 중입니다. Slack 업로드만으로 자동 호출하지 않습니다.
-- **급여의 잠정 합계는 지급 승인액이 아닙니다.** 미확인 보험·세금 사유만 검토 플래그로 표시하며 미해당 수당/기타 공제 공란은 정상입니다. 산재보험·회사 비용 확인분은 관리자 전용 정보로 근로자 급여 총액에서 제외합니다.
-- 실제 직원/급여 자료와 개인 설정 JSON은 공개 저장소나 허용되지 않은 Slack 채널에 올리지 않습니다.
+Workflow의 각 Tool은 `run` 또는 명시적으로 검증된 결과의 `reuse`를 선택할 수 있다. PTO가 필요하지 않으면 생략한다. PTO를 사용할 때는 **Usage Ledger + Deduction Quantity + 별도 승인 신청 상세 JSON**을 한꺼번에 전달한다. 미확정 Closing은 Payroll에 전달하지 않는다. [실행·재사용 상세](WORKFLOW.md).
 
-## 구형 계산기 안내와 신규 Tool을 혼동하지 마세요
+## 4. 인사·급여 담당자 확인사항
 
-아래 본문 중 `pto-calculator`·`worktime-calculator`·`payroll-calculator` 명령, 예전 활성 시트 방식, `compensation.xlsx`·`payroll-input.xlsx` 예시는 **기존 레거시 계산기의 사용법**으로 남아 있습니다. 신규 Tool에는 위 각 `TOOL-CLI.md`와 실제 스키마를 사용하세요. 레거시는 **운영 전환 확인 후 별도 PR**로 제거합니다. Normalizer는 입력 형식이 이미 유효하면 필수 선행 단계가 아닙니다.
+- Worktime 10열은 **실제 관찰·검증한 근무 사실**, 추가수당 승인/지급시간이 아니다.
+- Payroll Excel은 직원·계약·수당·공제·성과급 입력 총 **7개 별도 파일**이며 각 파일에 한 시트다. [정본](payroll/input-files.json).
+- `verified_work`, `approved_segments`, `evidence_registry`, `rate_policy` 등은 회사가 별도로 검증한 JSON을 참조한다. Worktime 엑셀에서 추정해 자동 생성하지 않는다.
+- `PAYROLL` 출력은 직원별 1행이며, 한 명에게라도 값이 있는 수당/공제 항목만 동적 헤더를 만든다. 해당하지 않는 직원 셀은 공란이다. 잠정 합계가 계산돼도 실제 지급 승인과 다르다.
+- 회사 비용(확인분)과 산재보험료는 **관리자 전용**. 직원에게 Payroll 관리자 파일 전체를 전송하지 않는다.
+- 같은 `run_id`로 결과가 이미 존재하면 기존 결과를 삭제하거나 덮어쓰지 않는다.
 
-## 가장 쉬운 첫 실행
+## 5. 오류와 운영 범위
 
-[공통 80명 실물 Excel 샘플](examples/sample/input/)을 이용할 수 있습니다.
-이 폴더는 **공개된 합성 샘플 한 세트**이며, 코드 변경 때 자동으로 새 Excel로
-덮어쓰지는 않습니다. 최신 Mapping 5개 시트가 필요하면
-[샘플 생성 안내](examples/sample/README.md)에 따라 `generate.py`를 **직접 실행**해
-Git 저장소 밖의 새 폴더에 생성하세요. 계산기 실행용으로 선택한 `input/`을
-`bhandara/data/input/` 아래에 복사하면 됩니다.
-직원명부와 연결정보는 `common/`에 한 번만 두며,
-연차·근태·급여 입력은 각각 `pto/`, `worktime/`,
-`payroll/`에 분리합니다.
+입력 누락·일자/직원 ID 불일치·SHA-256 변경·승인 자료 부재가 확인되면 실행하지 않고 원인을 확인한다. Slack에 파일만 올리면 자동 분석하거나 계산하지 않는다. 에이전트 연결, 파일 접근 영수증, 보관기간, 후속 댓글 무응답 재현은 [Stage 2~3 운영 연결](OPERATIONS-HANDOFF-2026-11-20.md)에서 별도 검증한다. **실직원 정보를 사용한 자동 검증은 금지**하고 합성자료로만 운영 테스트한다.
+
+> **전환 경고:** 현재 `agent-config`의 Gearbox 일부 어댑터·테스트는 삭제된 공개 Calculator `module.json`과 구형 CLI를 참조합니다. **Portfolio CI가 모두 PASS여도 Gearbox 전체 회귀는 Stage 2에서 호출 계약을 전환하기 전까지 실패할 수 있습니다.** 활성 `.external/portfolio`를 이 PR 브랜치로 전환하면 구형 Hermes 요청이 실패할 수 있으므로, 실제 운영 프로세스 영향 확인 없이 서버 브랜치를 전환·배포하지 마세요. `agent-config`는 이번 PR에서 수정하지 않습니다.
+
+## 6. 개발·서버 테스트
 
 ```bash
-python run.py bhandara worktime-calculator --period 2026-06
-python run.py bhandara pto-calculator --period 2026-07
-python run.py bhandara payroll-calculator --period 2026-07
+cd /opt/agents/config/agent-config/.external/portfolio
+sudo docker exec -w /opt/agent-config/.external/portfolio hermes \
+  /opt/hermes/.venv/bin/python -B bhandara/_tests/run.py
+
+sudo docker exec -w /opt/agent-config hermes \
+  /opt/hermes/.venv/bin/python -B gearbox/_tests/run.py
+
+sudo docker exec -w /opt/agent-config hermes \
+  /opt/hermes/.venv/bin/python -B gearbox/_tests/core_run.py
 ```
 
-**일반 사용자는 JSON 경로를 수정하지 않습니다.** 급여는 연봉·월급·시급·일급 계약금액과 포함 수당을 읽고 기본급을 산정하며, 시급·일급의 가산수당·주휴는 미산정 검토 대상입니다. 아래 설명의
-수동 설정·정규화 JSON은 기존의 고급 사용자용 실행 방식입니다.
-출입 인증을 출퇴근 승인으로 추정하지 않으며 실제 급여 지급도 하지 않습니다.
-
-**Common Mapping 구분:** 기존 Worktime/Payroll의 `ID_MAP`에 있는
-`security_id`는 개인별 식별자이지만, 신규 Worktime의 `PERSON MAP`
-`security_id`는 `CAPS`·`SECOM`·`TELECOP` 같은 업체 구분값입니다.
-둘을 자동으로 대체하지 않습니다. 신규 출입기 정규화는
-[Common 보안업체 매핑 계약](common/SECURITY-PERSON-MAP.md)을 참고하세요.
-
-**대상:** 인사·총무·급여 업무를 하면서 엑셀과 파일을 다룰 수 있지만 Python이나 개발 도구에는 익숙하지 않은 사용자.
-
-이 문서는 **“무슨 파일을 만들고, 어디에 두며, 어떤 값을 바꾸고, 결과를 어디서 보는가”**를 설명합니다. 프로그램 설치, 코드 구조, 테스트 및 원본 동일성 검증은 [프로젝트 README](../README.md)와 **각 계산기의 README**에 따로 정리합니다.
-
-> 반다라는 **연차 발생·근무시간·급여의 계산 결과를 검토하기 위한 도구**입니다. 연차 사용 승인, 근태 마감, 급여 지급·세금 신고·회계 확정까지 자동으로 해 주지는 않습니다.
-
-> **Payroll 최신 진행:** PR #71 Flow 경량화, PR #72 확정 PTO Closing·복수 신청 수량 대조까지 병합. 신규 P1-5b-2b-2는 **외부 승인된 신청별 기본급·고정수당 감액 후보만** 검토 Flow에 반영하며 합계/순지급액은 미확정입니다. [PTO 임금결정 규약](payroll/LEAVE-WAGE-ADJUSTMENTS.md).
-
-> **PTO 마감 전 Payroll 검토:** 당월 Closing이 없더라도 현재 `Usage Ledger` 실행 기준일까지의 신청·정확 수량을 `Deduction Quantity`와 대조하고 기존 급여대장의 **검토상태 열에 `마감 전 · 변동 가능`**을 표시할 수 있습니다. 이는 최종 급여 승인이 아니며 원본 자료 변경 시 재계산해야 합니다. [PTO 단일 검토 경로](payroll/PTO-CLOSING-REVIEW.md).
-
-> **Payroll P2-1 진행:** PR #74 PTO 마감 전·확정 동일 경로 병합 완료. 이제 기존 `DEDUCTION MAP` 요율과 외부 확정 **보험별 산정기준액**으로 근로자 부담 4대보험 후보를 계산합니다. 실제 신고/세금/실지급액은 아직 아니며 기존 7개 입력 Excel과 단일 급여대장 형식을 유지합니다. [보험료 후보 계약](payroll/INSURANCE-CANDIDATES.md).
-
-> **Payroll P2-2 진행:** #75 보험료 후보가 병합되었습니다. 이제 **PTO·초과근무 반영 후 실제 지급 후보 전체**의 과세/비과세 분류를 대조하고, 외부에서 확인된 근로·지방소득세 공제 후보를 같은 한 시트 급여대장에 표시합니다. 법정 세액표 계산·지급 승인·실지급액 확정은 아직 수행하지 않습니다. [세금·과세 분류 계약](payroll/TAX-WITHHOLDING.md).
-
-## 1. 먼저 어떤 계산기를 사용할지 고르세요 (아래 표의 구형 항목은 레거시)
-
-| 하고 싶은 일 | 선택할 계산기 | 내가 준비할 파일 | 자세한 사용 안내 |
-|---|---|---|---|
-| 원본 데이터의 **열 이름 정리·필수값 검토** | Normalizer(독립 데이터 정리 모듈) | CSV/XLSX/JSON 원본과 `mapping.json` | [Normalizer 안내](common/module/normalizer/RUNBOOK.md) |
-| 직원별 연차 **발생 내역** 확인 | PTO(연차) | `.xlsx` 직원명부·근무표 등과 `config.json` | [연차 사용 안내](pto-calculator/RUNBOOK.md) |
-| 근태로 일별 **근무시간** 계산 | Worktime(근무시간) | 공통 Excel 파일과 ID_MAP (고급: 정규화 JSON) | [근무시간 사용 안내](worktime-calculator/RUNBOOK.md) |
-| 직원별 **급여 계산 초안** 확인 | Payroll(급여) | 계약금액 Excel과 ID_MAP (고급: 기존 월 보상 JSON) | [급여 사용 안내](payroll-calculator/RUNBOOK.md) |
-
-**중요:** 계산기는 각각 독립적으로 사용할 수 있습니다. 다른 계산기까지 내려받을 필요는 없지만, 프로그램 실행에 필요한 **공통 Base** 파일은 함께 있어야 합니다. 설치를 맡기는 경우 “반다라 Base와 사용할 계산기 하나만 필요하다”고 전달하면 됩니다.
-
-## 2. 파일은 어디에 두나요?
-
-프로그램 폴더와 실제 업무 자료 폴더를 **따로** 두는 편이 가장 쉽고 안전합니다. 다음은 이해를 위한 폴더 예시입니다. 이름이 반드시 같을 필요는 없습니다.
-
-```text
-내 문서/
-├── 반다라-프로그램/               ← 내려받은 프로그램 파일
-│   ├── run.py
-│   └── bhandara/
-│       ├── common/              ← 공통 Base
-│       └── pto-calculator/      ← 예: 연차 계산기만 설치
-│
-└── 반다라-작업/                   ← 내 직원·급여 자료(외부 공유 금지)
-    └── 2026-11/
-        ├── 입력/                 ← 내가 준비하는 엑셀·JSON
-        ├── 설정/                 ← 계산기간·파일 위치 등의 JSON
-        └── 결과-01/             ← 프로그램이 새로 만드는 결과 폴더
-```
-
-**파일 위치의 핵심은 세 가지**입니다.
-
-1. **입력:** Excel이나 JSON 원본을 직접 넣는 곳입니다. 연차 계산기는 이 폴더를 기준으로 지정한 Excel 파일을 찾습니다.
-2. **설정:** 어떤 기간·직원·정책·파일을 사용할지 적은 `.json` 파일입니다. 설정 파일을 반드시 프로그램 폴더에 둘 필요는 없습니다.
-3. **결과:** 계산기가 생성하는 파일이 저장되는 곳입니다. **매번 새로운 폴더 이름**(예: `결과-01`, `결과-02`)을 사용하세요. 기존 결과를 덮어쓰지 않는 것이 원칙입니다.
-
-실제 직원의 이름·사번·근무시간·급여가 들어간 파일은 **공개 GitHub 저장소나 Slack에 올리지 마세요.** 접근 권한이 제한된 컴퓨터의 폴더에 보관하세요.
-
-## 3. 엑셀은 어떻게 준비하나요? (레거시 예시는 신규 Tool과 규격이 다릅니다)
-
-| 질문 | 답 |
-|---|---|
-| 확장자는? | 연차와 급여 계산용 Excel은 기본적으로 **`.xlsx`**입니다. 이름만 `.xls`에서 `.xlsx`로 바꾸지 말고 Excel에서 *다른 이름으로 저장 → Excel 통합 문서(\*.xlsx)*를 선택하세요. |
-| 파일 이름은? | 연차는 설정 파일에 적힌 `employee.xlsx` 등 이름과 **완전히 같아야** 합니다. 급여는 설정의 `compensation_path`, `payroll_input_path`와 일치해야 합니다. |
-| 시트 이름은? | 연차·급여 계산용 Excel은 **현재 활성 시트**를 읽습니다. `Sheet1`이어도 되며, 반드시 정해진 이름으로 바꿀 필요는 없습니다. **자료가 있는 시트를 활성화하고 저장**하세요. |
-| 첫 행은? | **1행에 열 제목**, **2행부터 직원별 데이터**를 넣습니다. 위에 제목·안내 문구 행을 추가하지 마세요. |
-| 열 이름을 한글로 써도 되나요? | **계산용 연차·급여 Excel은 정해진 영문 열 이름 그대로** 사용합니다. 임의 번역하지 마세요. 원본 정규화 기능에서는 한글 열 이름을 매핑 JSON으로 연결할 수 있습니다. |
-| 한 파일에 시트를 여러 개 만들어도 되나요? | 직접 계산하는 연차·급여 Excel은 활성 시트 하나를 읽습니다. 다른 시트에 데이터를 넣어도 자동으로 합쳐 읽지 않습니다. |
-| 수식은? | 원본 Excel의 계산 수식을 자동으로 재계산하는 기능은 없습니다. 중요한 입력은 확정된 값으로 넣는 편이 안전합니다. |
-
-**계산기마다 필요한 열과 허용되는 빈칸이 다릅니다.** 예를 들어 급여의 `compensation.xlsx`는 첫 세 열의 순서가 중요하고, `payroll-input.xlsx`는 여덟 열의 **이름과 순서가 모두 정확해야** 합니다. [연차](pto-calculator/RUNBOOK.md)와 [급여](payroll-calculator/RUNBOOK.md)에 실제 작성 예시를 넣어 두었습니다.
-
-## 4. JSON 파일이란 무엇이고, 무엇을 바꾸나요?
-
-JSON은 Excel 표 대신 **설정이나 구조화된 데이터를 적는 텍스트 파일**입니다. Windows 메모장 또는 텍스트 편집기로 열어 수정할 수 있습니다. 파일 확장자는 `.json`으로 저장하고, 가능하면 **UTF-8 인코딩**을 사용하세요.
-
-예를 들어 연차의 설정 파일 일부는 다음과 같습니다.
-
-```json
-{
-  "schema_version": "1.0",
-  "period": {
-    "from": "2026-11-01",
-    "to": "2026-11-30"
-  },
-  "employee_allowlist": ["E001", "E005"]
-}
-```
-
-위 예시는 **설정 항목의 의미만 보여주는 일부**입니다. 실행할 때는 제공된 **전체 설정 틀**을 복사해 사용하세요.
-
-| 바꾸는 항목 | 달라지는 것 |
-|---|---|
-| `period.from`, `period.to` | 계산 대상 날짜 범위 |
-| `employee_allowlist` | 연차를 계산할 직원 범위. `[]`는 전체 직원, `["E001"]`은 E001만 |
-| `files` 안의 이름 | 프로그램이 읽을 입력 Excel 파일 위치·이름 |
-| 급여의 `payroll_period` | 급여 계산월. **다른 월의 근태·보상·정책까지 자동으로 바뀌지는 않습니다.** |
-
-**JSON 편집 시 주의할 점:** 항목 이름(따옴표 안의 `schema_version`, `period` 등)은 임의로 변경하지 마세요. 문자열·날짜는 큰따옴표 `" "`로 감싸고, 항목 사이에는 쉼표가 필요합니다. **마지막 항목 뒤에는 쉼표를 붙이지 않습니다.** `null`은 “값 없음”, `[]`는 “빈 목록”입니다. `null`을 `"null"`로 바꾸면 다른 값이 됩니다.
-
-## 5. 가장 편한 첫 사용 순서
-
-1. **실제 직원 자료 대신 제공된 가상 예제를 먼저 사용하세요.** 각 계산기 안내서에 예제 위치와 예상 결과를 적었습니다.
-2. 예제가 실행되는 것을 확인한 뒤 **예제 입력 파일을 복사**하고, 복사본에 실제로 필요한 날짜·직원 ID·시간·금액을 바꾸세요. 가상 자료와 실제 자료를 섞지 않습니다.
-3. Excel의 **파일명·활성 시트·1행 열 제목**을 확인하세요. JSON 설정의 **기간·파일 경로·직원 목록**을 확인하세요.
-4. 계산을 실행한 다음 **결과 폴더의 `.xlsx` 검토용 파일**을 먼저 열어 보세요. `.json`은 상세 계산 정보와 시스템 인계용입니다.
-5. 검토·오류 목록에 항목이 있으면 원본 자료를 수정하고 **다른 결과 폴더 이름으로 다시 계산**하세요. 결과를 그대로 지급·승인 자료로 확정하지 마세요.
-
-현재 반다라는 버튼을 누르는 웹 서비스나 Excel 매크로가 아니라 **로컬 Python 실행형 도구**입니다. 최초 설치와 실행 명령은 [프로젝트 README](../README.md)에 있습니다. 실행을 다른 사람에게 맡기려면 **① 입력 폴더 ② 설정 JSON의 위치 ③ 비어 있는 결과 폴더 이름**을 알려주면 됩니다.
-
-## 6. 결과를 볼 때 가장 많이 헷갈리는 부분
-
-| 보이는 상태 | 이렇게 이해하세요 |
-|---|---|
-| 연차 `PASS` | 정해진 계산·입력 검토 범위에서 오류 없이 처리했다는 뜻. **연차 확정·사용 승인 아님** |
-| 근무시간 `CALCULATED_UNCLOSED` | 근무시간 계산 완료, **마감 승인 전** |
-| 급여 `REVIEW_REQUIRED` | **검토용 급여가 정상 계산돼도 이 상태가 나올 수 있음**. 반드시 계산 결과 파일이 생성됐는지 확인 |
-| `ERROR`, `BLOCKED` | 누락·계약 위반·불확실한 자료를 먼저 확인해야 함 |
-
-계산기가 결과를 만든다고 해서 실제 근로기준법 준수, 급여 신고·지급, 회계 처리 적합성이 인증되는 것은 아닙니다.
-
-## 7. 자주 묻는 질문
-
-**Q. 원본을 저장했는데 값이 반영되지 않아요.**
-
-활성 시트가 맞는지, 파일을 실제로 저장했는지, 설정 파일이 **지금 수정한 파일 경로**를 가리키는지 확인하세요.
-
-**Q. 파일 이름을 마음대로 바꿔도 되나요?**
-
-연차의 경우 이름을 바꾸면 `config.json`의 `files`에서도 똑같이 바꿔야 합니다. 급여도 `payroll-config.json`의 해당 `..._path`를 수정해야 합니다.
-
-**Q. Worktime에 엑셀만 넣으면 되나요?**
-
-**아니요.** Worktime 계산기는 `normalized-input.json`이 먼저 필요합니다. 제공된 가상 JSON으로 시험해 볼 수 있지만, 실제 회사 자료는 별도의 원본 정규화 단계를 거쳐야 합니다. 이 제한을 숨기지 않고 [Worktime 안내서](worktime-calculator/RUNBOOK.md)에 설명합니다.
-
-**Q. 급여 입력 Excel을 한글 열 제목으로 만들고 싶어요.**
-
-기존 계산용 Excel은 영문 고정 헤더를 사용합니다. 원본에 한글 열이 있다면 Payroll의 **정규화 기능**에서 `manifest.json`으로 한글 원본 열과 표준 필드를 연결할 수 있습니다. 단, 정규화 결과를 계산용 Excel이 자동으로 대신 읽는 것은 아니므로 [급여 안내서](payroll-calculator/RUNBOOK.md)의 두 과정을 구분하세요.
-
-**Q. 시트 이름을 꼭 `Sheet1`로 해야 하나요?**
-
-연차·급여 직접 계산용 파일은 **활성 시트를 읽으므로 시트 이름은 고정되지 않습니다**. 단, 원본 정규화 기능에서 JSON에 `"sheet": "근태"`처럼 지정했다면 **그 이름과 정확히 일치**해야 합니다.
-
-**Q. 어떤 문서가 기술 설명인가요?**
-
-각 도구의 **README**에는 설치·명령·코드 계약·테스트·원본 이전 이력을, 이 **RUNBOOK**과 각 도구의 RUNBOOK에는 **실제 파일 준비·설정 수정·결과 확인**을 둡니다.
+위에서 `cd`는 **호스트의 전체 절대경로**, `docker exec -w`는 **컨테이너 내부 경로**다. Gearbox 회귀는 현재 미전환 호출을 발견하는 진단이며 Stage 2 전에는 PASS로 가정하지 않는다. 서버 브랜치 삭제·캐시 삭제·배포는 별도 승인 후 일괄 진행한다.

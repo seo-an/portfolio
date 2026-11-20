@@ -109,7 +109,7 @@ def build_payroll_register(
 ) -> dict[str, Any]:
     """Build the existing dynamic one-sheet register, optionally showing known sums.
 
-    The legacy standalone preview keeps blank totals by default. The integrated
+    The independent preview keeps blank totals by default. The integrated
     Flow sets show_partial_totals=True: known amounts are added ONCE and
     incomplete-source flags are recorded separately. Neither is authorization
     to pay the displayed net candidate.

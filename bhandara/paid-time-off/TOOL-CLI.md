@@ -80,7 +80,7 @@ python3 run.py bhandara paid-time-off
 
 - 근태 판정, 휴가 승인/취소 결정, 사용촉진 법적 판단, 자동 상계, 급여·수당 계산
 - Gearbox/Slack 운영 실행, 원본 자동 수집, 다른 Tool 호출
-- 구형 `pto-calculator` 대체 또는 기존 실행 계약 자동 변경
+- Gearbox/Hermes·Slack 운영 연결 및 실제 직원 원본 처리 (별도 사용자 승인 필요)
 
 실행은 선택적 내부 Flow만 수행합니다. **새 `paid-time-off`는 기존 구형 계산기와 별개**입니다.
 

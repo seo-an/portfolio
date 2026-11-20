@@ -261,7 +261,7 @@ def normalize_vendor_excel(
 ) -> dict[str, Any]:
     """Read one vendor's source and write the existing canonical Excel.
 
-    Explicit identities (legacy/tests) OR the Common PERSON MAP workbook
+    Explicit identities OR the Common PERSON MAP workbook
     must be supplied. Vendor filtering occurs before the existing adapter
     validates and uses its `identities` rows.
     """

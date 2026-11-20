@@ -1,1 +1,0 @@
-"""Worktime configuration examples."""

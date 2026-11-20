@@ -55,7 +55,7 @@ Attendance Verification **내부**의 부호는 종전 계약(`장부−예정`)
 
 ## 현행 구현 범위
 
-현재 코드는 새 Schedule 매핑 Reader와 **순수 출력 조인, Excel Writer/Reader**를 제공한다. JSON 기반 선택적 Flow/Tool CLI는 구현하였으나 Gearbox 자동 인계, 실제 회사 자료 결재·사용은 연결하지 않는다. 기존 `worktime-calculator` 및 `payroll-calculator`를 전환하지 않는다. 출력 Excel은 구조화된 독립 인계 파일이며 **구형 Payroll JSON과 동일한 스키마라고 주장하지 않는다.**
+현재 Worktime은 JSON 기반 선택적 Flow/Tool CLI와 독립 결과 Excel을 제공합니다. Payroll에는 10열 WORKTIME 결과를 명시적으로 인계하며, 근로 사실만으로 지급을 승인하지 않습니다.
 
 테스트: `python -m unittest bhandara.tests.test_worktime_schedule_mapping bhandara.tests.test_worktime_output_v01 -v`.
 

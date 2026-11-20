@@ -224,7 +224,7 @@ class BaseTest(unittest.TestCase):
             self.assertEqual(len(hashes["result.json"]), 64)
             issues = [Finding(code="REVIEW", severity=Severity.REVIEW, scope=Scope.RUN,
                               message="manual approval required")]
-            receipt = build_receipt(module_id="pto-calculator", module_version="0.1.0",
+            receipt = build_receipt(module_id="paid-time-off", module_version="0.1.0",
                                     input_files={"source": source}, output_sha256=hashes,
                                     findings=issues, run_id="synthetic-id", recorded_at="synthetic-time")
             batch.write_json("receipt.json", receipt)

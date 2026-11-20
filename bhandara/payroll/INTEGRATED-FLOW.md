@@ -62,4 +62,4 @@ build_payroll_register(...) 단 1회
 
 P1-5b-2b의 PTO Closing·복수 휴가·고정수당 감액은 **이미 검증한 데이터에서 직원별 지급항목 목록에 반영**하고, 정식 급여대장 Output은 Flow 최종 단계에서 한 번만 생성한다. P2 보험·원천세도 같은 방식으로 검증된 금액 성분을 추가한다. 최종 승인/완결 플래그는 별도 증빙이 다 충족될 때만 처리한다.
 
-**운영/레거시 상태:** 이번 PR은 **내부 코드 리팩터링**이며 독립 Payroll JSON Tool CLI, Gearbox 운영 연결, 구형 `*-calculator` 제거는 포함하지 않는다. 서버 브랜치 정리도 보류한다.
+**현행:** 관련 계산·검토 기능과 Payroll JSON CLI, Portfolio Workflow가 구현되었습니다. 실제 지급 승인은 없으며 Gearbox/Hermes·Slack 연결은 별도 단계입니다.

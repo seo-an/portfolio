@@ -1,14 +1,11 @@
-"""Explicit, shared local input layout for standalone Bhandara calculators.
+"""Shared, strict XLSX input helpers and canonical Common identity roles.
 
-No fuzzy discovery, guessing by filename, network calls or implicit sample
-fallbacks. User-provided overrides are optional and versioned module contracts
-remain authoritative for actual sheet/column validation.
+No implicit file discovery, historical module manifests or formula fallback.
 """
 from __future__ import annotations
 
 import calendar
 import hashlib
-import json
 from datetime import date, datetime, time
 from pathlib import Path
 from typing import Any, Iterable, Mapping
@@ -20,31 +17,10 @@ class InputLayoutError(ValueError):
     pass
 
 
-ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_INPUT_ROOT = ROOT / "data" / "input"
 ROLE_PATHS = {
     "common": {
         "employees": "common/employee.xlsx",
         "identity": "common/id-map.xlsx",
-    },
-    "pto": {
-        "schedule": "pto/work-schedule.xlsx",
-        "assignments": "pto/work-schedule-assignment.xlsx",
-        "events": "pto/employee-events.xlsx",
-    },
-    "worktime": {
-        "schedule": "worktime/work-schedule.xlsx",
-        "attendance": "worktime/attendance.xlsx",
-    },
-    "payroll": {
-        "contracts": "payroll/pay-contract.xlsx",
-        "contract_components": "payroll/pay-contract-components.xlsx",
-        "service_contracts": "payroll/service-contracts.xlsx",
-        "service_records": "payroll/service-work-records.xlsx",
-        "compensation": "payroll/compensation.xlsx",
-        "payroll_input": "payroll/payroll-input.xlsx",
-        "company_policy": "payroll/company-policy.json",
-        "worktime_result": "payroll/worktime-result.json",
     },
 }
 
@@ -83,14 +59,6 @@ def role(root: Path, module: str, key: str,
     if not isinstance(override, Mapping):
         raise InputLayoutError(f"files.{module} must be a role-name mapping")
     default = ROLE_PATHS[module][key]
-    if module != "common":
-        manifest = ROOT / f"{module}-calculator" / "module.json"
-        if manifest.is_file():
-            with manifest.open("r", encoding="utf-8") as stream:
-                module_contract = json.load(stream)
-            declared = module_contract.get("shared_excel_input", {}).get("roles", {})
-            if key in declared:
-                default = declared[key]
     filename = override.get(key, default)
     return choose_path(root, filename)
 
@@ -100,11 +68,10 @@ def read_sheet(path: Path, required: Iterable[str], *,
     """Strict workbook parse, preserving row numbers and rejecting bad headers.
 
     Extra columns are left available to callers without becoming required
-    calculation fields. User-facing sample inputs omit test-only metadata.
+    calculation fields. Tool callers validate business-specific fields independently.
     """
     try:
-        # This shared-layout contract rejects every formula, unlike Payroll's
-        # generic source mapper, which reads cached cell values.
+        # This shared-layout contract rejects every formula, as required by the selected Tool.
         with open_xlsx_rows(
             path, sheet_name=sheet_name, data_only=False,
         ) as opened:
@@ -209,58 +176,3 @@ def as_clock(value: Any, field: str) -> str | None:
     raise InputLayoutError(f"invalid {field}: {value!r}")
 
 
-def write_auto_config(
-    input_root: Path,
-    name: str,
-    payload: Any,
-    *,
-    generated_dir: Path | None = None,
-) -> Path:
-    """Persist generated inputs outside source data and (optionally) read-only trees.
-
-    The CLI passes a writable runtime config directory alongside --output-dir.
-    Keeping the default only preserves callers that already manage a writable
-    local bhandara/data directory; it must never be used by a read-only sample.
-    """
-    if "/" in name or name.startswith("."):
-        raise InputLayoutError("invalid generated config name")
-    base = (
-        Path(generated_dir).resolve()
-        if generated_dir is not None
-        else input_root.resolve().parent / "config"
-    )
-    base.mkdir(parents=True, exist_ok=True)
-    fingerprint = hashlib.sha256(
-        json.dumps(payload, ensure_ascii=False, sort_keys=True).encode("utf-8")
-    ).hexdigest()[:12]
-    output = base / f"{Path(name).stem}-{fingerprint}.json"
-    # Same content produces the same path; changed sources/configs create a
-    # separately traceable auto-config without overwriting prior run settings.
-    if output.exists():
-        old = json.loads(output.read_text(encoding="utf-8"))
-        if old != payload:
-            raise InputLayoutError(
-                f"Generated config differs from existing {output}; use a new period "
-                "or remove the old generated config explicitly."
-            )
-    else:
-        output.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
-    return output
-
-
-def next_result_dir(input_root: Path, module_id: str) -> Path:
-    """Choose a new output directory without overwriting an earlier run."""
-    if module_id not in ("worktime-calculator", "payroll-calculator"):
-        raise InputLayoutError("unsupported calculator output directory")
-    base = input_root.resolve().parent / "output"
-    default = base / module_id
-    if not default.exists():
-        return default
-    for index in range(1, 10000):
-        candidate = base / f"{module_id}-{index:03d}"
-        if not candidate.exists():
-            return candidate
-    raise InputLayoutError("too many output versions; archive old runs")

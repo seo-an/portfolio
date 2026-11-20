@@ -33,7 +33,7 @@ Bhandara 저장소는 공통 `bhandara/data/input/` 체계를 유지하고, Tool
 | 신규 `paid-time-off` JSON Tool CLI | `tool_cli.py`, `config.example.json`, `run.py`의 명시적 선택 단계·경로 | **합성·서버 테스트 후 병합 완료** |
 | Gearbox/Slack 운영 연결 | 원본 수신, 권한·기한, 다중 Tool Workflow | **미연결** |
 
-**완료라는 말은 합성자료·독립 Python 경로의 완료**를 의미합니다. 실제 직원 원본 처리·승인·배포·운영 E2E를 의미하지 않습니다. 기존 `pto-calculator` v0.2.1 및 Gearbox 호환성 게이트를 건드리지 않았습니다.
+**현행 구현:** Paid Time Off 독립 Tool의 계산·검증·Excel 출력 계약은 유지합니다. 운영 E2E 및 실직원 승인 과정은 별도 영역입니다.
 
 ## 3. 데이터 생성·보관의 정본
 
@@ -117,7 +117,7 @@ ID는 `Closing-1.4-2026`(3/31), `Closing-2.4-2026`(6/30), `Closing-3.4-2026`(9/3
 1. 실제 직원·급여·근태 원본을 Git 저장소에 커밋하지 않습니다. 샘플 및 CI 합성자료와 분리합니다.
 2. AWS 환경변수의 정본은 Parameter Store이며 셸로 동기화합니다. Parameter Store 쓰기 IAM/S3 백업 읽기 IAM 권한 부착은 **사전 사용자 승인**이 필요합니다.
 3. 신규 공개 PTO Tool/CLI/운영 연결은 여전히 미구현입니다. **Slack/Hermes/Gearbox가 이 새 PTO 기능을 운영 호출 중이라고 주장하면 안 됩니다.**
-4. 구형 `pto-calculator`와 Gearbox 버전 호환성 계약은 임의 삭제·승격·업그레이드하지 않습니다.
+**현행 구현:** Paid Time Off 독립 Tool의 계산·검증·Excel 출력 계약은 유지합니다. 운영 E2E 및 실직원 승인 과정은 별도 영역입니다.
 5. 현재 Gearbox Adapter의 v2 Module별 입력·출력 전제와 목표 v3 Tool 단위 입출력은 다릅니다. `agent-config` 별도 브랜치·PR에서 이행해야 합니다.
 6. 임시 Slack 파일은 원본 영구 보관 금지·3시간 캐시·완료/만료 삭제·S3 제외 계약을 운영 통합 때 다시 검증해야 합니다.
 7. 테스트는 `unittest`, Hermes Python은 `uv` 격리 환경. `python3 gearbox/_tests/run.py`(기능), `python3 gearbox/_tests/core_run.py`(인프라) 통과 필수.

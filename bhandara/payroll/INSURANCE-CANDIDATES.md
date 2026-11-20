@@ -85,4 +85,4 @@ result = build_contract_scoped_overtime_preview(
 
 법적 합산·반올림, 통상임금/세법 적용, 가입 자격/감면·면제 여부는 입력으로 온 정책·산정근거가 실제로 적법한지 검증 후 운영해야 한다. 이 모듈은 `source_ref`·`assessment_ref`·`applicability_ref`를 단순 문자열로 읽을 뿐, 원본 발행권한/진위를 인증하지 않는다.
 
-**테스트:** `python3 -m unittest bhandara.tests.test_payroll_insurance_candidates_p2 -v`, Bhandara 전체 및 Gearbox 기능·인프라 회귀. `agent-config` PAUSE, 서버 브랜치 정리/레거시 철수 보류.
+**현행:** 관련 계산·검토 기능과 Payroll JSON CLI, Portfolio Workflow가 구현되었습니다. 실제 지급 승인은 없으며 Gearbox/Hermes·Slack 연결은 별도 단계입니다.

@@ -2,7 +2,7 @@
 
 No invocation of Entitlement, Deduction Quantity or Closing: consumes their
 explicitly supplied finished Excel results, plus source/validity references.
-This is not the legacy PTO runner or a Gearbox/Slack deployment endpoint.
+This runner is independent of Gearbox and Slack.
 """
 from __future__ import annotations
 

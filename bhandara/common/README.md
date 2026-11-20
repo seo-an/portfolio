@@ -1,82 +1,24 @@
-# Bhandara Common — 계산기 공통 처리
+# Common — 세 HR Tool이 공유하는 입력·검증 기반
 
-`common/`은 PTO·Worktime·Payroll 중 어떤 계산기 하나만 설치해도 사용할 수 있는 **범용 기능**을 담습니다. 특정 회사의 급여 규칙, 직원 개인정보 처리 정책, 운영 승인 권한은 이 폴더에서 결정하지 않습니다.
+Common은 독립적인 HR 판단·급여 계산기가 아니라, **입력 읽기와 신뢰할 수 있는 식별·검증**을 제공하는 라이브러리다. 독립 실행 가능한 Common 기능은 [Normalizer](module/normalizer/RUNBOOK.md)로 분리한다.
 
-## 라이브러리와 독립 실행 모듈 구분
-
-- 이 `common/` 아래의 `io/`, `config/`, `contracts/`,
-  `runtime/`, `utils/`, `validation/`는 **다른 계산기들이 import하는 라이브러리**입니다.
-- `common/module/normalizer/`는 자체 `module.json`,
-  `user_settings.py`, **실제 `input/`, `output/` 디렉터리**를 갖는
-  독립 실행 도구입니다. 데이터 정리 결과를 파일로 출력하고,
-  다른 계산기 또는 Common 라이브러리 코드에 의존하지 않습니다.
-- 계산기에서 재사용하는 Common 함수 호출과 Normalizer의 **데이터 파일 인계**는
-  다릅니다. 함수 import는 파일 인계를 대신하지 않습니다.
-- [Normalizer RUNBOOK](module/normalizer/RUNBOOK.md)에서 입력 파일,
-  기본 폴더, 비공개 경로 및 실행 방법을 확인하세요.
-
-## 입력 파일을 읽고 검증하는 기능
-
-| 기능 | 모듈 | 하는 일 |
+| 기능 | 코드 | 계약 |
 |---|---|---|
-| XLSX 워크북·시트 스트림 | `io/xlsx_stream.py` | 파일 열기·시트 선택·헤더 행 위치·행 순회·닫기만 담당. 셀 값/수식 처리 정책은 호출자가 결정 | 
-| CSV·XLSX·JSON 읽기 | `io/tabular.py` | 명시한 파일/시트/인코딩 읽기, 열 이름 중복·누락 확인, 원본 행번호 보존, 입력 폴더 밖 경로 접근 차단 |
-| 자료형 변환 | `validation/scalars.py` | 날짜·시간·정수·소수·논리값을 정해진 자료형으로 변환, 모호하거나 잘못된 값 거절 |
-| 기존 계산기별 Excel 계약 | `io/xlsx.py`, `io/input_layout.py` | Common 스트림으로 파일을 읽되, 필수 열·셀 및 계산기별 오류 처리 계약은 각각 유지 |
-| 설정 처리 | `config/resolver.py` | 외부 전체 JSON과 각 계산기의 `user_settings.py` 중 한 출처 선택 |
+| 엄격한 Excel 읽기 | `io/xlsx_stream.py`, `io/xlsx.py`, `io/input_layout.py` | 시트·헤더·수식·셀 검증, 행 번호 보존 |
+| 범용 원본 | `io/tabular.py` | CSV/JSON/Excel 열 매핑 및 입력 자료형 제약 |
+| 직원·업체 ID | `io/security_person_map.py` | `PERSON MAP`, `DEPARTMENT MAP`, `AREA MAP` |
+| 공통 ID 파일 참조 | `io/input_layout.py` | 정확한 `common/id-map.xlsx` 역할만 지정 |
+| 원본 해시 | `utils/hashing.py` | 스트리밍 SHA-256, 원본 불변 |
+| 검토/진단 | `contracts/`, `validation/`, `runtime/` | 자료 부재·충돌을 무단 확정 없이 표시 |
+| Common Normalizer | `module/normalizer/` | 지정한 매핑으로 별도 입력 검토 |
 
-### XLSX 읽기 계약을 합치지 않는 이유
+### 책임 경계
 
-2026-11-12부터 `io/tabular.py`와 `io/input_layout.py`는 `io/xlsx_stream.py`의 워크북 열기·시트 선택·행 순회 기능을 재사용합니다. 이 단계에서는 업무별 검증 정책을 공통화하지 않습니다.
+- 회사별 지급·휴가 산식은 개별 Tool이 소유한다. Common에서 자동 추정하지 않는다.
+- 원본 Excel의 파일명, 시트명과 헤더 규격은 각각의 Tool 계약이 정한다.
+- 사용자의 직원정보·ID 매핑·증빙을 Git에 저장하지 않으며, 샘플 데이터가 실제 자료를 대체하지 않는다.
+- Payroll 승인 여부, Slack 사용자/스레드 인증, 임시 캐시 TTL은 Common이 결정하지 않는다.
+- Worktime 보안업체별 사람 매핑은 [공통 매핑 계약](SECURITY-PERSON-MAP.md)을 따른다.
+- 단일 명령 테스트: `python3 -B bhandara/_tests/run.py`.
 
-| 사용처 | 헤더·수식 처리 | 실패 범위 |
-|---|---|---|
-| Payroll 원본 매핑 `io/tabular.py` | 모든 헤더는 비어 있거나 중복되면 안 됨. 기존 `data_only=True` 유지(수식의 캐시값을 읽을 수 있음) | 원본 구조 오류는 소스 단위 오류, 값 변환 거절은 매핑 계층 |
-| 공유 입력 `io/input_layout.py` → Worktime `shared_excel.py` | 모든 헤더는 고유·비공백. 어떤 수식 셀도 허용하지 않음 | 헤더·수식 오류는 입력 전체 실패; 직원·식별자 확인은 Worktime |
-| 공통 검증 `io/xlsx.py` | 필수 헤더만 고유하면 됨. 필수 셀의 수식·누락은 해당 행 거절 | 정상 행을 유지하고 `Finding`을 보고 |
-| PTO `src/input_adapter.py` | 필수 헤더만 검사, 선택 이벤트 필드·엑셀 날짜/시간을 자체 변환 | 오류 행의 직원 식별 가능 여부에 따라 개별 직원 차단 또는 전체 차단 |
-
-따라서 `data_only`, 헤더 검사, `Finding` 및 차단 범위를 일괄 변경하면 기존 계산 결과가 달라질 수 있습니다. 다음 단계에서 `io/xlsx.py` 등의 워크북 순회를 순차적으로 재사용하더라도 **기존 오류 코드·행번호·원본 SHA·승인 상태는 그대로** 유지해야 합니다. Worktime `shared_excel.py`는 `input_layout.py`를 사용하므로 이번 변경의 간접 적용 대상입니다.
-
-### PTO XLSX 스트림 적용 (2026-11-13)
-
-PTO의 `src/input_adapter.py`도 Common의 `open_xlsx_rows()`를 사용하여 워크북 열기·시트 선택·행 순회·파일 닫기를 수행합니다. 단, `data_only=False`와 `keep_links=False`를 유지하며, 엑셀의 원본 날짜 기준(`workbook.epoch`)도 그대로 전달합니다.
-
-**PTO 고유 규칙은 이동하지 않았습니다.** 필수 헤더 중복 검사(무관한 추가 열은 허용), 필수 셀 수식 거절, 이벤트 `reduced_hours` 선택 검증, `Finding` 코드·원본 행번호, 직원별 거절 또는 전역 차단, 입력 전후 SHA 확인은 모두 PTO가 담당합니다. Common 스트림은 회사 정책이나 업무 오류의 영향 범위를 결정하지 않습니다.
-
-합성 Excel 회귀 검증: `python -m unittest discover -s bhandara/tests -p 'test_pto_xlsx_stream_contract.py' -v`.
-
-### Common 필수 행 검증 리더 적용 (2026-11-13)
-
-`io/xlsx.py`의 `read_required_rows()`도 공통 `open_xlsx_rows()`를 사용합니다. Excel 열기·시트 선택·헤더 행 위치·행 순회·파일 닫기를 중복 구현하지 않습니다.
-
-**기존 검증 계약은 그대로 유지합니다.** 필수 헤더만 고유하면 추가 열(빈 열·중복된 열 포함)은 무시하고, 필수 셀의 수식이나 누락은 해당 행만 거절합니다. 정상 행은 계속 반환하며 원본 물리 행번호, `FORMULA_UNSUPPORTED`·`REQUIRED_CELL_MISSING`·`NO_DATA_ROWS` Finding, 파일명·시트명·입력 SHA 검증 및 `SpreadsheetInputError`는 그대로 사용합니다. `data_only=False`, `keep_links=False`도 바꾸지 않았습니다.
-
-합성 검증: `python -m unittest discover -s bhandara/tests -p 'test_common_xlsx_validation_stream.py' -v`.
-
-### 보안업체 직원 ID 정본 (신규 Worktime)
-
-신규 Worktime의 출입기 정규화는 기존 Common 입력 경로 `common/id-map.xlsx`의 `PERSON MAP`·`DEPARTMENT MAP`·`AREA MAP`을 사용합니다. `PERSON MAP`의 한 행은 **직원 × 보안업체** 단위이며, 업체 구분값은 `security_id`(`CAPS`/`SECOM`/`TELECOP`)입니다. 다중 업체 등록 시 같은 직원의 행을 늘릴 수 있으나, 프로그램은 업체 전용 추가 열을 읽지 않습니다.
-
-사용법·검증·기존 `ID_MAP`(구형 계산기)과의 경계: [보안업체 직원 Mapping 계약](SECURITY-PERSON-MAP.md).
-
-### 회사별 매핑과의 경계
-
-예를 들어 원본 CSV에서 `사번`과 `근로자번호` 중 무엇이 `worker_id`인지 결정하는 **회사별 매핑 규칙**은 Gearbox가 관리합니다. 공개 Bhandara를 단독 사용하는 사람은 계산기별 `manifest.json` 등에 같은 규칙을 직접 적을 수 있습니다. Common은 그 **명시된 규칙을 실행하는 일반 처리 기능**을 제공하되 어떤 별칭·코드가 옳은지 추측하지 않습니다.
-
-급여 계산기 `functions/source_mapping.py`는 회사별로 선택된 컬럼 별칭/`value_map`을 적용하고, Common의 일반 파서와 변환기를 호출합니다. 원본 행번호, 누락·거절 행, SHA 출처 검증을 보존합니다.
-
-**사용자 주의:** Common 파일은 사용자가 직접 편집할 필요가 없습니다. 본인이 설치한 계산기 폴더의 `RUNBOOK.md`와 `user_settings.py`를 먼저 확인하세요. `user_settings.py`는 현재 기간·파일 역할 설정만 지원하며, 수당 정책이나 법정 요건을 추정하지 않습니다.
-
-## 개발·검증
-
-별도 계산기 간 import를 사용하지 않으며, Gearbox나 클라우드 설치도 필요하지 않습니다. `unittest` 검증은 다음처럼 실행합니다.
-
-```bash
-python -m unittest discover -s bhandara/tests -p 'test_common_tabular_normalization.py' -v
-python -m unittest discover -s bhandara/tests -p 'test_common_xlsx_stream_contract.py' -v
-python -m unittest discover -s bhandara/tests -p 'test_common_xlsx_validation_stream.py' -v
-python -m unittest discover -s bhandara/tests -p 'test_module_isolation.py' -v
-```
-
-**이전 기록:** `payroll-calculator/migration-manifest.json`은 원본 Gearbox 코드의 초기 이관 기록을 유지합니다. 추가 리팩터링은 `post-migration-refactors.json`에서 추적합니다.
+프로젝트별 준비와 운영 연결은 [전체 사용법](../RUNBOOK.md) · [Workflow](../WORKFLOW.md)에서 확인한다.

@@ -88,6 +88,6 @@ result = build_contract_scoped_overtime_preview(
 
 이 단계는 **금액 후보를 더한 것**이지 세법상 정산이 완료됐다는 뜻이 아니다. `tax_withholding_review.statutory_tax_tables=NOT_COMPUTED`, `source_authenticity=NOT_AUTHENTICATED_BY_THIS_MODULE`이며, 기존 `earnings_complete=False`, `deductions_complete=False`, `approval_state=NOT_APPROVED`, `PARTIAL_REVIEW_ONLY`를 그대로 유지한다. **지급합계·공제합계·실지급액은 공란**이다.
 
-향후 과세/비과세 판정의 실제 정책 근거 인증, 주민세/지방소득세 신고 정합성, 보험료 정산·기타 공제, 수당/세금 전체 모집단 완전성 및 최종 검수·승인 게이트를 구현해야 한다. P3 독립 JSON Tool CLI/합성 E2E·Gearbox 운영 연결 및 레거시 철수도 아직 미완료다. 사용자의 요청이 없다면 `agent-config`는 수정하지 않는다.
+**현행:** 관련 계산·검토 기능과 Payroll JSON CLI, Portfolio Workflow가 구현되었습니다. 실제 지급 승인은 없으며 Gearbox/Hermes·Slack 연결은 별도 단계입니다.
 
 테스트: `python3 -m unittest bhandara.tests.test_payroll_tax_withholding_p2 -v`. 기존 Bhandara 전체 `unittest` 및 Gearbox 기능/인프라 회귀 필수.

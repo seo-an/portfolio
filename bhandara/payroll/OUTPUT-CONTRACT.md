@@ -69,22 +69,12 @@ view = build_payroll_register(rows, show_partial_totals=True)  # 통합 Flow의 
 write_payroll_result_xlsx(view, "/path/to/empty-existing-directory/payroll-result.xlsx")
 ```
 
-Writer는 파일 덮어쓰기를 거절하며 `PAYROLL` 시트만 생성한다. 기존 `payroll-calculator`의 급여 산식/계약/파일은 변경하지 않는다.
+**현행:** 관련 계산·검토 기능과 Payroll JSON CLI, Portfolio Workflow가 구현되었습니다. 실제 지급 승인은 없으며 Gearbox/Hermes·Slack 연결은 별도 단계입니다.
 
-## 다음 구현 우선순위
+## 현행 Payroll 연결
 
-PR #77에서 통합 Flow의 잠정 합계 표시·검증요청 플래그를 추가했다. 출력기 설계·병합은 완료됐다(PR #60). P0-1 Excel Reader와 P0-2/3 [정확 산정기간·Core→Output 검토용 Adapter](PERIOD-PREVIEW.md)를 통해 지급항목 ID·이름·금액을 전달할 수 있다. 단, **P0 Adapter는 완료 플래그 둘 다 False로 고정**한다. 초과근무·입퇴사/휴가 정산 및 실제 공제액을 검증하기 전에는 실지급액이 생기지 않는다.
+PR #78까지 7개 Excel Reader 및 검토 코어가 독립 JSON Tool CLI에 결합됐고, PR #80에서는 명시적 Tool 간 Workflow 인계를 구현했습니다. 급여대장에 표시되는 금액의 지급합계·공제합계·실지급 차액은 잠정치이며 지급승인이 아닙니다.
 
-## 후속 입력 연결 시 반드시 필요한 정보
+관리자용 산재보험·회사 비용(확인분)은 직원 지급·공제 금액에서 제외합니다. Worktime 근무 사실만으로 지급을 승인하지 않으며, 외부 인증·실지급·신고는 범위 밖입니다.
 
-기존 독립 Output은 `item_id`, `label`, `amount`를 엄격히 요구한다. P0 Adapter는 신규 입력 스키마 v1.1의 `FIXED ALLOWANCE MAP.allowance_name`과 `BONUS BUDGET.bonus_name`을 이름 정본으로 사용해 **계약·고정수당·성과급 후보**를 결합한다. 초과근무 지급항목 명칭과 공제 항목의 실제 계산 금액은 아직 미확정이며 임의로 생성하지 않는다.
-
-또한 `payroll` 독립 Tool CLI, Worktime 초과근무 정책 적용, 실제 4대보험 공제 산출, 연차·입퇴사 일할 산정, 법적 비과세 검증, 사용자 승인, Gearbox 운영연결은 **아직 미구현**이다. `agent-config` 수정은 PAUSE 중이다.
-
-## 테스트
-
-```bash
-python3 -m unittest bhandara.tests.test_payroll_dynamic_output_v01 -v
-```
-
-주제별 전체 Bhandara unittest는 `python3 -B bhandara/_tests/run.py`로 1회 실행하여 PASS/FAIL/ERROR/SKIP 개수를 확인한다. 기존 `unittest discover` 명령 자체의 기본 출력은 변경되지 않는다. Gearbox 기능·인프라 호환성 검증도 별도로 수행한다.
+테스트: `python3 -B bhandara/_tests/run.py` / [최신 운영 연결](../OPERATIONS-HANDOFF-2026-11-20.md).

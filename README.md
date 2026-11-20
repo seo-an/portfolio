@@ -1,258 +1,64 @@
-# Portfolio · Bhandara(반다라)
+# Bhandara — HR 계산·검토용 독립 Python Tools
 
-> **현재 상태(2026-11-20):** 신규 `paid-time-off`·`worktime`·`payroll`의 **독립 JSON Tool CLI와 모듈별/통합 계산 흐름**이 Portfolio PR #78까지 사용자 서버 테스트 및 병합 완료됐습니다. Payroll은 7개 별도 입력 XLSX, Worktime 10열, PTO 마감 전·확정 공통 검토, 지급·공제 잠정 합계/보험·원천세 검토, 관리자용 산재보험료·회사 비용(확인분) 분리 출력을 지원합니다. **산출물은 지급·신고 승인 자료가 아닙니다.**
+Bhandara는 **Paid Time Off(유급휴가), Worktime(근태), Payroll(급여)** 세 Tool과 이들을 명시적으로 연결하는 **Workflow**를 제공한다. 각 Tool은 독립 JSON 설정으로 실행할 수 있으며, 공통 Excel 읽기·직원 ID·출입업체 매핑·파일 SHA-256 검증 기능을 공유한다.
 
-> **다음 우선순위는 계산 기능 추가가 아닌 운영 연결 1~4단계**입니다: ① Portfolio Tool 간 Workflow 호출순서/경로 인계 → ② 사용자 별도 승인 후 Gearbox·Hermes·Slack 연결 → ③ 새 검토 요청 무응답·접근권한/TTL 운영 검증 → ④ 새 운영 경로가 검증된 후 구형 계산기 철수. 세 Tool의 **실제 Slack 실자료 실행은 여전히 NOT_CONNECTED**이며, `agent-config` 수정은 사용자 재개 승인 전까지 PAUSE. 서버 브랜치·배포 정리는 추후 일괄 처리합니다.
+> **2026-11-20 현황:** 세 Tool과 Workflow 연결은 구현·병합됐다(Portfolio #80). 구형 계산 경로·전용 샘플과 테스트를 철수하는 [PR #81](https://github.com/seo-an/portfolio/pull/81)이 진행 중이다. **Hermes·Gearbox·Slack에서 신규 Tool을 실제 호출하는 운영 연결은 아직 완료되지 않았다.** 이 저장소의 PR 병합만으로 에이전트가 자동 전환되지 않는다. `agent-config` 편집·배포와 서버 브랜치 정리는 별도 단계다.
 
-> **필독 인수인계:** [운영 연결 1~4단계 인수인계(2026-11-20)](bhandara/OPERATIONS-HANDOFF-2026-11-20.md) · [신규 Payroll JSON Tool CLI](bhandara/payroll/TOOL-CLI.md) · [레거시 철수 기준](bhandara/LEGACY-RETIREMENT.md). 사용자는 **별도의 50명 Golden E2E를 필수 단계에서 제외**했습니다. 필요 시 변경된 계약을 겨냥한 `unittest` 회귀만 추가합니다.
+## 구성
 
-## 과거 개발 현황 기록 — Payroll PR #60 시점 (현재 운영 현황 아님)
+| 실행 단위 | 기능 | 기본 출력 | 설정 예시 |
+|---|---|---|---|
+| Paid Time Off | 발생·차감·사용원장, 선택 마감 | `deduction-quantity-result.xlsx`, `usage-ledger-result.xlsx`, 선택 `closing-result.xlsx` | [설정](bhandara/paid-time-off/config.example.json) |
+| Worktime | 스케줄·출입검토·휴게·근로 사실 | `worktime-result.xlsx` / `WORKTIME` 10열 | [설정](bhandara/worktime/config.example.json) |
+| Payroll | 7종 단일시트 Excel, 별도 승인·정책 JSON을 한 번 검토 | `payroll-result.xlsx` / `PAYROLL`, `payroll-review.json` | [설정](bhandara/payroll/config.example.json) |
+| Workflow | 기존 결과 검증/재사용, 호출 순서와 명시적 경로 인계 | 위 Payroll 출력 및 실행별 handoff | [설정](bhandara/workflow.example.json) |
+| Common Normalizer | 명시적 열 매핑·검토 | 정규화·검토 JSON | [사용법](bhandara/common/module/normalizer/RUNBOOK.md) |
 
-신규 Paid Time Off와 Worktime은 각각 **계산 Module·Excel·JSON 기반 선택적 Flow/Tool CLI**를 구현해 사용자 서버 검증 후 병합했습니다. 신규 Payroll은 **계약·고정수당·성과급 계산 코어(PR #59)**와 **동적 단일 급여대장 Output(PR #60)**까지 구현했습니다. 다만 **Excel Reader·업무 계산 연결·초과근무수당·실제 공제액·Payroll JSON CLI는 아직 미구현**이므로 현재 지급·신고에 사용할 수 없습니다.
+**용어:** Module은 독립 기능, Flow는 하나의 Tool 내부에서 선택된 Module 순서, Tool은 개별 실행 단위, Workflow는 여러 Tool을 조합하는 호출·인계다. `flow/` 물리 폴더나 복잡한 DB는 없다.
 
-- **신규 PTO:** `python3 run.py bhandara paid-time-off`; [JSON CLI](bhandara/paid-time-off/TOOL-CLI.md).
-- **신규 Worktime:** `python3 run.py bhandara worktime`; [JSON CLI](bhandara/worktime/TOOL-CLI.md). `worktime-result.xlsx`/`WORKTIME`에는 10개 근무 사실 열만 있고 지급시간/승인 금액이 없습니다.
-- **신규 Payroll 코어:** `bhandara/payroll/core.py`; 계약 `ANNUAL/MONTHLY/WEEKLY`, `BASE/TOTAL`, `contract_id` 중심 수당 ID/Level, `deduction_code`별 **4개 공제율 매핑만 조회**, 팀/프로젝트 성과급 예산 배분.
-- **신규 Payroll Output:** `bhandara/payroll/output.py`, `output_excel.py`; `payroll-result.xlsx`/`PAYROLL` **한 시트, 2단 헤더, 실지급 항목에 따라 동적 열**, 미해당자 공란, 미완료 합계 공란. **Reader/계산 코어와 자동 연결되지 않음.** [Output 정본](bhandara/payroll/OUTPUT-CONTRACT.md).
-- **Payroll 입력:** [고정된 Excel 7개 파일명·시트·필수 헤더](bhandara/payroll/input-files.json). 공개 샘플 ZIP은 대화에서 제공했으나, `main`에는 구형 `pay-contract.xlsx` 외 신규 파일 6개의 등록이 미확인(2026-11-19 조회 기준). 파일 배치와 새 입력 형식의 일치 검증이 남아 있습니다.
-- **기존 계산기:** `pto-calculator`, `worktime-calculator`, `payroll-calculator`는 구형 독립 실행 및 Gearbox 호환을 위해 보존합니다.
-- **Gearbox/Slack:** 신규 Tool 운영 연결은 **미완료**, 파일 수신 ACK 후 새 요청 무응답 문제는 **원인 미확인**. `agent-config` 수정은 **사용자 요청으로 PAUSE** 상태입니다.
+## 설치
 
-**당시의 다음 구현 우선순위 기록입니다.** 현재 이 항목들은 PR #78까지 병합된 상태이며, 현행 계획은 문서 상단의 운영 연결 1~4단계를 따릅니다.
-
-현황과 미완료 내역: [전체 개발 상태](bhandara/DEVELOPMENT-STATUS-2026-11-19.md) · [Payroll 남은 구현](bhandara/payroll/NEXT-STEPS.md) · [Payroll Output 계약](bhandara/payroll/OUTPUT-CONTRACT.md) · [일반 사용자 실행서](bhandara/RUNBOOK.md).
-
-아래 내용 중 `*-calculator` 명령은 **기존 구형 계산기 사용법**이며 새 Payroll Tool CLI를 의미하지 않습니다.
-
-## 현재 신규화·레거시 철수 원칙
-
-현재 신규 `paid-time-off`, `worktime`, `payroll`의 **독립 JSON CLI/Excel 입출력·검토계약이 구현·검증·병합**되었습니다. 미완료인 것은 세 Tool 간 명시적 **Workflow 인계**, Gearbox/Hermes/Slack **운영 실행**, Slack 후속 명령 무응답 원인 진단, **구형 계산기 철수**입니다. 법정 지급 승인·실제 신고·송금·원장 신원 인증은 자동화된 것으로 주장하지 않습니다. Golden 50명 종합 시나리오는 **사용자 결정에 따라 필수조건이 아닙니다.** 상세 작업 범위와 중단조건은 [운영 인수인계서](bhandara/OPERATIONS-HANDOFF-2026-11-20.md)를 따릅니다.
-
-구형 `pto-calculator`, `worktime-calculator`, `payroll-calculator`의 **최종 삭제가 목표**이지만, 신규 Tool·운영 호출·단독 실행과 전체 회귀가 확인된 이후에만 순차적으로 삭제한다. [레거시 철수 게이트](bhandara/LEGACY-RETIREMENT.md).
-
-## 2단계: Common 라이브러리 / Normalizer 독립 모듈 분리
-
-Common의 `io/`·`validation/`·`runtime/` 등은 계산기 내부에서 재사용하는 **라이브러리**입니다.
-데이터 정규화처럼 단독 호출할 가치가 있는 기능은
-`common/module/normalizer/`에 **별도 실행 모듈**로 둡니다.
-이 모듈은 다른 계산기와 Common 라이브러리를 import하지 않고,
-실제 `input/`, `output/` 폴더 및 `module.json`을 직접 소유합니다.
-
-```text
-bhandara/common/module/normalizer/
-├── input/                  # 기본 입력: source.csv, mapping.json
-└── output/<run-id>/        # 기본 출력: 결과·검토·실행 기록
-```
-
-합성자료 실습은 위 기본 폴더에서 가능하며, 실제 직원·급여 자료는
-`--data-root`를 통해 **Git 밖의 비공개 작업 공간**에 둡니다.
-[Normalizer 독립 실행 안내](bhandara/common/module/normalizer/RUNBOOK.md)를 참고하세요.
-
-
----
-
-## 범용 Excel 읽기 / 표준 Excel 출력 (Calamine 입력 마이그레이션)
-
-Bhandara의 입력 데이터 읽기 계층은 `python-calamine==0.9.1`을 사용합니다.
-일반 원본 정규화에서는 `.xls`, `.xlsx`, `.xlsm`, `.xlsb`, `.ods`를
-읽을 수 있고 `.csv`는 기본 Python 모듈로 읽습니다.
-**출력 보고서·급여 장부·서식은 계속 `openpyxl`로 `.xlsx`를 작성**합니다.
-
-단, **파일을 읽을 수 있다는 것과 계산 입력으로 승인할 수 있다는 것은 다릅니다.**
-수식이 금지된 PTO·Worktime·Payroll의 엄격한 Excel 입력 경로는
-`.xlsx/.xlsm`에서 수식을 추가 검사하며, 수식 식별이 보장되지 않는
-`.xls/.xlsb/.ods`는 해당 경로에서 자동 통과시키지 않습니다.
-구형 원본을 곧바로 계산에 반영하지 말고 먼저 정규화·검증한 뒤
-기존 입력 양식으로 전달하세요. 기존 이름·시트·헤더 규칙은 유지됩니다.
-
----
-
-## 이제 Excel만 복사해서 실행할 수 있습니다
-
-**공개 샘플:** [가상 직원 80명의 실제 Excel](bhandara/examples/sample/input/) · [샘플 설명](bhandara/examples/sample/README.md)
-
-80명 통합 샘플은 **한 세트만 유지**합니다. 단, **코드 변경이나 PR만으로
-공개 Excel을 자동 생성·교체하지 않습니다.** 기존 `sample/input/`은 보관된
-합성 샘플이고, 최신 5개 시트(`ID_MAP`, `EXTERNAL`, `PERSON MAP`,
-`DEPARTMENT MAP`, `AREA MAP`)를 포함하는 새로운 세트를 만들려면
-`bhandara/examples/sample/generate.py --output-dir <새 경로>`를 **직접 실행**해야 합니다.
-정식 공개 샘플 교체는 별도 작업에서 `refresh.py --apply`를 명시한 경우만
-허용합니다. [생성·검증·교체 정책](bhandara/examples/sample/README.md).
-
-가장 쉬운 방법은 샘플의 `input/`을 `bhandara/data/input/`에 복사한 뒤
-계산할 **월만 지정**하는 것입니다. 세 계산기는 서로 독립적이며 공통 직원명부와
-ID 매핑을 재사용합니다.
+Python **3.12 이상**과 [uv](https://docs.astral.sh/uv/)를 사용한다.
 
 ```bash
-mkdir -p bhandara/data/input
-cp -R bhandara/examples/sample/input/. bhandara/data/input/
-.venv/bin/python run.py bhandara worktime-calculator --period 2026-06
-.venv/bin/python run.py bhandara pto-calculator --period 2026-07
-.venv/bin/python run.py bhandara payroll-calculator --period 2026-07
-```
-
-입력 폴더는 `common/`, `pto/`, `worktime/`,
-`payroll/`로 구분합니다. 설정 JSON의 파일 경로 수정은
-**고급 사용자에게만 선택 사항**입니다. 기본 모드에서는 파일명이나 ID가
-맞지 않으면 오류로 알려주며 비슷한 이름을 임의 추측하지 않습니다.
-출입 인증 기록은 자동 확정 근태가 아니며 급여도 검토용입니다. **현행 통합 Payroll 샘플**은 `payroll/pay-contract.xlsx` 한 파일의 `Contracts`·`Components` 시트를 사용합니다. 이전 `pay-contract-components.xlsx` 분리 파일은 현행 통합 샘플에 포함하지 않습니다. 시급·일급의 가산수당과 주휴는 별도 검토 대상입니다.
-
-> **처음 사용하는 인사·총무·급여 담당자라면:** 먼저 [쉬운 사용 안내서](bhandara/RUNBOOK.md)를 읽으세요. **Excel 파일 위치·확장자·활성 시트·1행 열 제목·JSON 설정 수정 위치**를 계산기별로 설명합니다.
->
-> - [연차 Excel·설정 준비](bhandara/pto-calculator/RUNBOOK.md)
-> - [근무시간 JSON·설정 준비](bhandara/worktime-calculator/RUNBOOK.md)
-> - [급여 Excel·정책·설정 준비](bhandara/payroll-calculator/RUNBOOK.md)
->
-> 이 README부터는 **개발자·설치 담당자용** 소스 구성, Python 환경, CLI·코드 계약·검증 내용입니다.
-
-
-**PTO(연차), Worktime(근무시간), Payroll(급여) 계산기를 필요한 것만 내려받아 로컬에서 실행할 수 있는 공개 Python 모듈 모음**입니다. 개인 서버, Hermes 에이전트, Slack, Google Drive, API 키, 별도 데이터베이스가 없어도 실행할 수 있습니다.
-
-> **2026-11-10 기준: 1차 이전·독립 실행·상호배타 검증 완료.** PTO·Worktime·Payroll 이전과 기존 Gearbox 회귀 테스트를 마쳤고, 서로 다른 계산기 없이 **공통 Base + 계산기 하나만** 설치한 격리 환경에서 각각 실행하는 테스트 7개와 **Worktime JSON → Payroll 인계**도 통과했습니다. 기능 개선, 새로운 계산 정책, 법적 적합성 검토는 이후 별도 프로젝트에서 진행합니다. 기존 Gearbox 운영 Pipeline은 변경하지 않았습니다.
-
-## 1. 어떤 모듈을 받을까?
-
-| 모듈 | 하는 일 | 입력 | 결과 | 실행 상태 |
-|---|---|---|---|---|
-| [Normalizer](bhandara/common/module/normalizer/RUNBOOK.md) | 지정한 원본 열을 명시적 매핑에 따라 정리·검증 | CSV/XLSX/JSON 원본 + mapping.json | 정리 결과·검토 JSON·실행 기록 | **독립 실행 (2단계)** |
-| [PTO Calculator](bhandara/pto-calculator/README.md) | 입사일 기준 연차 **발생 내역** 계산·검토 | 직원·근무표·근태 등의 Excel, 설정 JSON | 연차 결과·검토 JSON/XLSX·실행 기록 | 독립 실행 검증 완료 |
-| [Worktime Calculator](bhandara/worktime-calculator/README.md) | 정규화된 근무표·근태로 일별 근무시간 계산 | 고정 경로 Excel 자동 입력 또는 정규화 JSON(고급) | 근무시간 결과·검토 JSON/XLSX | 독립 실행 검증 완료 |
-| [Payroll Calculator](bhandara/payroll-calculator/README.md) | 연봉·월급·시급·일급 계약·근태를 이용한 **검토용** 기본급·급여 계산 | 계약·고정수당·변동급여 Excel 또는 기존 설정 JSON | 급여 계산·검토 JSON/XLSX | 독립 실행 검증 완료 |
-| [공통 Base](bhandara/BASE-CONTRACT.md) | Excel 읽기·진단·해시·결과 저장·검토 계약 | 각 계산기가 호출 | 공통 함수 | **모든 계산기에 필수** |
-
-세 모듈은 서로를 직접 설치하지 않고 실행할 수 있습니다. 다만 **계산기 폴더 하나만 복사해서는 안 됩니다.** 공통 Base와 최상위 실행 파일도 함께 필요합니다. 구체적인 검증 기준은 [상호배타 검증 문서](bhandara/MODULE-ISOLATION.md)를 참고하세요.
-
-## 2. 가장 쉬운 설치: 저장소 전체 받기
-
-Python **3.12 이상**과 Git, [uv](https://docs.astral.sh/uv/)를 준비합니다. Hermes에서 실제 검증한 Python 버전은 **3.14.9**입니다. 별도 가상환경을 사용하므로 시스템 Python을 변경하지 않습니다.
-
-```sh
 git clone https://github.com/seo-an/portfolio.git
 cd portfolio
-
-uv venv --python 3.14 .venv
-uv pip install --python .venv/bin/python -r requirements.txt
-
-.venv/bin/python install.py --check
-.venv/bin/python run.py --help
-```
-
-`requirements.txt`에 고정된 외부 패키지는 `openpyxl==3.1.5`와 `korean-lunar-calendar==0.4.0`입니다. `install.py --check`는 **읽기 전용 점검**이며 패키지를 설치하지 않습니다. Windows에서는 Python 경로를 `.venv\Scripts\python.exe`로 바꿉니다.
-
-## 3. 필요한 계산기 하나만 받기 — 권장
-
-전체 계산기를 받지 않고 **Base + 선택한 계산기만** 구성하려면 Git의 sparse-checkout을 이용합니다. 다음 예시는 PTO 전용 설치이며 다른 모듈을 내려받지 않습니다.
-
-```sh
-git clone --depth 1 --sparse https://github.com/seo-an/portfolio.git bhandara-pto
-cd bhandara-pto
-git sparse-checkout set bhandara/common bhandara/pto-calculator
-
 uv venv --python 3.14 .venv
 uv pip install --python .venv/bin/python -r requirements.txt
 .venv/bin/python install.py --check
 ```
 
-**Worktime만** 필요하면 `git sparse-checkout set bhandara/common bhandara/worktime-calculator`, **Payroll만** 필요하면 `git sparse-checkout set bhandara/common bhandara/payroll-calculator`로 바꿉니다. Git은 최상위 `run.py`, `install.py`, `requirements.txt` 및 `bhandara/__init__.py`도 함께 체크아웃합니다.
+시스템 Python 대신 해당 환경의 Python으로 실행한다. 비공개 원본·승인 자료·개인 JSON을 Git에 커밋하지 않는다.
 
-Git 사용이 어렵다면 GitHub 저장소의 **Code → Download ZIP**으로 전체 소스를 받은 뒤 다음 파일만 남기는 방법도 있습니다.
+## 실행
 
-```text
-내-반다라/
-├── run.py
-├── install.py
-├── requirements.txt
-└── bhandara/
-    ├── __init__.py
-    ├── common/                    # 반드시 포함
-    └── pto-calculator/           # 세 계산기 중 하나만 선택
+```bash
+mkdir -p bhandara/data/config
+cp bhandara/paid-time-off/config.example.json bhandara/data/config/paid-time-off.json
+cp bhandara/worktime/config.example.json bhandara/data/config/worktime.json
+cp bhandara/payroll/config.example.json bhandara/data/config/payroll.json
+cp bhandara/workflow.example.json bhandara/data/config/workflow.json
+
+.venv/bin/python run.py bhandara paid-time-off
+.venv/bin/python run.py bhandara worktime
+.venv/bin/python run.py bhandara payroll
+.venv/bin/python run.py bhandara workflow
 ```
 
-`pto-calculator/` 대신 `worktime-calculator/` 또는 `payroll-calculator/`를 넣어도 됩니다. **모듈 하나만 받고 싶어도 Base는 생략할 수 없습니다.** Python 패키지 저장소(PyPI)에 각 계산기를 별도 배포한 상태는 아니므로, 위의 파일 구성이 현재 공식적인 단독 이용 방식입니다.
+필요한 명령만 실행한다. 서로 다른 실행을 모두 연속 실행하라는 뜻은 아니다. **각 JSON에 기간·원본 경로·필수 승인/정책 JSON을 사용자가 명시적으로 지정해야 한다.** 각 Tool의 출력은 서로 다른 출력 루트를 사용한다. 원본이 없으면 안전하게 실패하며, 결과 파일을 임의 검색·덮어쓰기 하지 않는다.
 
-## 4. 실행하기
+실행 자세한 설명: [처음 사용하는 사람용 RUNBOOK](bhandara/RUNBOOK.md) · [Workflow 인계](bhandara/WORKFLOW.md) · [Common 계약](bhandara/BASE-CONTRACT.md).
 
-모든 명령은 **내려받은 폴더의 최상위**, 즉 `run.py`가 있는 곳에서 실행합니다. 실제 직원·근태·임금 자료와 계산 결과는 **Git 저장소 밖의 비공개 폴더**에 둡니다. 출력 대상은 다른 실행이 사용하지 않은 **새 경로**를 지정합니다.
+## 지급·보안 경계
 
-### PTO — 제공되는 합성 Excel로 즉시 시험
+Payroll이 표시하는 지급합계·공제합계·실지급 차액은 **잠정 금액**이며 `NOT_APPROVED` 상태다. 외부 승인 없이 지급, 세금·보험 신고, 자동 송금하지 않는다. Worktime의 근로 사실만으로 추가수당을 승인하지 않는다. PTO Closing은 **확정된 원본만** 지급 검토에 연결한다. 산재보험료와 회사 비용(확인분)은 관리자용이며 직원별 조회에서 제외한다.
 
-```sh
-.venv/bin/python bhandara/pto-calculator/examples/generate_demo.py \
-  --output-dir /tmp/bhandara-pto-demo
+실직원·급여 원본, 승인 JSON, 직원 ID 매핑은 Git/일반 로그·비공개가 아닌 채널에 넣지 않는다. Slack 수신·권한 확인·3시간 선택 캐시 등은 이후 [운영 연결](bhandara/OPERATIONS-HANDOFF-2026-11-20.md)에서 다룬다.
 
-.venv/bin/python run.py bhandara pto-calculator \
-  --config /tmp/bhandara-pto-demo/config.json \
-  --input-dir /tmp/bhandara-pto-demo/input \
-  --output-dir /tmp/bhandara-pto-result
+## 테스트
+
+```bash
+.venv/bin/python -B bhandara/_tests/run.py
 ```
 
-실제 적용 시에는 [PTO 입력 Excel 헤더와 설정](bhandara/pto-calculator/README.md)에 맞춰 별도의 입력 파일을 준비합니다. 합성 예제의 직원 ID와 실제 직원 기록을 혼용하지 마세요.
-
-### Worktime — 정규화된 JSON을 준비한 다음 계산
-
-```sh
-.venv/bin/python run.py bhandara worktime-calculator \
-  --normalized /private/worktime/normalized-input.json \
-  --config /private/worktime/worktime-config.json \
-  --output-dir /private/worktime/result-01
-```
-
-Worktime은 **원본 Excel을 직접 정규화하지 않습니다.** 별도의 Source Mapping 과정으로 `schema_version: "0.1"`의 `normalized-input.json`을 준비해야 합니다. [Worktime 실행서](bhandara/worktime-calculator/README.md)에 입력 구조와 가상 데이터 예제를 설명했습니다. 다른 계산기를 함께 설치할 필요는 없습니다.
-
-### Payroll — 원본 입력 가공 또는 검토용 계산
-
-```sh
-# 제공된 합성 CSV로 Payroll의 기존 정규화 기능 시험
-.venv/bin/python run.py bhandara payroll-calculator \
-  --operation normalize \
-  --input-dir bhandara/payroll-calculator/examples/source-mapping-demo \
-  --output-dir /tmp/bhandara-payroll-normalized
-
-# 이미 구성한 회사별 설정 및 입력 파일로 검토용 계산
-.venv/bin/python run.py bhandara payroll-calculator \
-  --config /private/payroll/payroll-config.json \
-  --output-dir /private/payroll/review-01
-```
-
-Payroll의 `payroll-config.json`은 지급·공제 입력, 근태 결과, 급여항목 레지스트리, 정책 파일 등을 **명시적 경로로 지정**합니다. 설정 예제와 사용 절차는 [Payroll README](bhandara/payroll-calculator/README.md)에서 확인하세요.
-
-**주의:** Payroll은 검토용 금액이 정상 계산되어도 `REVIEW_REQUIRED`와 **종료 코드 2**를 반환합니다. 해당 코드만으로 계산 실패라고 판단하면 안 됩니다. `payroll-review.json`과 `payroll-calculation.json`의 상태 및 산출물 유무를 함께 확인하세요.
-
-## 5. Worktime 결과를 Payroll로 넘기는 방법
-
-두 계산기를 **각자 별도 폴더에서 실행**할 수 있습니다. Worktime이 만든 `worktime-result.json`을 Payroll의 `payroll-config.json` 안 `worktime_result_path`에 지정하면 됩니다. 같은 Python 프로세스, Worktime 모듈 설치, 공통 DB는 필요하지 않습니다.
-
-```json
-{
-  "worktime_result_path": "/private/worktime/result-01/worktime-result.json"
-}
-```
-
-위 JSON은 **급여 설정 파일의 일부**입니다. 실제 계산에는 다른 필수 경로와 급여기간 설정도 필요합니다. Payroll은 `worktime_result_path`, `worktime_rows_path`, `worktime_closes_path` 중 **하나만** 선택합니다. 입력에 미마감 근무시간이 있으면 결과도 미확정·검토용이며, **JSON을 넘긴 것만으로 승인이나 근태 마감이 발생하지 않습니다.**
-
-이 계약은 각 모듈을 다른 임시 설치 루트에 두고 JSON만 주고받는 **실제 상호배타 테스트에서 PASS**했습니다. 자세한 구조는 [검증 결과](bhandara/MODULE-ISOLATION.md) 및 [운영 실행서](bhandara/RUNBOOK.md)에 있습니다.
-
-> **PR #77 병합 이력:** 기존 한 시트 급여대장의 지급합계·공제합계·실지급액에 **산출된 항목의 잠정 합계**를 보여주며, 미완료 여부는 검토 플래그로 분리합니다. Bhandara 전체 테스트는 `bhandara/_tests/run.py`를 사용하면 주제별 PASS/FAIL/ERROR/SKIP을 볼 수 있습니다. 기존 `unittest discover`도 계속 사용할 수 있습니다. 별도 승인/신고 기능을 추가한 것은 아닙니다.
-
-> **Payroll 직원보험·회사 부담 분리:** 공통 `employee.xlsx`의 보험별 취득일/적용 제외/미가입을 확인합니다. 근로자 소득세와 보험 공제만 미확인 검증요청에 포함하고, 산재보험료는 사업주가 부담하는 별도 비용으로 계산해 **직원 지급합계·공제합계·실지급액에서 제외**합니다. [자세한 계약](bhandara/payroll/EMPLOYER-INSURANCE.md).
-
-> **Payroll P3-1 CLI 병합 이력(#78까지):** #77 잠정 합계·주제별 unittest·공통 보험상태·산재 사업주 비용까지 사용자 서버 테스트 및 병합 완료. **회사 비용은 추후 모듈에서 소비하도록 관리자 급여대장에만 산출하며 Payroll 안에서 더 확장하지 않습니다.** 기존 7개 XLSX·Worktime/PTO 계약을 유지한 채 `python3 run.py bhandara payroll` JSON 설정 실행을 검증 중입니다. [Payroll Tool CLI](bhandara/payroll/TOOL-CLI.md).
-
-## 6. 검증·개인정보·운영 경계
-
-```sh
-# 저장소 전체를 받은 경우: 공개 모듈 전체 회귀 테스트
-.venv/bin/python -m unittest discover -s bhandara/tests -p 'test_documentation_examples.py' -v
-
-.venv/bin/python -B bhandara/_tests/run.py # 전체 테스트·주제별 요약
-
-# 모듈 하나만 받은 경우: 설치·의존성 확인 및 위 합성/샘플 CLI 실행
-.venv/bin/python install.py --check
-```
-
-- **상호배타 테스트 완료:** `Base + PTO`, `Base + Worktime`, `Base + Payroll`의 단독 실행, 미설치 모듈 호출 차단, Worktime JSON 인계, 이전 해시·기존 Gearbox 회귀를 확인했습니다.
-- **모듈이 독립 실행된다는 것과 계산 결과를 승인한다는 것은 다릅니다.** PTO 결과는 연차 사용·정산 승인, Worktime 결과는 근태 마감, Payroll 결과는 최종 급여 지급·원천세 신고·회계전표 승인을 의미하지 않습니다.
-- 개인정보가 있는 원본 Excel/JSON, 계산 결과, 승인 참조, 급여액, 비공개 Golden은 **Git·Slack·공개 저장소에 올리지 않습니다.** 외부 서비스로 데이터를 자동 전송하지 않습니다.
-- 실제 운영·개선 계획은 공개 계산기와 분리됩니다. Hermes 및 기존 Gearbox 운영 Pipeline은 그대로 유지합니다.
-
-추가 자료: [Bhandara 운영 실행서](bhandara/RUNBOOK.md) · [공통 Base 계약](bhandara/BASE-CONTRACT.md) · [Golden 비교 설명](bhandara/GOLDEN-COMPARISON.md) · [Payroll 원본 이전 이력](bhandara/payroll-calculator/MIGRATION.md).
+표준 `unittest`를 사용한다. **별도 50명 Golden E2E는 필수 아님.** 운영 연결 변경 시 Gearbox 기능·인프라 테스트를 분리해서 수행한다.
