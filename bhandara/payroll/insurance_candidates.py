@@ -172,6 +172,10 @@ def review_employee_insurance_status(
             raise InsuranceCandidateError("common employee: incomplete insurance fields")
         reasons: list[str] = []
         for kind, record in state.items():
+            if kind == "industrial_accident":
+                # Employer-only cost: never flag an employee deduction or
+                # include administrative registration status in pay notices.
+                continue
             if record["state"] == "NOT_ENROLLED":
                 reasons.append(f"INSURANCE_NOT_ENROLLED:{kind}")
             elif record["state"] == "ENROLLED" and kind in CONTRIBUTION_KINDS:
