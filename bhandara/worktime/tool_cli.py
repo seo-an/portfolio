@@ -12,6 +12,8 @@ from pathlib import Path
 import re
 import sys
 from typing import Any
+
+from bhandara.common.runtime.workspace import ensure_tool_workspace
 from zoneinfo import ZoneInfo
 
 from bhandara.common.io.input_layout import read_sheet, as_day, InputLayoutError
@@ -83,8 +85,9 @@ def _config(source: str | Path) -> dict[str, Any]:
         raise WorktimeToolError("run_id must be auto or 1..64 letters/digits/-/_")
     input_root = _path(doc.get("input_root"), "input_root", path.parent)
     output_root = _path(doc.get("output_root"), "output_root", path.parent)
-    if input_root == output_root:
-        raise WorktimeToolError("input_root and output_root must differ")
+    if (input_root == output_root or output_root.is_relative_to(input_root)
+            or input_root.is_relative_to(output_root)):
+        raise WorktimeToolError("input/output roots must not contain one another")
     files = doc.get("files", {})
     if not isinstance(files, dict) or set(files) - FILES:
         raise WorktimeToolError(f"files permits only {sorted(FILES)}")
@@ -154,8 +157,11 @@ def _read_module_result(path: Path, *, name: str, config: dict[str, Any]) -> dic
 
 def execute(config_path: str | Path) -> dict[str, str]:
     """Execute exactly the JSON-selected stages. No implicit Module invocation."""
+    ensure_tool_workspace("worktime")
     config = _config(config_path)
     paths = config["files"]
+    if (config["output_root"] / config["run_id"]).exists():
+        raise WorktimeToolError("run_id already exists; output overwrite forbidden")
     output = config["output_root"] / config["run_id"]
     from_date, to_date = config["period_from"], config["period_to"]
     steps = config["steps"]
