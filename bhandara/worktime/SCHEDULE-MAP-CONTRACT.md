@@ -4,7 +4,7 @@
 
 ## 파일 구조
 
-입력은 기존 `worktime/work-schedule.xlsx` 한 파일이다. **구형 첫 시트를 변경하지 않고**, 아래 두 시트를 추가한다. 이전 `worktime-calculator`는 기존 입력을 계속 읽는다. 현재 공개 샘플 Excel에는 새 시트가 없을 수 있으며 **자동 갱신하지 않는다**.
+입력은 worktime/work-schedule.xlsx 한 파일이며, SCHEDULE MAP과 ASSIGNMENTS 시트를 명시적으로 사용합니다. 필수 시트가 없으면 오류로 차단하며 임의로 다른 시트를 읽지 않습니다.
 
 ### `SCHEDULE MAP` — 고유 시간표 정의
 
