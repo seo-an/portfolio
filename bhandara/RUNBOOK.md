@@ -7,6 +7,8 @@
 
 > **Payroll P1-5b-2b-1 진행 중:** PTO Closing/사용상세와 Payroll 휴가 승인 기록을 **읽기 전용**으로 대조하는 검토 단계입니다. Closing 자체는 마감 후 외부 `확정` 상태가 아니면 급여 근거로 사용할 수 없고, 복수 PTO 신청 대조 성공도 금전 지급 확정이 아닙니다. [PTO Closing 대조 계약](payroll/PTO-CLOSING-REVIEW.md).
 
+> **급여 합계 출력:** PR #77 이후 통합 Payroll Flow는 **이미 계산한 항목으로 지급합계·공제합계·실지급 차액을 잠정 표시**합니다. 미확정이면 `검토상태`에 `검증요청 · 잠정합계`가 나타나며 재검토해야 합니다. 급여 송금이 승인된 것은 아닙니다. **주제별 Bhandara 전체 테스트:** `python3 -B bhandara/_tests/run.py`. [Output 규약](payroll/OUTPUT-CONTRACT.md).
+
 ### 신규 Tool — 매번 명령어 수정하지 않음
 
 사용자 전용 JSON은 공개 Git에서 제외한 `bhandara/data/config/`에 보관합니다. 예제 파일을 복사한 뒤 그 안에서 날짜·입출력 폴더·실행 단계를 바꾸세요. 새로운 명령에는 `--period`, `--input-dir`, `--output-dir`가 필요하지 않습니다.
