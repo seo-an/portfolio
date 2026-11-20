@@ -24,7 +24,11 @@ from bhandara.payroll.overtime_candidates import (
     OvertimeCandidateError, _interval, calculate_overtime_candidates,
 )
 from bhandara.payroll.output import build_payroll_register
-from bhandara.payroll.insurance_candidates import calculate_insurance_candidates
+from bhandara.payroll.insurance_candidates import (
+    calculate_insurance_candidates, read_employee_insurance_status,
+    check_insurance_assessment_against_employee_status,
+    review_employee_insurance_status,
+)
 from bhandara.payroll.tax_withholding import review_taxability_and_withholding
 from bhandara.payroll.leave_wage_adjustments import (
     reconcile_leave_wage_decisions, apply_leave_wage_decisions,
@@ -184,6 +188,7 @@ def build_contract_scoped_overtime_preview(
     pto_wage_plan: Mapping[str, Any] | None = None,
     insurance_assessment_plan: Mapping[str, Any] | None = None,
     withholding_plan: Mapping[str, Any] | None = None,
+    employee_xlsx: str | Path | None = None,
 ) -> dict[str, Any]:
     """Contract-scoped approved overtime is a *candidate*, never final wages.
 
@@ -196,6 +201,16 @@ def build_contract_scoped_overtime_preview(
     coverage = validate_settlement_coverage(
         inputs.for_role("contracts"), plan=settlement_plan,
         period_from=period_from, period_to=period_to,
+    )
+    # Common employee insurance acquisition dates/exclusions are the single
+    # source of enrolment state. No birthdate/age inference or payroll-only
+    # duplicate enrolment entry is needed.
+    employee_insurance_status = (
+        read_employee_insurance_status(
+            employee_xlsx,
+            employee_ids=coverage["segments_by_employee"],
+            period_to=period_to,
+        ) if employee_xlsx is not None else None
     )
     source_work = tuple(verified_work)
     source_approvals = tuple(approved_segments)
@@ -327,6 +342,10 @@ def build_contract_scoped_overtime_preview(
             assessment_plan=insurance_assessment_plan,
             period_from=period_from, period_to=period_to,
         )
+        if employee_insurance_status is not None:
+            check_insurance_assessment_against_employee_status(
+                employee_insurance_status, insurance_review=insurance_review,
+            )
         for employee in components["payroll_rows"]:
             worker = employee["employee_id"]
             # Never silently append duplicate or previously applied insurance.
@@ -360,9 +379,24 @@ def build_contract_scoped_overtime_preview(
         settlement_review["tax_withholding_candidate_review"] = (
             "EXPLICIT_PAY_ITEM_SPLITS_AND_EXTERNAL_TAX_AMOUNTS_REVIEW_ONLY"
         )
+    insurance_review_reasons = review_employee_insurance_status(
+        employee_insurance_status,
+        employee_ids=coverage["segments_by_employee"],
+        insurance_review=insurance_review,
+    )
+    review_reasons = {
+        employee: [
+            *insurance_review_reasons[employee],
+            *([] if tax_review is not None else [
+                "INCOME_TAX_UNVERIFIED", "LOCAL_INCOME_TAX_UNVERIFIED",
+            ]),
+        ]
+        for employee in coverage["segments_by_employee"]
+    }
     out = {
         "payroll_register": build_payroll_register(
             components["payroll_rows"], show_partial_totals=True,
+            review_reasons_by_employee=review_reasons,
         ),
         "settlement_review": settlement_review,
         "status": "PARTIAL_REVIEW_ONLY",
