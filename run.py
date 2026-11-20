@@ -132,6 +132,20 @@ def main(argv: list[str] | None = None) -> int:
                            else Path(__file__).resolve().parent /
                            "bhandara/data/config/paid-time-off.json")
             return tool.main(config_path)
+        if args.module_id == "payroll":
+            if any((args.data_root, args.run_id, args.source, args.input_dir,
+                    args.normalized, args.output_dir, args.operation, args.manifest,
+                    args.scenario_id, args.isolate_worker_failures, args.period,
+                    args.paths_config, args.worktime_result)):
+                print("PAYROLL_TOOL_INVALID: use JSON config, not positional calculation options",
+                      file=sys.stderr)
+                return 2
+            from pathlib import Path
+            from bhandara.payroll.tool_cli import main as payroll_main
+            config = (Path(args.config) if args.config
+                      else Path(__file__).resolve().parent /
+                      "bhandara/data/config/payroll.json")
+            return payroll_main(config)
         if args.module_id == "common-normalizer":
             if any((
                 args.input_dir, args.normalized, args.output_dir,
