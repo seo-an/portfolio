@@ -212,6 +212,8 @@ def build_payroll_register(
             "net_pay": net,
             "review_status": (
                 "검증요청 · 잠정합계" if show_partial_totals and flags
+                else "공제 확인 · 승인 전"
+                if show_partial_totals and review_reasons_by_employee is not None
                 else "REVIEW_REQUIRED" if net is not None
                 else "PARTIAL_REVIEW_ONLY"
             ),
