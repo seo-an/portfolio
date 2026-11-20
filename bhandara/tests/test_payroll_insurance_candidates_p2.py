@@ -238,9 +238,10 @@ class InsuranceOneSheetExcelTests(unittest.TestCase):
         self.assertEqual(row["deductions:INS_HEALTH_INSURANCE"], 107850)
         self.assertEqual(row["deductions:INS_LONGTERM_CARE"], 14171)
         self.assertEqual(row["deductions:INS_EMPLOYMENT_INSURANCE"], 27000)
-        self.assertIsNone(row["gross_pay"])
-        self.assertIsNone(row["deduction_total"])
-        self.assertIsNone(row["net_pay"])
+        self.assertEqual(row["gross_pay"], 3000000)
+        self.assertEqual(row["deduction_total"], 291521)
+        self.assertEqual(row["net_pay"], 2708479)
+        self.assertEqual(row["review_status"], "검증요청 · 잠정합계")
         self.assertEqual(out["approval_state"], "NOT_APPROVED")
         xlsx = self.root / "payroll-result.xlsx"
         write_payroll_result_xlsx(out["payroll_register"], xlsx)
