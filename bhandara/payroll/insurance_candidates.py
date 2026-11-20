@@ -211,6 +211,55 @@ def check_insurance_assessment_against_employee_status(
             )
 
 
+def apply_common_insurance_applicability(
+    assessment_plan: Mapping[str, Any],
+    employee_status: Mapping[str, Mapping[str, Mapping[str, Any]]],
+) -> dict[str, Any]:
+    """Use common employee acquisition data; do not re-enter enrollment in Payroll.
+
+    The employee-specific assessment base is still externally approved. An
+    acquisition date only determines enrolled status as of the period end,
+    NOT a statutory first-month premium or partial-month fraction.
+
+    Legacy *_applicable keys are accepted for compatibility but checked
+    against the canonical common status. Health-linked care may have an
+    explicitly approved exception with applicable=False.
+    """
+    if not isinstance(assessment_plan, Mapping):
+        raise InsuranceCandidateError("assessment_plan: mapping required")
+    selected = assessment_plan.get("assessments")
+    if not isinstance(selected, (list, tuple)):
+        raise InsuranceCandidateError("assessment_plan.assessments: list required")
+    normalized = []
+    for record in selected:
+        if not isinstance(record, Mapping):
+            raise InsuranceCandidateError("assessment: object required")
+        worker = _text(record.get("employee_id"), "assessment.employee_id")
+        if worker not in employee_status:
+            raise InsuranceCandidateError("common employee: insurance assessment has unknown employee")
+        updated = dict(record)
+        states = employee_status[worker]
+        for kind in CONTRIBUTION_KINDS:
+            key = kind + "_applicable"
+            active = states[kind]["state"] == "ENROLLED"
+            if key in updated and updated[key] is not active:
+                raise InsuranceCandidateError(
+                    f"common employee: {kind} applicability conflicts with acquisition status"
+                )
+            updated[key] = active
+        health_enrolled = states["health_insurance"]["state"] == "ENROLLED"
+        care = updated.get("longterm_care_applicable", health_enrolled)
+        if type(care) is not bool or (care and not health_enrolled):
+            raise InsuranceCandidateError(
+                "common employee: longterm care requires enrolled health insurance"
+            )
+        # Exceptions to long-term care require an explicit outside assessment
+        # and applicability reference; no age-based eligibility inference.
+        updated["longterm_care_applicable"] = care
+        normalized.append(updated)
+    return {**assessment_plan, "assessments": normalized}
+
+
 def _text(value: Any, field: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise InsuranceCandidateError(f"{field}: nonempty text required")
