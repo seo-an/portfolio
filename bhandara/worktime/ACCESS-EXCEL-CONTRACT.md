@@ -41,7 +41,7 @@
 
 `employee_id, worker_id, work_date, arrival_time, departure_time, arrival_basis, departure_basis, candidate_status, confirmed, evidence_event_ids, source_vendor`
 
-명시적 `CLOCK_IN`/`CLOCK_OUT`이 있으면 우선 사용합니다. 없고 일반 `ACCESS`만 있다면 같은 직원·같은 날짜에서 **수집 대상 이벤트 중 시간상 최초/최후 기록**을 후보로 만듭니다. 하나뿐이면 도착 후보만 제공하고 퇴근 후보는 공란으로 남깁니다. `OUTING/RETURN/DISARM` 및 경비 세트·인식 실패 기록은 후보로 사용하지 않습니다.
+**출근과 퇴근은 독립적으로** 결정합니다. 명시 `CLOCK_IN`이 있으면 최초 인증을 출근 후보로, 없으면 최초 성공 `ACCESS`(확인된 OUT 기기 제외)를 추정 출근으로 사용합니다. 명시 `CLOCK_OUT`이 있으면 최종 인증을 퇴근 후보로, 없으면 출근 후보보다 시각이 늦은 마지막 성공 `ACCESS`(확인된 IN 기기 제외)를 추정 퇴근으로 사용합니다. 하나뿐인 일반 출입은 양쪽에 중복 사용하지 않습니다. 다중 명시 출퇴근은 최초·최종 후보를 남기되 `MULTIPLE_EXPLICIT_REVIEW`로 표시합니다. `OUTING/RETURN`은 표준 Access Events 시트에 원본 증빙으로 보존하지만 출퇴근 후보로 사용하지 않고, 휴게·반반차·시간차 신청 승인 여부도 추정하지 않습니다. `DISARM`, 경비 세트·인식 실패·UNKNOWN 인증은 출퇴근 후보에서 제외합니다.
 
 - `arrival_basis`: `EXPLICIT_CLOCK_IN`, `INFERRED_FIRST_ACCESS`, `MISSING`.
 - `departure_basis`: `EXPLICIT_CLOCK_OUT`, `INFERRED_LAST_ACCESS`, `MISSING`.

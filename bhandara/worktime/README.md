@@ -12,7 +12,7 @@
 
 - Module은 독립 계산 단위이고 Flow는 Tool 내부의 논리적인 사용 순서입니다. 물리적 `flow/` 디렉터리를 만들지 않습니다.
 - 원본 출입기록은 업체별 `vendor_adapters/`에서 표준 `access-events.xlsx` v0.2로 변환합니다. 출력 시트 `Access Events`, `Attendance Candidates`, `Source Review`, `Metadata`는 업체와 무관하게 동일합니다.
-- `Attendance Candidates`의 첫/마지막 출입은 항상 `confirmed=false`입니다. **근태장부와 서로 다른 증빙으로 보존**합니다.
+- `Attendance Candidates`에서 명시 출근/퇴근을 각각 우선하고, 빠진 쪽만 첫/마지막 성공 출입으로 추정 보완합니다. 단일 출입 기록 재사용·외출/복귀의 출퇴근 후보 전용은 금지합니다. 모든 후보는 `confirmed=false`이며 **근태장부와 서로 다른 증빙으로 보존**합니다.
 - 시차출퇴근·추가근무 등 **사유는 외부 입력을 그대로 보존**합니다. 기록의 방향(더 일찍/늦게)은 계산 가능하지만 승인된 근로 유형은 자동 확정하지 않습니다.
 - 신규 Worktime의 **스케줄 ID 매핑 Reader**, **단일 일자별 사실 Output Excel Writer/Reader**는 구현했습니다. JSON 기반 선택적 Flow/Tool CLI를 **PR #57에서 구현·테스트·병합**했으며, Gearbox/Slack 운영 연동과 Worktime Closing은 후속 작업입니다.
 - Output은 소정·실제·출근 변화량·퇴근 변화량 네 시간 컬럼과 스케줄 ID·외부 근태/휴가 참조만 보존하며, 상태·급여 반영시간·수당 판정 컬럼을 만들지 않습니다.
