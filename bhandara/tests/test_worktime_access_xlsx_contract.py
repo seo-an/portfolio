@@ -265,6 +265,119 @@ class AccessExcelContractTests(unittest.TestCase):
         self.assertEqual(candidate["candidate_status"], "INFERRED_PAIR")
         self.assertFalse(candidate["confirmed"])
 
+    def test_clock_in_without_clock_out_uses_last_successful_access(self):
+        path = self.write(name="clock-in-access.xlsx", events=[
+            self.event(event_id="late", mode="ACCESS",
+                       event_time="2026-11-16T18:15",
+                       source_row_number=2),
+            self.event(event_id="in", mode="CLOCK_IN",
+                       event_time="2026-11-16T09:00",
+                       source_row_number=3),
+            self.event(event_id="outing", mode="OUTING",
+                       event_time="2026-11-16T19:40",
+                       source_row_number=4),
+            self.event(event_id="return", mode="RETURN",
+                       event_time="2026-11-16T20:30",
+                       source_row_number=5),
+            self.event(event_id="failed", mode="ACCESS", auth_status="FAILED",
+                       event_time="2026-11-16T23:00",
+                       source_row_number=6),
+        ])
+        c = read_access_events_xlsx(path)["attendance_candidates"][0]
+        self.assertEqual(c["arrival_time"], "2026-11-16T09:00:00")
+        self.assertEqual(c["departure_time"], "2026-11-16T18:15:00")
+        self.assertEqual(c["arrival_basis"], "EXPLICIT_CLOCK_IN")
+        self.assertEqual(c["departure_basis"], "INFERRED_LAST_ACCESS")
+        self.assertEqual(c["candidate_status"], "PARTIAL_EXPLICIT")
+        self.assertEqual(c["evidence_event_ids"], "in,late")
+        self.assertFalse(c["confirmed"])
+
+    def test_clock_out_without_clock_in_uses_first_successful_access(self):
+        path = self.write(name="access-clock-out.xlsx", events=[
+            self.event(event_id="out", mode="CLOCK_OUT",
+                       event_time="2026-11-16T18:00", source_row_number=2),
+            self.event(event_id="middle", mode="ACCESS",
+                       event_time="2026-11-16T12:00", source_row_number=3),
+            self.event(event_id="first", mode="ACCESS",
+                       event_time="2026-11-16T08:40", source_row_number=4),
+        ])
+        c = read_access_events_xlsx(path)["attendance_candidates"][0]
+        self.assertEqual(c["arrival_time"], "2026-11-16T08:40:00")
+        self.assertEqual(c["departure_time"], "2026-11-16T18:00:00")
+        self.assertEqual(c["arrival_basis"], "INFERRED_FIRST_ACCESS")
+        self.assertEqual(c["departure_basis"], "EXPLICIT_CLOCK_OUT")
+        self.assertEqual(c["candidate_status"], "PARTIAL_EXPLICIT")
+        self.assertEqual(c["evidence_event_ids"], "first,out")
+
+    def test_single_access_not_reused_and_device_direction_is_respected(self):
+        one = self.write(name="single-access.xlsx", events=[
+            self.event(event_id="solo", mode="ACCESS",
+                       event_time="2026-11-16T09:00"),
+        ])
+        c = read_access_events_xlsx(one)["attendance_candidates"][0]
+        self.assertEqual(c["arrival_basis"], "INFERRED_FIRST_ACCESS")
+        self.assertEqual(c["departure_basis"], "MISSING")
+        self.assertEqual(c["departure_time"], "")
+        known_in = self.write(name="entrance-only.xlsx", events=[
+            self.event(event_id="morning", mode="ACCESS", direction="IN",
+                       event_time="2026-11-16T09:00", source_row_number=2),
+            self.event(event_id="evening", mode="ACCESS", direction="IN",
+                       event_time="2026-11-16T18:00", source_row_number=3),
+        ])
+        c = read_access_events_xlsx(known_in)["attendance_candidates"][0]
+        self.assertEqual(c["arrival_basis"], "INFERRED_FIRST_ACCESS")
+        self.assertEqual(c["departure_basis"], "MISSING")
+        known_out = self.write(name="exit-only.xlsx", events=[
+            self.event(event_id="a", mode="ACCESS", direction="OUT",
+                       event_time="2026-11-16T09:00", source_row_number=2),
+            self.event(event_id="b", mode="ACCESS", direction="OUT",
+                       event_time="2026-11-16T18:00", source_row_number=3),
+        ])
+        c = read_access_events_xlsx(known_out)["attendance_candidates"][0]
+        self.assertEqual(c["arrival_basis"], "MISSING")
+        self.assertEqual(c["departure_basis"], "MISSING")
+
+    def test_multiple_explicit_punches_choose_boundary_but_remain_review(self):
+        path = self.write(name="multi-explicit.xlsx", events=[
+            self.event(event_id="in-late", mode="CLOCK_IN",
+                       event_time="2026-11-16T09:10", source_row_number=2),
+            self.event(event_id="in-early", mode="CLOCK_IN",
+                       event_time="2026-11-16T08:55", source_row_number=3),
+            self.event(event_id="out-early", mode="CLOCK_OUT",
+                       event_time="2026-11-16T17:50", source_row_number=4),
+            self.event(event_id="out-late", mode="CLOCK_OUT",
+                       event_time="2026-11-16T18:20", source_row_number=5),
+        ])
+        c = read_access_events_xlsx(path)["attendance_candidates"][0]
+        self.assertEqual(c["arrival_time"], "2026-11-16T08:55:00")
+        self.assertEqual(c["departure_time"], "2026-11-16T18:20:00")
+        self.assertEqual(c["candidate_status"], "MULTIPLE_EXPLICIT_REVIEW")
+        self.assertEqual(len(c["evidence_event_ids"].split(",")), 4)
+        self.assertFalse(c["confirmed"])
+
+    def test_outing_return_disarm_unknown_and_failed_cannot_make_commute(self):
+        path = self.write(name="auxiliary-events.xlsx", events=[
+            self.event(event_id="leave", mode="OUTING",
+                       event_time="2026-11-16T08:00", source_row_number=2),
+            self.event(event_id="back", mode="RETURN",
+                       event_time="2026-11-16T18:00", source_row_number=3),
+            self.event(event_id="disarm", mode="DISARM",
+                       event_time="2026-11-16T07:00", source_row_number=4),
+            self.event(event_id="unknown", mode="UNKNOWN",
+                       event_time="2026-11-16T19:00", source_row_number=5),
+            self.event(event_id="failed", mode="ACCESS", auth_status="FAILED",
+                       event_time="2026-11-16T20:00", source_row_number=6),
+            self.event(event_id="unverified", mode="ACCESS", auth_status="UNKNOWN",
+                       event_time="2026-11-16T21:00", source_row_number=7),
+        ])
+        result = read_access_events_xlsx(path)
+        self.assertEqual(len(result["events"]), 6)
+        c = result["attendance_candidates"][0]
+        self.assertEqual(c["candidate_status"], "NO_ATTENDANCE_CANDIDATE")
+        self.assertEqual(c["arrival_time"], "")
+        self.assertEqual(c["departure_time"], "")
+        self.assertEqual(c["evidence_event_ids"], "")
+
     def test_source_exclusions_do_not_block_normalized_success(self):
         excluded = self.review()
         excluded["status"] = "EXCLUDED"
