@@ -23,6 +23,7 @@ def build_parser() -> argparse.ArgumentParser:
     bhandara = commands.add_parser("bhandara", help="Run a Bhandara Tool")
     bhandara.add_argument("module_id", help="Tool or common-normalizer")
     bhandara.add_argument("--config", help="Private JSON settings path")
+    bhandara.add_argument("--module", help="One independently approved Module ID (PTO only)")
     bhandara.add_argument("--data-root", help="Normalizer private workspace")
     bhandara.add_argument("--run-id", help="Normalizer isolated run ID")
     bhandara.add_argument("--source", help="Normalizer source path")
@@ -30,6 +31,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def _run_json_tool(args: argparse.Namespace) -> int:
+    if args.module is not None:
+        if args.module_id != "paid-time-off" or not args.config:
+            print("MODULE_INVALID: supported only with PTO --config", file=sys.stderr)
+            return 2
+        if any((args.data_root, args.run_id, args.source)):
+            print("MODULE_INVALID: unexpected normalizer arguments", file=sys.stderr)
+            return 2
+        module_cli = import_module("bhandara.paid-time-off.module_cli")
+        return module_cli.main(args.config, module=args.module)
     if any((args.data_root, args.run_id, args.source)):
         print("TOOL_INVALID: --data-root, --run-id and --source "
               "are common-normalizer-only", file=sys.stderr)
@@ -46,6 +56,9 @@ def _run_json_tool(args: argparse.Namespace) -> int:
 
 
 def _run_normalizer(args: argparse.Namespace) -> int:
+    if args.module is not None:
+        print("MODULE_INVALID: common-normalizer does not accept --module", file=sys.stderr)
+        return 2
     from bhandara.common.module.normalizer.runner import (
         NormalizerRunError, run_normalizer,
     )

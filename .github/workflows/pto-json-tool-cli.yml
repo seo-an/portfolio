@@ -5,6 +5,7 @@ on:
     paths:
       - "bhandara/paid-time-off/**"
       - "bhandara/tests/test_pto_json_tool_cli.py"
+      - "bhandara/tests/test_pto_single_module_cli.py"
       - "run.py"
       - ".github/workflows/pto-json-tool-cli.yml"
   workflow_dispatch:
@@ -23,6 +24,7 @@ jobs:
         run: |
           python -m unittest \
             bhandara.tests.test_pto_json_tool_cli \
+            bhandara.tests.test_pto_single_module_cli \
             bhandara.tests.test_paid_time_off_entitlement_excel \
             bhandara.tests.test_paid_time_off_deduction_excel \
             bhandara.tests.test_paid_time_off_usage_excel \
