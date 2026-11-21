@@ -155,10 +155,14 @@ def _normalized_review(value: Mapping[str, Any], vendor: str) -> dict[str, Any]:
 
 
 def _candidates(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Resolve explicit attendance modes; use first/last generic ACCESS only otherwise.
+    """Select unapproved commute candidates separately for arrival/departure.
 
-    Excluded security-setting/failed-auth raw records must never reach this
-    stage. A candidate is never an approved attendance punch.
+    Prefer earliest explicit CLOCK_IN and latest explicit CLOCK_OUT. When one
+    side has no explicit event, first/last successful ACCESS may supply that
+    *side only*. A single ACCESS is never both arrival and departure, and a
+    known physical OUT/IN is not an arrival/departure respectively.
+    OUTING and RETURN remain eligible raw source events, but cannot prove
+    commute or authorized rest/time off. All candidates remain unconfirmed.
     """
     from collections import defaultdict
 
@@ -168,35 +172,52 @@ def _candidates(events: list[dict[str, Any]]) -> list[dict[str, Any]]:
     output = []
     for key, rows in sorted(groups.items()):
         sorted_rows = sorted(rows, key=lambda row: (row["event_timestamp"], row["event_id"]))
-        ins = [r for r in sorted_rows if r["mode"] == "CLOCK_IN"
-               and r["auth_status"] != "FAILED"]
-        outs = [r for r in sorted_rows if r["mode"] == "CLOCK_OUT"
-                and r["auth_status"] != "FAILED"]
-        generic = [r for r in sorted_rows if r["mode"] == "ACCESS"
-                   and r["auth_status"] != "FAILED"]
-        selected: list[dict[str, Any]] = []
-        if ins or outs:
-            arrival, departure = (ins[0] if len(ins) == 1 else None,
-                                  outs[0] if len(outs) == 1 else None)
-            arrival_basis = "EXPLICIT_CLOCK_IN" if arrival else "MISSING"
-            departure_basis = "EXPLICIT_CLOCK_OUT" if departure else "MISSING"
-            status = ("EXPLICIT_PAIR" if arrival and departure
-                      else "MULTIPLE_EXPLICIT_REVIEW" if len(ins) > 1 or len(outs) > 1
-                      else "PARTIAL_EXPLICIT")
-            selected = ins + outs
-        elif generic:
-            arrival = generic[0]
-            departure = generic[-1] if len(generic) > 1 else None
-            arrival_basis = "INFERRED_FIRST_ACCESS"
-            departure_basis = "INFERRED_LAST_ACCESS" if departure else "MISSING"
-            status = "INFERRED_PAIR" if departure else "SINGLE_ACCESS"
-            selected = generic if len(generic) <= 2 else [generic[0], generic[-1]]
-        else:
-            arrival = departure = None
-            arrival_basis = departure_basis = "MISSING"
-            status = "NO_ATTENDANCE_CANDIDATE"
+        successful = [r for r in sorted_rows if r["auth_status"] == "SUCCESS"]
+        ins = [r for r in successful if r["mode"] == "CLOCK_IN"]
+        outs = [r for r in successful if r["mode"] == "CLOCK_OUT"]
+        generic = [r for r in successful if r["mode"] == "ACCESS"]
+        arrival_access = [r for r in generic if r["direction"] != "OUT"]
+
+        arrival = ins[0] if ins else (arrival_access[0] if arrival_access else None)
+        departure_access = [
+            r for r in generic
+            if arrival is not None
+            and r["event_timestamp"] > arrival["event_timestamp"]
+            and r["direction"] != "IN"
+        ]
+        departure = outs[-1] if outs else (
+            departure_access[-1] if departure_access else None
+        )
+        arrival_basis = ("EXPLICIT_CLOCK_IN" if ins else
+                         "INFERRED_FIRST_ACCESS" if arrival else "MISSING")
+        departure_basis = ("EXPLICIT_CLOCK_OUT" if outs else
+                           "INFERRED_LAST_ACCESS" if departure else "MISSING")
+
         if arrival and departure and departure["event_timestamp"] <= arrival["event_timestamp"]:
             status = "TIME_SEQUENCE_REVIEW"
+        elif len(ins) > 1 or len(outs) > 1:
+            status = "MULTIPLE_EXPLICIT_REVIEW"
+        elif arrival_basis == "EXPLICIT_CLOCK_IN" and departure_basis == "EXPLICIT_CLOCK_OUT":
+            status = "EXPLICIT_PAIR"
+        elif arrival and departure and not ins and not outs:
+            status = "INFERRED_PAIR"
+        elif arrival and departure:
+            status = "PARTIAL_EXPLICIT"
+        elif arrival_basis == "INFERRED_FIRST_ACCESS" and not departure:
+            status = "SINGLE_ACCESS"
+        elif arrival or departure:
+            status = "PARTIAL_EXPLICIT"
+        else:
+            status = "NO_ATTENDANCE_CANDIDATE"
+
+        # Preserve every explicit punch for multi-entry review, as before.
+        # Add only observed ACCESS records actually used as a fallback.
+        selected = list(ins) + list(outs)
+        for fallback in (arrival, departure):
+            if fallback is not None and fallback["mode"] == "ACCESS":
+                if fallback not in selected:
+                    selected.append(fallback)
+        selected.sort(key=lambda r: (r["event_timestamp"], r["event_id"]))
         output.append({
             "employee_id": key[0], "worker_id": key[1], "work_date": key[2],
             "arrival_time": arrival["event_timestamp"] if arrival else "",
