@@ -1,5 +1,8 @@
 # Bhandara Stage 1 — Tool 간 Payroll Workflow
 
+> **상태 정정 (2026-11-21):** 이 문서는 Portfolio 독립 Workflow의 호출·검증 계약을 설명하며, 아래의 `agent-config 수정 PAUSE` 또는 `Slack 운영 미검증` 표현은 과거 단계의 메모다. PTO 선택·Worktime·Payroll 연계와 실행/재사용/SHA 검증 코드는 병합돼 있다. 11월 21일에는 Hermes의 **단일 합성 출입원장 Slack 자연어 집계**까지만 운영 성공이 보고됐다. **전체 Workflow를 Slack에서 실행하거나 Payroll 복수 원본을 역할에 연결하는 기능은 아직 미검증/미구현**이다. 최신 [운영 인수인계](OPERATIONS-HANDOFF-2026-11-21.md)를 참조한다.
+
+
 > **상태: Portfolio PR #80 사용자 서버 테스트 및 병합 완료.** 별도 계산 모듈/DB/서버를 만들지 않고 기존 독립 Tool의 호출·파일 인계만 연결한다. 운영 Slack/Gearbox 배포는 이 작업 범위가 아니다.
 
 ## 목적과 원칙

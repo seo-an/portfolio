@@ -16,6 +16,9 @@ server_cleanup: "NOT_YET_EXECUTED"
 
 # Bhandara 운영 인수인계 (2026-11-20 상태 정정)
 
+> **후속 인수인계가 발행됨 (2026-11-21):** 이 문서의 PR 대기/서버 정리/Slack E2E 미확인은 11월 20일 기준 이력이다. 다음날 합성 Slack에서 파일-only ACK, 업로드 후 자연어 검토, 동시 파일+명령 검토, 직접 `&bhandara review attendance`가 실제 통과했다. `&` 명령 소유권·Moksha tombstone·긴급 `&delete` 관련 코드도 agent-config #222~#224에 병합됐지만, 최신 이미지 배포/실제 삭제 검증은 남아 있다. **현재 작업은 [2026-11-21 운영 인수인계](OPERATIONS-HANDOFF-2026-11-21.md)에서 시작**한다.
+
+
 이 문서는 이전 Stage 1~4 작업의 현재 상태를 **완료된 코드와 운영 검증으로 구분**한 최신 인수인계다. 이전의 “Stage 2 미시작”, “PR #81 검증 대기”, “agent-config 편집 PAUSE” 등은 더 이상 정확하지 않다. 운영 전환의 검증 절차와 실제 합성 Slack 시나리오는 [agent-config 운영 판정서](https://github.com/seo-an/agent-config/blob/main/operations/runbooks/bhandara-go-live-readiness-2026-11-20.md)를 따르며, 해당 문서가 담긴 PR #212가 병합되기 전에는 [PR #212 브랜치의 정본](https://github.com/seo-an/agent-config/pull/212)을 참고한다.
 
 ## 1. 완료된 코드와 테스트

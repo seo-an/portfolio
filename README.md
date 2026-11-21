@@ -1,5 +1,8 @@
 # Bhandara — HR 계산·검토용 독립 Python Tools
 
+> **2026-11-21 운영 갱신:** 11월 20일의 `Slack 실제 운영 미검증` 문구는 당시 기록이다. 이후 **파일-only ACK, 파일 업로드 후 스레드 자연어 집계, 파일+자연어 동시 집계, `&bhandara review attendance`**가 합성 CSV를 사용한 실제 Slack에서 PASS로 확인됐다. 단, **사람별 최초·최종 XLSX 실제 Slack 전송, PTO/Worktime/Payroll 전체 Tool의 Slack E2E, 내부 모든 Module의 독립 연결, 다중 Payroll 첨부의 파일 역할 매핑은 여전히 미검증/미연결**이다. 최신 판단·다음 단계: [2026-11-21 인수인계](bhandara/OPERATIONS-HANDOFF-2026-11-21.md). Hermes 긴급 `&delete`는 agent-config 코드 병합까지 완료됐으나 최신 이미지 배포/실제 삭제 운영 검증은 미확인이다.
+
+
 Bhandara는 **Paid Time Off(유급휴가), Worktime(근태), Payroll(급여)** 세 Tool과 이들을 명시적으로 연결하는 **Workflow**를 제공한다. 각 Tool은 독립 JSON 설정으로 실행할 수 있으며, 공통 Excel 읽기·직원 ID·출입업체 매핑·파일 SHA-256 검증 기능을 공유한다.
 
 > **2026-11-20 현황:** 세 Tool과 Workflow 연결은 구현·병합됐다(Portfolio #80). 구형 계산 경로 철수(#81), Excel 원본 보호·실행용 폴더·Git 제외(#82)도 병합됐다. Hermes 자연어 Index·Ananda 출입원장 파일 Module 코드는 agent-config #211에서 병합되고 합성 테스트됐다. **실제 Slack 도구 발견·파일 전송·후속 무응답 재발 여부는 운영 배포 후 확인해야 한다.** 독립 Tool 내부 모든 Module을 Slack에서 개별 실행하는 기능은 아직 연결되지 않았다.
