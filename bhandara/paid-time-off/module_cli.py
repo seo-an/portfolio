@@ -40,7 +40,7 @@ def execute_module(config_path: str | Path, *, module: str) -> dict[str, str]:
     A dependent Module must consume explicitly named prior-result files;
     it must not create earlier entitlement, deduction or usage results.
     """
-    if module not in MODULES or type(module) is not str:
+    if type(module) is not str or module not in MODULES:
         raise ModuleScopeError("MODULE_UNKNOWN")
     tool = import_module("bhandara.paid-time-off.tool_cli")
     config = tool._read_config(Path(config_path).resolve())
