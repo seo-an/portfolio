@@ -207,7 +207,7 @@ class VendorAdapterTests(unittest.TestCase):
         self.assertEqual(c["candidate_status"], "SINGLE_ACCESS")
         self.assertEqual(c["departure_time"], "")
 
-    def test_partial_explicit_does_not_borrow_generic_access(self):
+    def test_partial_explicit_uses_later_access_for_missing_departure(self):
         rows = [
             self.caps(mode="출근(인증)", row_number=2),
             self.caps(mode="출입", stamp="18:10:00", row_number=3),
@@ -215,7 +215,10 @@ class VendorAdapterTests(unittest.TestCase):
         _, normalized = self.run_file("CAPS", rows)
         c = normalized["attendance_candidates"][0]
         self.assertEqual(c["candidate_status"], "PARTIAL_EXPLICIT")
-        self.assertEqual(c["departure_time"], "")
+        self.assertEqual(c["arrival_basis"], "EXPLICIT_CLOCK_IN")
+        self.assertEqual(c["departure_basis"], "INFERRED_LAST_ACCESS")
+        self.assertEqual(c["departure_time"], "2026-11-16T18:10:00")
+        self.assertFalse(c["confirmed"])
 
     def test_outing_return_alone_do_not_generate_clock_candidates(self):
         rows = [
