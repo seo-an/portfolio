@@ -1,6 +1,8 @@
+> **2026-11-23 PTO Cycle 운영 갱신:** 계산 저장소 `portfolio`의 독립 PTO Module을 실행하는 **Ananda 자연어 → 인증된 Native Gateway → 실제 Slack 검토용 Excel 전송** 연결이 `seo-an/agent-config` PR #258·#260·#262·#261을 통해 운영 배포됐다. 사용자 보고 `PTO_CYCLE_DEPLOY=PASS`; Entitlement·Deduction Quantity·Usage Ledger·Closing 네 결과 Excel의 합성 Slack 검증 완료. 원본 삭제 뒤 기존 결과 스냅샷은 AVAILABLE/STALE로 유지하는 새 계약은 `agent-config` 소유다. **Worktime·Payroll의 모든 Module Slack Cycle 및 전체 Workflow E2E 완료를 뜻하지 않는다.** 이전 'PTO 운영 연결 미완료' 문구는 당시 이력이다. 현행 운영 절차: [PTO Cycle Runbook](https://github.com/seo-an/agent-config/blob/main/operations/runbooks/pto-cycle-operations.md), [최종 인수인계](https://github.com/seo-an/agent-config/blob/main/operations/handoffs/cycle-pto-operations-handoff-20261123.md).
+
 # Bhandara — HR 계산·검토용 독립 Python Tools
 
-> **2026-11-21 운영 갱신:** 11월 20일의 `Slack 실제 운영 미검증` 문구는 당시 기록이다. 이후 **파일-only ACK, 파일 업로드 후 스레드 자연어 집계, 파일+자연어 동시 집계, `&bhandara review attendance`**가 합성 CSV를 사용한 실제 Slack에서 PASS로 확인됐다. 단, **사람별 최초·최종 XLSX 실제 Slack 전송, PTO/Worktime/Payroll 전체 Tool의 Slack E2E, 내부 모든 Module의 독립 연결, 다중 Payroll 첨부의 파일 역할 매핑은 여전히 미검증/미연결**이다. 최신 판단·다음 단계: [2026-11-21 인수인계](bhandara/OPERATIONS-HANDOFF-2026-11-21.md). Hermes 긴급 `&delete`는 agent-config 코드 병합까지 완료됐으나 최신 이미지 배포/실제 삭제 운영 검증은 미확인이다.
+> **2026-11-21 운영 갱신:** 11월 20일의 `Slack 실제 운영 미검증` 문구는 당시 기록이다. 이후 **파일-only ACK, 파일 업로드 후 스레드 자연어 집계, 파일+자연어 동시 집계, `&bhandara review attendance`**가 합성 CSV를 사용한 실제 Slack에서 PASS로 확인됐다. 단, **Worktime/Payroll 전체 Tool의 Slack Cycle E2E, 내부 모든 Module의 독립 연결, 다중 Payroll 첨부의 파일 역할 매핑은 여전히 미검증/미연결**이다. PTO 네 Module은 이후 2026-11-23 별도로 실증됐다. 최신 판단·다음 단계: [2026-11-21 인수인계](bhandara/OPERATIONS-HANDOFF-2026-11-21.md). Hermes 긴급 `&delete`는 agent-config 코드 병합까지 완료됐으나 최신 이미지 배포/실제 삭제 운영 검증은 미확인이다.
 
 
 Bhandara는 **Paid Time Off(유급휴가), Worktime(근태), Payroll(급여)** 세 Tool과 이들을 명시적으로 연결하는 **Workflow**를 제공한다. 각 Tool은 독립 JSON 설정으로 실행할 수 있으며, 공통 Excel 읽기·직원 ID·출입업체 매핑·파일 SHA-256 검증 기능을 공유한다.

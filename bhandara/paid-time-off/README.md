@@ -1,8 +1,10 @@
+> **2026-11-23 PTO Cycle 운영 갱신:** 계산 저장소 `portfolio`의 독립 PTO Module을 실행하는 **Ananda 자연어 → 인증된 Native Gateway → 실제 Slack 검토용 Excel 전송** 연결이 `seo-an/agent-config` PR #258·#260·#262·#261을 통해 운영 배포됐다. 사용자 보고 `PTO_CYCLE_DEPLOY=PASS`; Entitlement·Deduction Quantity·Usage Ledger·Closing 네 결과 Excel의 합성 Slack 검증 완료. 원본 삭제 뒤 기존 결과 스냅샷은 AVAILABLE/STALE로 유지하는 새 계약은 `agent-config` 소유다. **Worktime·Payroll의 모든 Module Slack Cycle 및 전체 Workflow E2E 완료를 뜻하지 않는다.** 이전 'PTO 운영 연결 미완료' 문구는 당시 이력이다. 현행 운영 절차: [PTO Cycle Runbook](https://github.com/seo-an/agent-config/blob/main/operations/runbooks/pto-cycle-operations.md), [최종 인수인계](https://github.com/seo-an/agent-config/blob/main/operations/handoffs/cycle-pto-operations-handoff-20261123.md).
+
 # Paid Time Off — 한국 연차유급휴가 Tool
 
-> **현재 기준: 2026-11-19, PR #56 병합 후.** Entitlement·Deduction Quantity·Allocation·Expiry/Carryover·사용내역·Closing의 독립 계산·Excel 및 **JSON 기반 선택적 Tool Flow/CLI 구현과 합성·서버 테스트를 완료**했습니다. **Gearbox/Slack 운영 연결 및 실자료 검증은 미완료**입니다.
+> **2026-11-19 계산기 구현 이력:** Entitlement·Deduction Quantity·Allocation·Expiry/Carryover·사용내역·Closing의 독립 계산·Excel 및 **JSON 기반 선택적 Tool Flow/CLI 구현과 합성·서버 테스트를 완료**했습니다. **Gearbox/Slack 운영 연결 및 실자료 검증은 미완료**입니다.
 >
-**현행 Paid Time Off Tool은 독립 JSON CLI와 Workflow 인계를 지원합니다. 실제 Hermes·Slack 운영 연결은 별도 단계입니다.**
+**현재 Paid Time Off Tool은 독립 JSON CLI·Workflow 인계와, 별도 agent-config의 Ananda Slack PTO Cycle 연결을 모두 지원합니다. 일반 Worktime/Payroll Slack Cycle은 별도입니다.**
 
 ## 1. 핵심 구조
 

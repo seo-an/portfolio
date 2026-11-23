@@ -9,9 +9,13 @@ calculator_implementation: "MERGED"
 slack_native_ack_and_semantic_attendance_review: "USER_REPORTED_LIVE_PASS"
 first_last_excel_slack_upload: "LIVE_NOT_VERIFIED"
 emergency_delete: "MERGED_BUT_LIVE_NOT_VERIFIED"
+pto_cycle_four_modules_slack_synthetic: "USER_REPORTED_LIVE_PASS_2026-11-23"
+pto_cycle_gateway_deployment: "USER_REPORTED_PTO_CYCLE_DEPLOY_PASS"
 ---
 
 # Bhandara 최신 인수인계 — 2026-11-21
+
+> **2026-11-23 추가 완료:** 이 문서는 11-21 당시 기록이다. PTO 네 독립 Module(Entitlement/Deduction Quantity/Usage Ledger/Closing)은 Ananda의 실제 합성 Slack 업로드/응답에서 검증되었고, `agent-config` #261 운영 ON + #262 스냅샷 계약 병합 후 `PTO_CYCLE_DEPLOY=PASS`로 배포 확인됐다. 계산과 무관한 Worktime·Payroll의 전체 Slack 연결 및 Payroll 다중 입력 자동 할당은 여전히 별도 과제다. 정본은 [PTO Cycle 운영 Runbook](https://github.com/seo-an/agent-config/blob/main/operations/runbooks/pto-cycle-operations.md)과 [최종 인수인계](https://github.com/seo-an/agent-config/blob/main/operations/handoffs/cycle-pto-operations-handoff-20261123.md)다.
 
 이 문서는 [11월 20일 기존 인수인계](OPERATIONS-HANDOFF-2026-11-20.md)를 **현재 관찰 상태에 맞춰 보완**한다. 기존 문서는 그 시점의 역사적 현황이며, `Slack 운영 미검증` 문구를 현재 전체 기능이 미동작한다는 뜻으로 읽지 않는다.
 

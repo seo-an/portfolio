@@ -1,3 +1,5 @@
+> **2026-11-23 PTO Cycle 운영 갱신:** 계산 저장소 `portfolio`의 독립 PTO Module을 실행하는 **Ananda 자연어 → 인증된 Native Gateway → 실제 Slack 검토용 Excel 전송** 연결이 `seo-an/agent-config` PR #258·#260·#262·#261을 통해 운영 배포됐다. 사용자 보고 `PTO_CYCLE_DEPLOY=PASS`; Entitlement·Deduction Quantity·Usage Ledger·Closing 네 결과 Excel의 합성 Slack 검증 완료. 원본 삭제 뒤 기존 결과 스냅샷은 AVAILABLE/STALE로 유지하는 새 계약은 `agent-config` 소유다. **Worktime·Payroll의 모든 Module Slack Cycle 및 전체 Workflow E2E 완료를 뜻하지 않는다.** 이전 'PTO 운영 연결 미완료' 문구는 당시 이력이다. 현행 운영 절차: [PTO Cycle Runbook](https://github.com/seo-an/agent-config/blob/main/operations/runbooks/pto-cycle-operations.md), [최종 인수인계](https://github.com/seo-an/agent-config/blob/main/operations/handoffs/cycle-pto-operations-handoff-20261123.md).
+
 # Bhandara 사용 안내서
 
 > **최신 운영 상태 (2026-11-21):** 본문 11월 20일 기준의 `Slack E2E 미검증`은 당시 이력이다. 이후 Ananda에서 합성 파일-only ACK, 업로드 후 자연어 검토, 파일과 명령 동시 전송, 직접 `&bhandara review attendance` 집계가 실제 Slack에서 성공했다. **실제 XLSX 파일 송신/모든 Tool·Module 연결/긴급 삭제 실증까지 완료된 것은 아니다.** 현재 수행 범위와 남은 항목은 [11월 21일 인수인계](OPERATIONS-HANDOFF-2026-11-21.md)를 우선한다.
