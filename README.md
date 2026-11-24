@@ -2,6 +2,8 @@
 
 # Bhandara — HR 계산·검토용 독립 Python Tools
 
+> **2026-11-24 PTO Entitlement 수정 완료:** [Portfolio PR #89](https://github.com/seo-an/portfolio/pull/89) 병합. 회계연도 기준 입사 첫해에도 1~11개월차 월별 개근 발생분을 해당 발생 연도에 합산한다. 최초 회계연도 비례 부여는 별개이며 월간 근태 누락은 `판정 안됨`이다. `basis` 미지정 시 `입사일 기준`, `fiscal_year_start` 미지정 시 `01-01`을 유지한다. GitHub Actions PTO 및 전체 Bhandara unittest 성공, 사용자 서버 Entitlement unittest 28개 PASS 보고. 운영 JSON·Gateway·다른 Module 변경 없음.
+
 > **2026-11-21 운영 갱신:** 11월 20일의 `Slack 실제 운영 미검증` 문구는 당시 기록이다. 이후 **파일-only ACK, 파일 업로드 후 스레드 자연어 집계, 파일+자연어 동시 집계, `&bhandara review attendance`**가 합성 CSV를 사용한 실제 Slack에서 PASS로 확인됐다. 단, **Worktime/Payroll 전체 Tool의 Slack Cycle E2E, 내부 모든 Module의 독립 연결, 다중 Payroll 첨부의 파일 역할 매핑은 여전히 미검증/미연결**이다. PTO 네 Module은 이후 2026-11-23 별도로 실증됐다. 최신 판단·다음 단계: [2026-11-21 인수인계](bhandara/OPERATIONS-HANDOFF-2026-11-21.md). Hermes 긴급 `&delete`는 agent-config 코드 병합까지 완료됐으나 최신 이미지 배포/실제 삭제 운영 검증은 미확인이다.
 
 
