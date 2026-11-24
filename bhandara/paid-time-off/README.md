@@ -32,7 +32,7 @@
 ```
 
 - **Entitlement**는 확정된 월간·연간 근태 판정을 받아 해당 연도의 연차 발생량만 계산합니다. `eligibility`를 PTO 내부에서 다시 실행하지 않습니다.
-- **회계연도 기준 입사 첫해**에도 입사 후 첫 11개월의 월별 발생분을 해당 발생 연도에 반영합니다. 최초 회계연도 비례 부여와 별도 발생 건으로 보존하고, 월간 근태 증빙이 누락되면 0일로 확정하지 않습니다.
+- **회계연도 기준 입사 첫해**에도 입사 후 첫 11개월의 월별 발생분을 해당 발생 연도에 반영합니다. 최초 회계연도 비례 부여와 별도 발생 건으로 보존하고, 월간 근태 증빙이 누락되면 0일로 확정하지 않습니다. **Portfolio PR #89(2026-11-24 병합), 서버 Entitlement unittest 28개 PASS**로 검증했습니다. 입사일 기준 및 회계연도 시작일 기본값은 각각 `입사일 기준`, `01-01`입니다.
 - **Deduction Quantity**는 외부 승인된 휴가 시간 ÷ 1일 기준시간(기본 8시간)을 일수로 환산합니다. 승인·취소 결정을 직접 하지 않습니다.
 - **Allocation**은 Tool 내부 `allocation.py`의 순수 함수입니다. `request_id`와 `grant_id`를 사용일에 맞춰 연결합니다. **독립 업무 Module이 아닙니다.**
 - **Expiry & Carryover**는 확정 유효기간과 남은 발생분을 마감 경계에서 만료·이월로 판정합니다. **차감 배정은 하지 않습니다.**
@@ -43,7 +43,7 @@
 
 | 항목 | 현재 구현 | 아직 하지 않은 것 |
 |---|---|---|
-| Entitlement | `calculation.py`, `runner.run_entitlement()`, 발생요약/상세 Excel, 안정적 `grant_id`·반영발생일수 | 실제 운영 활성화 |
+| Entitlement | `calculation.py`, `runner.run_entitlement()`, 발생요약/상세 Excel, 안정적 `grant_id`·반영발생일수 | 개인별 법적·사내 정책 적정성 및 실자료 승인 검토는 별개 |
 | Deduction Quantity | `calculation.py`, `runner.run_deduction_quantity()`, 차감요약/상세 Excel, 숨김 정확한 분자·분모 | 직원별 1일 기준시간 자동 정책 연결 |
 | Allocation | `allocation.py`, 발생·사용 신청별 배정, 음수 부족분, 미래 예약 | 외부 자동 상계 API(만들지 않기로 결정) |
 | 발생자료 결합 | `source_join.py`, 당년 Entitlement·외부 대휴·Closing 잔여를 ID로 결합 | 실자료 연속운영 검증 |
@@ -51,7 +51,7 @@
 | Expiry & Carryover | `expiry-carryover/calculation.py`, 만료·이월·수당 검토 표시 | 권리·현금 지급 법적 판정 |
 | Closing | `closing/calculation.py` + `runner_closing.py`, `closing-result.xlsx` | 자동 마감 승인 및 월별/분기별 실제 운영 |
 | Use Promotion | 독립 Module 미구현 | 대상·기한·통지·증빙·결과 계약 협의 |
-| Tool CLI | `tool_cli.py`, `config.example.json`, `run.py bhandara paid-time-off` | 선택 Flow/독립 CLI 구현; Gearbox/Slack 운영 연동 미완료 |
+| Tool CLI | `tool_cli.py`, `config.example.json`, `run.py bhandara paid-time-off` | 독립 CLI 완료; PTO 네 Module의 Ananda Native Slack Cycle 운영 연동은 `agent-config`에서 완료. Worktime·Payroll 전체는 별도 |
 
 ## 3. 입력 자료와 원본의 소유권
 
