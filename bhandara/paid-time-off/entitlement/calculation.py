@@ -15,7 +15,7 @@ from typing import Iterable, Mapping, Any
 
 from . import (
     ELIGIBLE, NOT_ELIGIBLE, UNDETERMINED, add_months,
-    calculate_anniversary_grants,
+    calculate_anniversary_grants, calculate_first_year_monthly_grants,
 )
 
 BASIS_ANNIVERSARY = "입사일 기준"
@@ -403,6 +403,27 @@ def calculate_employee(
                     ))
             previous_boundary = boundary
             boundary = date(boundary.year + 1, boundary.month, boundary.day)
+
+        # First-year monthly rights use hire-date anniversaries even if the
+        # fiscal proration boundary has not occurred yet. Keep fiscal proration
+        # separate and report only grants in this calculation year.
+        for grant in calculate_first_year_monthly_grants(
+            hire_date=hire, as_of_date=effective_as_of,
+            monthly_eligibility=monthly,
+        ):
+            if not calculation_start <= grant["grant_date"] <= effective_as_of:
+                continue
+            raw = (
+                Fraction(grant["raw_days"])
+                if grant["raw_days"] is not None else None
+            )
+            results.append(_make_event(
+                employee_id, basis, "월별 발생",
+                grant["grant_date"], grant["period_start"], grant["period_end"],
+                "계산 완료" if raw is not None else "판정 안됨",
+                raw, "근태 판정 누락·미확정" if raw is None else "",
+            ))
+        results.sort(key=lambda event: event[0]["grant_date"])
     unresolved = any(raw is None for _, raw in results)
     total = sum((raw for _, raw in results if raw is not None), Fraction(0))
     summary = {

@@ -64,6 +64,41 @@ def _grant(
     }
 
 
+def calculate_first_year_monthly_grants(
+    *,
+    hire_date: date,
+    as_of_date: date,
+    monthly_eligibility: EligibilityResolver,
+) -> list[dict]:
+    """Return hire-date monthly grants for months 1..11, without annual grants.
+
+    Shared by anniversary and fiscal-year calculations. Missing attendance
+    evidence stays UNDETERMINED; it must never become zero or an approval.
+    """
+    if not isinstance(hire_date, date) or not isinstance(as_of_date, date):
+        raise ValueError("hire_date and as_of_date must be dates")
+    if not callable(monthly_eligibility):
+        raise ValueError("explicit monthly eligibility resolver is required")
+    if as_of_date <= hire_date:
+        return []
+
+    first_anniversary = add_months(hire_date, 12)
+    grants: list[dict] = []
+    for month in range(1, MAX_MONTHLY_DAYS + 1):
+        grant_date = add_months(hire_date, month)
+        if grant_date > as_of_date or grant_date >= first_anniversary:
+            continue
+        start = add_months(hire_date, month - 1)
+        end = grant_date - timedelta(days=1)
+        status = _resolve(monthly_eligibility, start, end)
+        if status != NOT_ELIGIBLE:
+            grants.append(_grant(
+                grant_date, "monthly", status, Decimal("1"),
+                period_start=start, period_end=end,
+            ))
+    return grants
+
+
 def calculate_anniversary_grants(
     *,
     hire_date: date,
@@ -82,21 +117,10 @@ def calculate_anniversary_grants(
         raise ValueError("both explicit eligibility resolvers are required")
     if as_of_date <= hire_date:
         return []
-    first_anniversary = add_months(hire_date, 12)
-    grants: list[dict] = []
-
-    for month in range(1, MAX_MONTHLY_DAYS + 1):
-        grant_date = add_months(hire_date, month)
-        if grant_date > as_of_date or grant_date >= first_anniversary:
-            continue
-        start = add_months(hire_date, month - 1)
-        end = grant_date - timedelta(days=1)
-        status = _resolve(monthly_eligibility, start, end)
-        if status != NOT_ELIGIBLE:
-            grants.append(_grant(
-                grant_date, "monthly", status, Decimal("1"),
-                period_start=start, period_end=end,
-            ))
+    grants = calculate_first_year_monthly_grants(
+        hire_date=hire_date, as_of_date=as_of_date,
+        monthly_eligibility=monthly_eligibility,
+    )
 
     service_year = 1
     while True:
