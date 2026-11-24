@@ -32,6 +32,8 @@ class PtoInputPreflightTests(unittest.TestCase):
         self.assertEqual(before, self.path.read_bytes())
         self.assertEqual(list(Path(self.temp.name).iterdir()), [self.path])
         self.assertFalse(report["approved"])
+        self.assertEqual(report["status"], "OK")
+        self.assertEqual(report["operation"], "inspect_input")
         self.assertNotIn("private-file", json.dumps(report))
         return {(x["module"], x["role"]): x for x in report["checks"]}
 
