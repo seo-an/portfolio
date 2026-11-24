@@ -69,7 +69,10 @@ def inspect_input(path: str | Path) -> dict:
                 pass
         checks.append({"module": module, "role": role, "status": status,
                        "missing_headers": list(missing)})
+    # Transport success is independent of workbook acceptance: a valid
+    # response can report zero matches or multiple candidate roles.
     return {"schema_version": "1.0", "tool": "paid-time-off",
+            "operation": "inspect_input", "status": "OK",
             "checks": checks, "review_only": True, "approved": False}
 
 
