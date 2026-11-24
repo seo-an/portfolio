@@ -4,7 +4,7 @@ from __future__ import annotations
 import importlib
 import tempfile
 import unittest
-from datetime import date
+from datetime import date, timedelta
 from fractions import Fraction
 from pathlib import Path
 
@@ -130,11 +130,60 @@ class EntitlementCalculationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             calc.build_flag_index([row, row])
 
+    def test_fiscal_first_year_monthly_before_next_fiscal_boundary(self):
+        hire = date(2026, 5, 18)
+        idx = {}
+        for offset in range(7):
+            start = calc.add_months(hire, offset)
+            end = calc.add_months(hire, offset + 1) - timedelta(days=1)
+            idx[("E001", "월간", start, end)] = "ELIGIBLE"
+
+        for cutoff, expected in (
+            (date(2026, 11, 30), 6),
+            (date(2026, 12, 31), 7),
+        ):
+            with self.subTest(cutoff=cutoff):
+                summary, rows = calc.calculate_employee(
+                    employee_id="E001", hire_date=hire,
+                    as_of_date=cutoff, basis="회계연도 기준",
+                    flag_index=idx,
+                )
+                self.assertEqual(summary["status"], "계산 완료")
+                self.assertEqual(summary["calculation_result"], str(expected))
+                self.assertEqual(summary["granted_days"], f"{expected}.0")
+                self.assertEqual(len(rows), expected)
+                self.assertTrue(all(row["grant_type"] == "월별 발생" for row in rows))
+                self.assertTrue(all(row["basis"] == "회계연도 기준" for row in rows))
+                self.assertEqual(rows[0]["grant_date"], "2026-06-18")
+                self.assertEqual(rows[-1]["grant_date"], (
+                    "2026-11-18" if expected == 6 else "2026-12-18"
+                ))
+
+    def test_fiscal_first_year_missing_monthly_flag_is_not_zero(self):
+        summary, rows = calc.calculate_employee(
+            employee_id="E001", hire_date=date(2026, 5, 18),
+            as_of_date=date(2026, 6, 18),
+            basis="회계연도 기준", flag_index={},
+        )
+        self.assertEqual(summary["status"], "판정 안됨")
+        self.assertIsNone(summary["granted_days"])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["grant_type"], "월별 발생")
+        self.assertIsNone(rows[0]["calculation_result"])
+        self.assertEqual(rows[0]["reason"], "근태 판정 누락·미확정")
+
     def test_fiscal_initial_proration_not_later_years(self):
         idx = {
             ("E001", "연간", date(2026, 7, 1), date(2026, 12, 31)): "ELIGIBLE",
             ("E001", "연간", date(2027, 1, 1), date(2027, 12, 31)): "ELIGIBLE",
         }
+        # Monthly anniversaries after the fiscal boundary remain separate
+        # from the initial prorated fiscal grant.
+        hire = date(2026, 7, 1)
+        for offset in range(5, 11):
+            start = calc.add_months(hire, offset)
+            end = calc.add_months(hire, offset + 1) - timedelta(days=1)
+            idx[("E001", "월간", start, end)] = "ELIGIBLE"
         facts = dict(period_start="2026-07-01", period_end="2026-12-31",
                      method="소정근로일 기준", numerator=125, denominator=250,
                      base_days=15)
@@ -143,9 +192,16 @@ class EntitlementCalculationTests(unittest.TestCase):
             as_of_date=date(2027, 12, 31), basis="회계연도 기준", flag_index=idx,
             proration_facts=facts,
         )
-        self.assertEqual(first["granted_days"], "7.5")
-        self.assertEqual(first_rows[0]["grant_date"], "2027-01-01")
-        self.assertEqual(first_rows[0]["calculation_result"], "7.5")
+        self.assertEqual(first["granted_days"], "13.5")
+        prorated = [r for r in first_rows
+                    if r["grant_type"] == "최초 회계연도 비례"]
+        monthly = [r for r in first_rows if r["grant_type"] == "월별 발생"]
+        self.assertEqual(len(prorated), 1)
+        self.assertEqual(prorated[0]["grant_date"], "2027-01-01")
+        self.assertEqual(prorated[0]["calculation_result"], "7.5")
+        self.assertEqual(len(monthly), 6)
+        self.assertEqual(monthly[-1]["grant_date"], "2027-06-01")
+        self.assertEqual(len({r["grant_id"] for r in first_rows}), 7)
         # 2028 requires only 2027's annual flag; no 2026 proration evidence.
         future, future_rows = calc.calculate_employee(
             employee_id="E001", hire_date=date(2026, 7, 1),
@@ -157,6 +213,11 @@ class EntitlementCalculationTests(unittest.TestCase):
         self.assertEqual(future_rows[0]["grant_date"], "2028-01-01")
     def test_fiscal_grant_for_hire_before_fiscal_start_same_year(self):
         idx = {("E001", "연간", date(2026, 1, 1), date(2026, 3, 31)): "ELIGIBLE"}
+        hire = date(2026, 1, 1)
+        for offset in range(3):
+            start = calc.add_months(hire, offset)
+            end = calc.add_months(hire, offset + 1) - timedelta(days=1)
+            idx[("E001", "월간", start, end)] = "ELIGIBLE"
         facts = dict(period_start="2026-01-01", period_end="2026-03-31",
                      method="달력일 기준", numerator=90, denominator=365)
         summary, rows = calc.calculate_employee(
@@ -165,7 +226,12 @@ class EntitlementCalculationTests(unittest.TestCase):
             fiscal_year_start="04-01", proration_method="달력일 기준",
             proration_facts=facts,
         )
-        self.assertEqual(rows[0]["grant_date"], "2026-04-01")
+        prorated = [r for r in rows if r["grant_type"] == "최초 회계연도 비례"]
+        monthly = [r for r in rows if r["grant_type"] == "월별 발생"]
+        self.assertEqual(len(prorated), 1)
+        self.assertEqual(prorated[0]["grant_date"], "2026-04-01")
+        self.assertEqual([r["grant_date"] for r in monthly],
+                         ["2026-02-01", "2026-03-01", "2026-04-01"])
         self.assertEqual(summary["status"], "계산 완료")
 
     def test_anniversary_previous_year_is_not_counted(self):
