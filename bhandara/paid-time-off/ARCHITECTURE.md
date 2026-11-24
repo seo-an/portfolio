@@ -1,6 +1,6 @@
 # Paid Time Off — v3 아키텍처 및 모듈 인계 계약
 
-**기준: 2026-11-19, PR #56 병합 후 / 독립 Excel 및 JSON 선택적 Tool CLI 구현 완료.** 이 문서는 현재 병합된 코드를 기준으로 작성했습니다. PR #37~#43 초기 설계안 중 본문과 충돌하는 설명은 폐기합니다. 프로젝트 전체 구조는 `Module → Flow(논리적) → Tool → Workflow`입니다.
+**현행 갱신: 2026-11-24, PR #89 병합 후 / 독립 Excel·JSON CLI와 PTO Native Slack Cycle 운영 확인.** 이 문서는 현재 병합된 코드를 기준으로 작성했습니다. PR #37~#43 초기 설계안 중 본문과 충돌하는 설명은 폐기합니다. 프로젝트 전체 구조는 `Module → Flow(논리적) → Tool → Workflow`입니다.
 
 ## 1. 확정된 구조
 
@@ -31,9 +31,9 @@ Bhandara 저장소는 공통 `bhandara/data/input/` 체계를 유지하고, Tool
 | `runner_closing.py` | `closing-result.xlsx`, 다음 기간 인계 | 독립 Excel 완료 |
 | `use-promotion` | 대상·기한·통지·증빙·결과 | **미구현** |
 | 신규 `paid-time-off` JSON Tool CLI | `tool_cli.py`, `config.example.json`, `run.py`의 명시적 선택 단계·경로 | **합성·서버 테스트 후 병합 완료** |
-| Gearbox/Slack 운영 연결 | 원본 수신, 권한·기한, 다중 Tool Workflow | **미연결** |
+| Gearbox/Slack 운영 연결 | PTO 4개 Module의 자연어·Native Gateway·Excel 반환 | **PTO 연결 완료(`agent-config`)**; Worktime·Payroll 전 Module 및 전체 Workflow의 동일 Cycle 연결은 별도 |
 
-**현행 구현:** Paid Time Off 독립 Tool의 계산·검증·Excel 출력 계약은 유지합니다. 운영 E2E 및 실직원 승인 과정은 별도 영역입니다.
+**현행 구현:** 독립 PTO Tool 계산·검증·Excel 출력과 PTO 네 Module의 합성 Slack 운영 E2E까지 확인됐습니다. 실직원 승인·실자료의 법률 적정성 판정은 별도 영역입니다. 운영 정본: [agent-config PTO Cycle Runbook](https://github.com/seo-an/agent-config/blob/main/operations/runbooks/pto-cycle-operations.md).
 
 ## 3. 데이터 생성·보관의 정본
 
@@ -42,6 +42,7 @@ Bhandara 저장소는 공통 `bhandara/data/input/` 체계를 유지하고, Tool
 - 연차 발생의 법정 요건을 내부에서 다시 판단하는 대신 외부 근태 결과의 판정을 사용합니다.
 - `as_of_date`의 연도 1월 1일부터 기준일까지 발생한 건만 산출합니다. 이전 연도 기록은 근태 판정의 근거이지 중복 발생 금액이 아닙니다.
 - 근속 가산은 실제 입사일 기준 완료 근속연수를 사용합니다. 회계연도 첫 경계는 비례, 후속은 전년도 출근율 결과를 반영하는 정기 부여입니다.
+- **회계연도 기준 입사 첫해 월별 발생(PR #89)**: 입사일 기준과 동일한 첫해 월별 발생 함수를 사용합니다. 회계연도 경계 전에 도래한 개근 월의 권리를 해당 발생 연도에 반영하고, 최초 회계연도 비례 부여는 다른 발생 이벤트로 별도 기록합니다. 증빙 없는 월은 `판정 안됨`이며 다음 연도에 과거 발생량을 중복 합산하지 않습니다. 기본값 `basis=입사일 기준`, `fiscal_year_start=01-01` 유지. GitHub Actions 2건 성공 및 서버 Entitlement unittest 28건 통과.
 - 원본 `계산결과`와 최종 `반영발생일수`는 **같은 발생상세 행**입니다. `grant_id`는 발생 사건의 본질적 식별정보에서 생성해 행 위치·실행 ID·수량 정정에 의존하지 않습니다.
 - 수량 계산은 `Fraction`, 합계에서 마지막 한 번만 반올림합니다. 발생 건별 반올림은 금지하고 최종 합계를 발생 건에 배분합니다.
 - 미판정 직원의 발생량을 임의 부분합으로 확정하지 않습니다.
